@@ -3,5 +3,16 @@
 	"description": "Prova de conceito multiplayer: sincronização em tempo real centralizada no PocketBase e minijogo de Pedra, Papel e Tesoura.",
 	"accentColor": "#ed225d",
 	"enableRealtime": true,
-	"filesOrder": ["network.js", "game.js", "ui.js", "sketch.js"]
+	"filesOrder": [
+		"icons.js",
+		"session.js",
+		"network-actions.js",
+		"network.js",
+		"game.js",
+		"ui-components.js",
+		"ui-screens.js",
+		"ui-overlays.js",
+		"ui.js",
+		"sketch.js"
+	]
 }

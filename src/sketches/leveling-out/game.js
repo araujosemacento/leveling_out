@@ -117,7 +117,11 @@ class GameEngine {
 				this.opponentScore = Number(sala.placar_a) || 0;
 			}
 
-			if (sala.rodada_atual && Number(sala.rodada_atual) > this.roundId && this.state !== 'ESCOLHENDO') {
+			if (
+				sala.rodada_atual &&
+				Number(sala.rodada_atual) > this.roundId &&
+				this.state !== 'ESCOLHENDO'
+			) {
 				this.roundId = Number(sala.rodada_atual);
 			}
 			this.saveState();

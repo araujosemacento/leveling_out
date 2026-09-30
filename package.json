@@ -12,8 +12,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
-		"format": "prettier --write .",
-		"test:visual": "bun tests/visual_stepper.js"
+		"format": "prettier --write ."
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -30,7 +29,6 @@
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.19.0",
 		"globals": "^17.6.0",
-		"playwright": "^1.63.0",
 		"prettier": "^3.8.3",
 		"prettier-plugin-svelte": "^4.1.0",
 		"prettier-plugin-tailwindcss": "^0.8.0",
@@ -41,7 +39,6 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
-		"pocketbase": "^0.28.1",
 		"prismjs": "^1.30.0"
 	}
 }

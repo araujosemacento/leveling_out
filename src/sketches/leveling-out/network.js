@@ -2,10 +2,9 @@
 /* eslint-disable */
 
 /**
- * Módulo de Rede e Persistência de Sessão
- * Conecta diretamente ao PocketBase via REST e Server-Sent Events (SSE).
- * Inclui Re-hidratação de Estado (Full State Resync), Heartbeat com Auto-recuperação
- * e tratamento rigoroso contra desconexões órfãs e dados obsoletos.
+ * Módulo Central de Rede e Sincronização Autoritativa
+ * Coordena conexão com PocketBase, reconciliação de estado, assinaturas SSE
+ * e delega responsabilidades de sessão (NetworkSession) e ações de jogo (NetworkActions).
  */
 
 class NetworkManager {
@@ -26,42 +25,22 @@ class NetworkManager {
 		this.salaRecord = null;
 		this.jogadorRecord = null;
 
-		// Persistência de Identidade: recupera ou gera um ID fixo para esta sala
-		this.myId = this.loadOrGeneratePlayerId();
-		this.statusPollingTimer = null;
-		this._lastHeartbeat = 0;
-
-		// Monitor de visibilidade de aba para reconciliação automática
-		this.setupVisibilityListener();
-	}
-
-	loadOrGeneratePlayerId() {
-		try {
-			if (typeof window !== 'undefined' && window.__PLAYER_ID__) {
-				return window.__PLAYER_ID__;
+		// 1. Módulo de Sessão e Identidade Local
+		this.session = new NetworkSession(this.roomCode, () => {
+			if (this.isConnected) {
+				this.reconcileState();
 			}
-			const storageKey = `leveling_player_${this.roomCode}`;
-			const saved = sessionStorage.getItem(storageKey);
-			if (saved) {
-				return saved;
-			}
-			const newId = 'player_' + Math.random().toString(36).substring(2, 8);
-			sessionStorage.setItem(storageKey, newId);
-			return newId;
-		} catch (e) {
-			return 'player_' + Math.random().toString(36).substring(2, 8);
-		}
-	}
+		});
+		this.myId = this.session.playerId;
 
-	setupVisibilityListener() {
-		if (typeof document !== 'undefined') {
-			document.addEventListener('visibilitychange', () => {
-				if (document.visibilityState === 'visible' && this.isConnected) {
-					console.log('[Network] Aba visível novamente. Engatilhando reconciliação de estado...');
-					this.reconcileState();
-				}
-			});
-		}
+		// 2. Módulo de Ações de Jogo e Presença
+		this.actions = new NetworkActions(
+			() => this.pb,
+			this.roomCode,
+			this.myId,
+			this.onMessage,
+			() => this.reconcileState()
+		);
 	}
 
 	async connect() {
@@ -170,7 +149,6 @@ class NetworkManager {
 				});
 			} else {
 				this.myEquipe = myRecord.equipe;
-				// Atualiza o last_seen imediatamente
 				try {
 					myRecord = await this.pb.collection('jogadores').update(myRecord.id, {
 						last_seen: new Date().toISOString()
@@ -217,7 +195,6 @@ class NetworkManager {
 
 	async setupRealtimeSubscriptions() {
 		try {
-			// Cancela inscrições anteriores se existirem
 			try {
 				this.pb.collection('salas').unsubscribe();
 				this.pb.collection('jogadores').unsubscribe();
@@ -233,7 +210,7 @@ class NetworkManager {
 					});
 
 					// Consulta status de lances para feedback instantâneo de jogada do oponente
-					this.verificarStatusOponente(e.record.rodada_atual || 1);
+					this.actions.verificarStatusOponente(e.record.rodada_atual || 1, this.myEquipe);
 				}
 			});
 
@@ -274,122 +251,18 @@ class NetworkManager {
 		}
 	}
 
-	async verificarStatusOponente(rodada) {
-		if (!this.pb) return;
-		try {
-			const res = await this.pb.send(
-				`/api/ppt/status?sala_codigo=${encodeURIComponent(this.roomCode)}&rodada=${rodada}`,
-				{ method: 'GET' }
-			);
-
-			if (res.status === 'RESOLVIDO') {
-				this.stopStatusPolling();
-				this.onMessage({
-					type: 'PPT_RESOLVIDO',
-					data: res
-				});
-			} else if (res.ultimo_resultado && res.ultimo_resultado.status === 'RESOLVIDO') {
-				this.stopStatusPolling();
-				this.onMessage({
-					type: 'PPT_RESOLVIDO',
-					data: res.ultimo_resultado
-				});
-			} else if (res.equipes_enviadas && Array.isArray(res.equipes_enviadas)) {
-				const opponentTeam = this.myEquipe === 'A' ? 'B' : 'A';
-				if (res.equipes_enviadas.includes(opponentTeam)) {
-					this.onMessage({
-						type: 'OPPONENT_MOVED',
-						rodada: rodada
-					});
-				}
-			}
-		} catch (_) {}
-	}
-
 	async enviarLance(lance, rodada) {
-		if (!this.isConnected || !this.pb) return;
-
-		try {
-			const response = await this.pb.send('/api/ppt/lance', {
-				method: 'POST',
-				body: {
-					sala_codigo: this.roomCode,
-					player_id: this.myId,
-					equipe: this.myEquipe,
-					lance: lance,
-					rodada: rodada
-				}
-			});
-
-			if (response.status === 'RESOLVIDO') {
-				this.stopStatusPolling();
-				this.onMessage({
-					type: 'PPT_RESOLVIDO',
-					data: response
-				});
-			} else if (response.status === 'AGUARDANDO_OPONENTE') {
-				this.startStatusPolling(rodada);
-			}
-		} catch (err) {
-			console.error('[Lance Error]', err);
-		}
-	}
-
-	startStatusPolling(rodada) {
-		this.stopStatusPolling();
-		this.statusPollingTimer = setInterval(async () => {
-			if (!this.pb) return;
-			try {
-				const response = await this.pb.send(
-					`/api/ppt/status?sala_codigo=${encodeURIComponent(this.roomCode)}&rodada=${rodada}`,
-					{ method: 'GET' }
-				);
-				if (response.status === 'RESOLVIDO') {
-					this.stopStatusPolling();
-					this.onMessage({
-						type: 'PPT_RESOLVIDO',
-						data: response
-					});
-				}
-			} catch (err) {
-				console.warn('[Polling Status Error]', err);
-			}
-		}, 800);
+		if (!this.isConnected) return;
+		await this.actions.enviarLance(this.myEquipe, lance, rodada);
 	}
 
 	stopStatusPolling() {
-		if (this.statusPollingTimer) {
-			clearInterval(this.statusPollingTimer);
-			this.statusPollingTimer = null;
-		}
+		this.actions.stopStatusPolling();
 	}
 
 	updateHeartbeat() {
-		if (!this.isConnected || !this.pb) return;
-
-		const now = millis();
-		if (!this._lastHeartbeat || now - this._lastHeartbeat > 8000) {
-			this._lastHeartbeat = now;
-
-			if (!this.jogadorRecord) {
-				this.reconcileState();
-				return;
-			}
-
-			this.pb
-				.collection('jogadores')
-				.update(this.jogadorRecord.id, {
-					last_seen: new Date().toISOString()
-				})
-				.catch((err) => {
-					// Se o registro não existe mais (404), fomos purgados pelo cleanup
-					if (err && err.status === 404) {
-						console.log('[Heartbeat] Registro de jogador não encontrado (404). Reconciliando...');
-						this.jogadorRecord = null;
-						this.reconcileState();
-					}
-				});
-		}
+		if (!this.isConnected) return;
+		this.actions.updateHeartbeat(this.jogadorRecord);
 	}
 
 	isOpponentOnline() {
