@@ -117,13 +117,8 @@ class GameEngine {
 				this.opponentScore = Number(sala.placar_a) || 0;
 			}
 
-			if (
-				sala.rodada_atual &&
-				Number(sala.rodada_atual) > this.roundId &&
-				this.state !== 'ESCOLHENDO'
-			) {
-				this.roundId = Number(sala.rodada_atual);
-			}
+			// Placar autoritativo atualizado via SSE.
+			// O roundId do jogador avança estritamente quando ele clica em "Próxima Rodada" via startNewRound().
 			this.saveState();
 		} else if (data.type === 'PPT_RESOLVIDO') {
 			this.triggerDramaticReveal(data.data, network);
@@ -133,8 +128,26 @@ class GameEngine {
 
 	triggerDramaticReveal(res, network) {
 		const myTeam = (network && network.myEquipe) || 'A';
-		if (this.pendingResolution && this.pendingResolution.res.rodada === res.rodada) return;
+		if (!res || !res.rodada) return;
 
+		const resRound = Number(res.rodada);
+
+		// Descarta resoluções de rodadas anteriores, a menos que estivéssemos aguardando o desfecho desta rodada
+		if (resRound < this.roundId && this.state !== 'AGUARDANDO_OPONENTE_JOGADA') {
+			console.warn(`[Game] Ignorando resolução de rodada antiga (${resRound} < ${this.roundId})`);
+			return;
+		}
+
+		// Se já estiver exibindo o resultado desta mesma rodada, não reinicia contagem
+		if (this.state === 'RESULTADO' && resRound === this.roundId) {
+			return;
+		}
+
+		if (this.pendingResolution && Number(this.pendingResolution.res.rodada) === resRound) {
+			return;
+		}
+
+		this.roundId = resRound;
 		this.pendingResolution = { res, myTeam };
 		this.state = 'REVELANDO';
 		this.revealStartTime = millis();
@@ -176,12 +189,22 @@ class GameEngine {
 		this.myMove = null;
 		this.opponentMove = null;
 		this.roundResult = null;
+		this.pendingResolution = null;
+
 		if (network && network.salaRecord && network.salaRecord.rodada_atual) {
 			this.roundId = Number(network.salaRecord.rodada_atual);
+		} else {
+			this.roundId += 1;
 		}
+
 		this.state = 'ESCOLHENDO';
 		this.statusMessage = 'Faça sua jogada!';
 		this.saveState();
+
+		// Verifica se o oponente já fez a jogada na nova rodada enquanto estávamos na tela de resultado
+		if (network && network.actions) {
+			network.actions.verificarStatusOponente(this.roundId, network.myEquipe);
+		}
 	}
 
 	chooseMove(move, network) {

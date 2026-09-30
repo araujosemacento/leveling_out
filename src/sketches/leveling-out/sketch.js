@@ -26,7 +26,8 @@ function setup() {
 	network = new NetworkManager(
 		roomCode,
 		(message) => game.handleMessage(message, network),
-		(status) => game.setStatus(status)
+		(status) => game.setStatus(status),
+		() => (game ? game.roundId : 1)
 	);
 
 	// Inicia a conexão com o PocketBase

@@ -42,7 +42,7 @@ class NetworkActions {
 				}
 			});
 
-			if (response.status === 'RESOLVIDO') {
+			if (response.status === 'RESOLVIDO' && Number(response.rodada) === Number(rodada)) {
 				this.stopStatusPolling();
 				this.onMessage({
 					type: 'PPT_RESOLVIDO',
@@ -64,17 +64,11 @@ class NetworkActions {
 				{ method: 'GET' }
 			);
 
-			if (res.status === 'RESOLVIDO') {
+			if (res.status === 'RESOLVIDO' && Number(res.rodada) === Number(rodada)) {
 				this.stopStatusPolling();
 				this.onMessage({
 					type: 'PPT_RESOLVIDO',
 					data: res
-				});
-			} else if (res.ultimo_resultado && res.ultimo_resultado.status === 'RESOLVIDO') {
-				this.stopStatusPolling();
-				this.onMessage({
-					type: 'PPT_RESOLVIDO',
-					data: res.ultimo_resultado
 				});
 			} else if (res.equipes_enviadas && Array.isArray(res.equipes_enviadas)) {
 				const opponentTeam = myEquipe === 'A' ? 'B' : 'A';
@@ -97,7 +91,7 @@ class NetworkActions {
 					`/api/ppt/status?sala_codigo=${encodeURIComponent(this.roomCode)}&rodada=${rodada}`,
 					{ method: 'GET' }
 				);
-				if (response.status === 'RESOLVIDO') {
+				if (response.status === 'RESOLVIDO' && Number(response.rodada) === Number(rodada)) {
 					this.stopStatusPolling();
 					this.onMessage({
 						type: 'PPT_RESOLVIDO',

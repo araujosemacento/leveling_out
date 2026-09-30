@@ -8,10 +8,11 @@
  */
 
 class NetworkManager {
-	constructor(roomCode, onMessage, onStatusChange) {
+	constructor(roomCode, onMessage, onStatusChange, getRoundId) {
 		this.roomCode = roomCode;
 		this.onMessage = onMessage;
 		this.onStatusChange = onStatusChange;
+		this.getRoundId = typeof getRoundId === 'function' ? getRoundId : () => 1;
 		this.backendUrl = window.__BACKEND_URL__ || 'http://localhost:8090';
 
 		this.pb = null;
@@ -126,18 +127,40 @@ class NetworkManager {
 				});
 			}
 
-			// 2. Obter jogadores ativos na sala
-			const jogadores = await this.pb.collection('jogadores').getList(1, 10, {
+			// 2. Obter jogadores na sala
+			const jogadores = await this.pb.collection('jogadores').getList(1, 20, {
 				filter: `sala_codigo = "${this.roomCode}"`
 			});
+
+			// Limiar de 45 segundos para considerar um jogador ativo
+			const ACTIVE_THRESHOLD_MS = 45000;
+			const isPlayerActive = (j) => {
+				if (!j || !j.last_seen) return false;
+				const parsed = new Date(String(j.last_seen).replace(' ', 'T')).getTime();
+				return !isNaN(parsed) && Date.now() - parsed < ACTIVE_THRESHOLD_MS;
+			};
 
 			// Verifica se este jogador já possui cadastro ativo na sala
 			let myRecord = jogadores.items.find((j) => j.player_id === this.myId);
 
+			// Filtra oponentes comprovadamente ativos na sala
+			const activeOpponents = jogadores.items.filter(
+				(j) => j.player_id !== this.myId && isPlayerActive(j)
+			);
+
 			if (!myRecord) {
-				// Equipe A para o primeiro jogador, Equipe B para o segundo
-				const hasTeamA = jogadores.items.some((j) => j.equipe === 'A');
-				this.myEquipe = hasTeamA ? 'B' : 'A';
+				// Atribui equipe de forma balanceada considerando apenas jogadores ativos
+				const activeTeamA = activeOpponents.filter((j) => j.equipe === 'A').length;
+				const activeTeamB = activeOpponents.filter((j) => j.equipe === 'B').length;
+
+				if (activeTeamA === 0) {
+					this.myEquipe = 'A';
+				} else if (activeTeamB === 0) {
+					this.myEquipe = 'B';
+				} else {
+					// Se ambas tiverem jogadores ativos, entra na que possui menor contingente
+					this.myEquipe = activeTeamA <= activeTeamB ? 'A' : 'B';
+				}
 
 				myRecord = await this.pb.collection('jogadores').create({
 					sala_codigo: this.roomCode,
@@ -157,10 +180,15 @@ class NetworkManager {
 			}
 			this.jogadorRecord = myRecord;
 
-			// 3. Atualizar oponente ativo
-			const otherPlayer = jogadores.items.find((j) => j.player_id !== this.myId);
-			if (otherPlayer) {
-				this.opponentId = otherPlayer.player_id;
+			// 3. Atualizar oponente ativo (prioriza o mais recente)
+			const latestOpponent = activeOpponents.sort((a, b) => {
+				const timeA = new Date(String(a.last_seen).replace(' ', 'T')).getTime() || 0;
+				const timeB = new Date(String(b.last_seen).replace(' ', 'T')).getTime() || 0;
+				return timeB - timeA;
+			})[0];
+
+			if (latestOpponent) {
+				this.opponentId = latestOpponent.player_id;
 				this.opponentLastSeen = millis();
 			} else {
 				this.opponentId = null;
@@ -182,7 +210,7 @@ class NetworkManager {
 				type: 'FULL_SYNC',
 				sala: this.salaRecord,
 				myEquipe: this.myEquipe,
-				opponent: otherPlayer || null,
+				opponent: latestOpponent || null,
 				pptStatus: pptStatus
 			});
 
@@ -209,19 +237,20 @@ class NetworkManager {
 						sala: e.record
 					});
 
-					// Consulta status de lances para feedback instantâneo de jogada do oponente
-					this.actions.verificarStatusOponente(e.record.rodada_atual || 1, this.myEquipe);
+					// Consulta status de lances para a rodada em que o jogador atualmente se encontra
+					const activeRound = this.getRoundId();
+					this.actions.verificarStatusOponente(activeRound, this.myEquipe);
 				}
 			});
 
-			// 2. Assinar presença de jogadores via SSE com tratamento rigoroso de deleção
+			// 2. Assinar presença de jogadores via SSE com validação ativa
 			await this.pb.collection('jogadores').subscribe('*', (e) => {
 				if (e.record.sala_codigo !== this.roomCode) return;
 
 				if (e.action === 'delete') {
 					if (e.record.player_id !== this.myId) {
 						if (this.opponentId === e.record.player_id) {
-							console.log('[Presence SSE] Oponente deletado pelo servidor.');
+							console.log('[Presence SSE] Oponente desconectou ou foi purgado pelo servidor.');
 							this.opponentId = null;
 							this.opponentLastSeen = 0;
 							this.onMessage({
@@ -237,12 +266,15 @@ class NetworkManager {
 					}
 				} else if (e.action === 'create' || e.action === 'update') {
 					if (e.record.player_id !== this.myId) {
+						const isFirstOpponent = !this.opponentId || this.opponentId === e.record.player_id;
 						this.opponentId = e.record.player_id;
 						this.opponentLastSeen = millis();
-						this.onMessage({
-							type: 'OPPONENT_ONLINE',
-							opponent: e.record
-						});
+						if (isFirstOpponent) {
+							this.onMessage({
+								type: 'OPPONENT_ONLINE',
+								opponent: e.record
+							});
+						}
 					}
 				}
 			});

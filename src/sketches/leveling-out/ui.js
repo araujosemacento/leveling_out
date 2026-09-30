@@ -53,7 +53,7 @@ class UIRenderer {
 		} else if (game.state === 'REVELANDO') {
 			this.screens.drawRevealingScreen(game);
 		} else if (game.state === 'RESULTADO') {
-			this.screens.drawResultScreen(game);
+			this.screens.drawResultScreen(game, network);
 		}
 
 		// 4. Overlays de Sincronização e Erro Crítico

@@ -90,22 +90,26 @@ Para cada repositório com alterações, formate a saída com a seguinte estrutu
 
 #### Repositório: `<nome-ou-caminho-relativo>`
 
-- **Sumário (Título):**
-  - Uma única linha concisa (recomendado até 72 caracteres).
-  - Emprega o padrão `<tipo>(<escopo>): <descrição>` ou `<tipo>: <descrição>`.
-  - Escrito no tempo verbal imperativo (ex.: "implementa", "corrige", "refatora", "adiciona", ou em inglês "add", "fix", "refactor").
+1. **Sumário:**
+   - Uma única linha concisa (recomendado até 72 caracteres).
+   - Emprega o padrão Conventional Commits: `<tipo>(<escopo>): <descrição>` ou `<tipo>: <descrição>`.
+   - Escrito no tempo verbal imperativo (ex.: `fix(api): corrige sincronização de rodadas e adiciona purga de presença`).
 
-- **Descrição Detalhada (Corpo):**
-  - Explicação contextualizada do **que** foi feito e **por que** foi feito.
-  - Lista em tópicos das principais modificações técnicas introduzidas.
-  - Indicação de eventuais impactos colaterais, quebras de compatibilidade (*breaking changes*) ou dependências adicionadas/removidas.
+2. **Descrição Detalhada:**
+   - **Parágrafo Contextualizador:** Um parágrafo conciso explicando objetivamente o que foi feito e por que foi feito.
+   - **Principais Alterações:** Logo abaixo do parágrafo, uma seção intitulada `Principais alterações:` contendo uma lista numerada detalhando as mudanças técnicas (módulos afetados, causas raízes sanadas e fluxos corrigidos).
 
-- **Comando Git Sugerido:**
-  - Forneça o comando Git pronto para copiar e colar, por exemplo:
-  ```bash
-  git -C <caminho_do_repo> add .
-  git -C <caminho_do_repo> commit -m "<Sumário>" -m "<Descrição detalhada em parágrafos>"
-  ```
+3. **Comando Git Sugerido:**
+   - Comando pronto para copiar e colar com o sumário no primeiro `-m` e o corpo completo (parágrafo + principais alterações) no segundo `-m`:
+   ```bash
+   git -C <caminho_do_repo> add <arquivos_ou_.>
+   git -C <caminho_do_repo> commit -m "<tipo>(<escopo>): <sumario_curto>" -m "<Parágrafo conciso de contextualização.
+
+Principais alterações:
+1. <Primeira alteração técnica>
+2. <Segunda alteração técnica>
+3. <Terceira alteração técnica>"
+   ```
 
 ---
 

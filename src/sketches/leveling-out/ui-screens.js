@@ -238,6 +238,18 @@ class UIScreens {
 		const btnY = height * 0.78;
 		this.nextRoundBtn = { x: width / 2, y: btnY, w: btnW, h: btnH };
 
+		// Indicador se o oponente já avançou para a próxima rodada
+		if (
+			network &&
+			network.salaRecord &&
+			Number(network.salaRecord.rodada_atual) > Number(game.roundId)
+		) {
+			fill(52, 211, 153);
+			textSize(12);
+			textStyle(BOLD);
+			text('Oponente pronto para a próxima rodada', width / 2, btnY - 32);
+		}
+
 		const isHover =
 			mouseX >= width / 2 - btnW / 2 &&
 			mouseX <= width / 2 + btnW / 2 &&
