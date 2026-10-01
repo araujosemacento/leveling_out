@@ -1,5 +1,48 @@
 @import 'tailwindcss';
 
+@theme {
+	/* Mapeamento de Cores para utilitários Tailwind (bg-primary, text-accent, etc.) */
+	--color-background: var(--background);
+	--color-text: var(--text);
+	--color-primary: var(--primary);
+	--color-primary-hover: var(--primary-hover);
+	--color-primary-soft: var(--primary-soft);
+	--color-secondary: var(--secondary);
+	--color-secondary-hover: var(--secondary-hover);
+	--color-secondary-soft: var(--secondary-soft);
+	--color-tertiary: var(--tertiary);
+	--color-tertiary-hover: var(--tertiary-hover);
+	--color-tertiary-soft: var(--tertiary-soft);
+	--color-accent: var(--accent);
+	--color-accent-hover: var(--accent-hover);
+	--color-accent-soft: var(--accent-soft);
+
+	--color-bg-base: var(--bg-base);
+	--color-bg-surface: var(--bg-surface);
+	--color-bg-surface-soft: var(--bg-surface-soft);
+	--color-bg-surface-elevated: var(--bg-surface-elevated);
+
+	--color-border-subtle: var(--border-subtle);
+	--color-border-medium: var(--border-medium);
+	--color-border-strong: var(--border-strong);
+	--color-border-accent: var(--border-accent);
+
+	--color-text-primary: var(--text-primary);
+	--color-text-muted: var(--text-muted);
+	--color-text-subtle: var(--text-subtle);
+	--color-text-on-accent: var(--text-on-accent);
+
+	--color-team-a: var(--color-team-a);
+	--color-team-b: var(--color-team-b);
+
+	/* Mapeamento de Tipografia para utilitários Tailwind */
+	--font-display: var(--font-display);
+	--font-subheading: var(--font-subheading);
+	--font-util-heading: var(--font-util-heading);
+	--font-util-body: var(--font-util-body);
+	--font-code: var(--font-code);
+}
+
 :root {
 	/* Tipografia Estilizada (Bubbly / Friendly Identity) */
 	--font-display: 'Bagel Fat One', cursive, sans-serif;
@@ -127,6 +170,19 @@ body {
 	-webkit-font-smoothing: antialiased;
 }
 
+/* Transição suave de cores e superfícies para suporte a troca de temas */
+body,
+header,
+main,
+button,
+input,
+div,
+a {
+	transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration: 250ms;
+}
+
 /* Classes utilitárias de tipografia */
 .font-display {
 	font-family: var(--font-display);
@@ -168,83 +224,4 @@ code,
 pre,
 .font-code {
 	font-family: var(--font-code);
-}
-
-/* ==========================================================================
-   Tema Prism.js customizado para Dark Mode e p5.js
-   ========================================================================== */
-.token.comment,
-.token.prolog,
-.token.doctype,
-.token.cdata {
-	color: #71717a; /* zinc-500 */
-	font-style: italic;
-}
-
-.token.punctuation {
-	color: #a1a1aa; /* zinc-400 */
-}
-
-.token.namespace {
-	opacity: 0.7;
-}
-
-.token.property,
-.token.tag,
-.token.constant,
-.token.symbol,
-.token.deleted {
-	color: #f43f5e; /* rose-500 */
-}
-
-.token.boolean,
-.token.number {
-	color: #fb923c; /* orange-400 */
-}
-
-.token.selector,
-.token.attr-name,
-.token.string,
-.token.char,
-.token.builtin,
-.token.inserted {
-	color: #4ade80; /* emerald-400 */
-}
-
-.token.operator,
-.token.entity,
-.token.url {
-	color: #38bdf8; /* sky-400 */
-}
-
-.token.atrule,
-.token.attr-value,
-.token.keyword {
-	color: #f43f5e; /* rose-500 / p5 accent */
-	font-weight: 500;
-}
-
-.token.function,
-.token.class-name {
-	color: #60a5fa; /* blue-400 */
-	font-weight: 500;
-}
-
-.token.regex,
-.token.important,
-.token.variable {
-	color: #fbbf24; /* amber-400 */
-}
-
-.token.important,
-.token.bold {
-	font-weight: bold;
-}
-
-.token.italic {
-	font-style: italic;
-}
-
-.token.entity {
-	cursor: help;
 }

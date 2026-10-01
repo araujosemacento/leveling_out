@@ -8,13 +8,12 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Programação para Jogos I</title>
+	<title>Leveling Out</title>
 </svelte:head>
 
-<div class="flex min-h-screen flex-col bg-[#121214] text-[#f4f4f5]">
+<div class="flex min-h-screen flex-col bg-bg-base text-text-primary">
 	<Header />
 	<main class="flex-1">
 		{@render children()}
 	</main>
 </div>
-

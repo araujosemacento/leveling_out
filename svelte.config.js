@@ -3,8 +3,7 @@ import adapter from '@sveltejs/adapter-static';
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	compilerOptions: {
-		runes: ({ filename }) =>
-			filename.split(/[/\\]/).includes('node_modules') ? undefined : true
+		runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true)
 	},
 	kit: {
 		adapter: adapter({
@@ -15,7 +14,9 @@ const config = {
 			strict: true
 		}),
 		paths: {
-			base: process.argv.includes('dev') ? '' : (process.env.BASE_PATH ?? '/portfolio_programacao_jogos')
+			base: process.argv.includes('dev')
+				? ''
+				: (process.env.BASE_PATH ?? '/portfolio_programacao_jogos')
 		}
 	}
 };

@@ -31,7 +31,16 @@ O projeto baseia sua paleta em valores calibrados para contraste, acessibilidade
 3. **Monospace:**
    - **Fira Code (`.font-code`):** Exclusiva para códigos de sala (`roomCode`).
 
-## 3. Proibições Estritas de Front-end
+## 3. Diretrizes de Componentes e Utilitários Tailwind
+
+1. **Posicionamento de Ícones em Botões de Formulário:**
+   - Em botões de formulário e ações de submissão/criação, o ícone deve ser posicionado estritamente à direita do texto (ex.: `<span>Rótulo</span> <Icon ... />`).
+
+2. **Integração das Classes Tailwind com Variáveis de Tema:**
+   - Utilizar as classes utilitárias do Tailwind CSS v4 configuradas no bloco `@theme` (`bg-primary`, `bg-accent`, `bg-bg-surface`, `bg-bg-surface-soft`, `border-border-subtle`, `text-text-primary`, `text-text-muted`, etc.).
+   - Evitar hardcoding de cores hexadecimais literais quando houver token semântico mapeado.
+
+## 4. Proibições Estritas de Front-end
 
 Neste repositório, é **expressamente proibido** incluir no front-end:
 

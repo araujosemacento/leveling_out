@@ -185,6 +185,11 @@ A paleta conta com matrizes base e extrapolações semânticas para os temas Lig
 - **Textos:** `--text-primary: #fdecd8`, `--text-muted: #cbb49c`, `--text-subtle: #8e7a63`, `--text-on-accent: #ffffff`
 - **Ações:** `--primary-hover: #f0a32d`, `--secondary-hover: #8f3322`, `--tertiary-hover: #12cc2b`, `--accent-hover: #8666e8`
 
+### Convenções de Botões e Utilitários Tailwind
+
+- **Ícones em Botões de Formulário:** Em botões de formulário e ações de envio/criação, o ícone deve ser posicionado estritamente à direita do texto (ex.: `<span>Rótulo</span> <Icon ... />`).
+- **Integração Tailwind:** Empregar classes utilitárias do Tailwind v4 (`bg-primary`, `bg-accent`, `bg-bg-surface`, `border-border-subtle`, `text-text-primary`, etc.) mapeadas pelo `@theme` sobre as variáveis CSS, evitando hardcode de cores hexadecimais literais.
+
 ### Restrições Visuais Estritas
 
 É **expressamente proibido** incluir no front-end:
@@ -215,13 +220,14 @@ Nesta máquina servidora e de desenvolvimento, o **Node.js** e o **npm** **NÃO 
 - [x] Definição conceitual e validação do game loop via Pitch.
 - [x] Backend PocketBase configurado com migrações declarativas e hooks de limpeza.
 - [x] PoC de conectividade multiplayer funcional entre redes distintas (Wi-Fi vs 4G).
-- [ ] Eliminar completamente o runner de p5.js, o iframe e códigos de portfólio.
-- [ ] Implementar sistema de tokens com as paletas Light e Dark e as 4 famílias tipográficas.
+- [x] Eliminar completamente o runner de p5.js, o iframe e códigos de portfólio.
+- [x] Implementar sistema de tokens com as paletas Light e Dark e as 4 famílias tipográficas.
 - [ ] Implementar o motor desacoplado com arquitetura Input $\rightarrow$ Update $\rightarrow$ Render.
 
 ### Fase 2: Componentes Compostos e Core Loop
 
 - [ ] Criar o Title Card animado do jogo (aplicando Bagel Fat One e Capriola) para identidade visual no lobby.
+- [ ] Implementar alternância dinâmica e manual entre os temas Light e Dark com transição suave de cores.
 - [ ] Criar o componente `TestTube.svelte` em SVG procedural com física de líquido e menisco.
 - [ ] Criar o componente `AnalogSlider.svelte` integrando a classe composível `SliderDragController`.
 - [ ] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
