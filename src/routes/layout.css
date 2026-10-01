@@ -1,22 +1,116 @@
 @import 'tailwindcss';
 
 :root {
-	--font-body: 'SN Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-	--font-heading: 'Outfit', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+	/* Tipografia Estilizada (Bubbly / Friendly Identity) */
+	--font-display: 'Bagel Fat One', cursive, sans-serif;
+	--font-subheading: 'Capriola', sans-serif;
+
+	/* Tipografia Utilitária (Legibilidade e Concentração) */
+	--font-util-heading: 'SN Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	--font-util-body: 'Mona Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+	/* Tipografia Monospace (Códigos de Sala) */
 	--font-code: 'Fira Code', 'Consolas', monospace;
 
-	/* Cores base */
-	--bg-primary: #121214;
-	--bg-card: #18181b;
-	--border-subtle: #27272a;
-	--text-primary: #f4f4f5;
-	--text-muted: #a1a1aa;
+	/* Alias de compatibilidade */
+	--font-heading: var(--font-display);
+	--font-body: var(--font-util-body);
 
-	/* Cores de destaque (Rosa / Vermelho p5.js) */
-	--color-accent: #ed225d;
-	--color-accent-hover: #f43f5e;
-	--color-accent-light: #fda4af;
-	--color-accent-glow: rgba(237, 34, 93, 0.3);
+	/* Paleta Base Light */
+	--text: #271602;
+	--background: #faf4eb;
+	--primary: #e2931d;
+	--secondary: #e5988b;
+	--tertiary: #4bf762;
+	--accent: #4c2bb1;
+
+	/* Extrapolação Light: Superfícies e Fundos */
+	--bg-base: var(--background);
+	--bg-primary: var(--background);
+	--bg-surface: #ffffff;
+	--bg-surface-soft: #f4ece0;
+	--bg-surface-elevated: #ede2d3;
+
+	/* Extrapolação Light: Bordas */
+	--border-subtle: #e5d7c4;
+	--border-medium: #d4c0a5;
+	--border-strong: #271602;
+	--border-accent: var(--accent);
+
+	/* Extrapolação Light: Textos */
+	--text-primary: var(--text);
+	--text-muted: #6e563d;
+	--text-subtle: #988066;
+	--text-on-accent: #ffffff;
+	--text-on-primary: #271602;
+	--text-on-secondary: #271602;
+
+	/* Extrapolação Light: Estados, Acentos e Equipes */
+	--primary-hover: #cc7e12;
+	--primary-soft: #fef5e8;
+	--secondary-hover: #db8576;
+	--secondary-soft: #faeae7;
+	--tertiary-hover: #37df4e;
+	--tertiary-soft: #eafdea;
+	--accent-hover: #3c2091;
+	--accent-soft: #efeafc;
+	--accent-glow: rgba(76, 43, 177, 0.25);
+
+	--color-team-a: var(--accent);
+	--color-team-b: var(--secondary);
+	--color-point-high: var(--primary);
+	--color-point-good: var(--tertiary);
+	--highlight: #fef08a;
+	--highlight-soft: #fef9c3;
+}
+
+[data-theme='dark'] {
+	/* Paleta Base Dark */
+	--text: #fdecd8;
+	--background: #140e05;
+	--primary: #e2931d;
+	--secondary: #74281a;
+	--tertiary: #08b41f;
+	--accent: #704ed4;
+
+	/* Extrapolação Dark: Superfícies e Fundos */
+	--bg-base: var(--background);
+	--bg-primary: var(--background);
+	--bg-surface: #1e1509;
+	--bg-surface-soft: #291e10;
+	--bg-surface-elevated: #352717;
+
+	/* Extrapolação Dark: Bordas */
+	--border-subtle: #3a2b19;
+	--border-medium: #4e3a24;
+	--border-strong: #fdecd8;
+	--border-accent: var(--accent);
+
+	/* Extrapolação Dark: Textos */
+	--text-primary: var(--text);
+	--text-muted: #cbb49c;
+	--text-subtle: #8e7a63;
+	--text-on-accent: #ffffff;
+	--text-on-primary: #140e05;
+	--text-on-secondary: #fdecd8;
+
+	/* Extrapolação Dark: Estados, Acentos e Equipes */
+	--primary-hover: #f0a32d;
+	--primary-soft: #2e1d05;
+	--secondary-hover: #8f3322;
+	--secondary-soft: #2d100a;
+	--tertiary-hover: #12cc2b;
+	--tertiary-soft: #052609;
+	--accent-hover: #8666e8;
+	--accent-soft: #25174f;
+	--accent-glow: rgba(112, 78, 212, 0.3);
+
+	--color-team-a: var(--accent);
+	--color-team-b: var(--secondary);
+	--color-point-high: var(--primary);
+	--color-point-good: var(--tertiary);
+	--highlight: #e2931d;
+	--highlight-soft: #382405;
 }
 
 * {
@@ -31,6 +125,27 @@ body {
 	padding: 0;
 	min-height: 100vh;
 	-webkit-font-smoothing: antialiased;
+}
+
+/* Classes utilitárias de tipografia */
+.font-display {
+	font-family: var(--font-display);
+}
+
+.font-subheading {
+	font-family: var(--font-subheading);
+}
+
+.font-util-heading {
+	font-family: var(--font-util-heading);
+}
+
+.font-util-body {
+	font-family: var(--font-util-body);
+}
+
+.font-code {
+	font-family: var(--font-code);
 }
 
 h1,
@@ -133,4 +248,3 @@ pre,
 .token.entity {
 	cursor: help;
 }
-

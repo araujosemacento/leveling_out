@@ -1,12 +1,12 @@
-# AGENTS.md: Documentação do Projeto & Leveling Out
+# AGENTS.md: Documentação do Projeto Leveling Out
 
-Este documento serve como guia central para desenvolvedores e agentes autônomos que operam neste repositório. Ele detalha a visão conceitual do jogo **Leveling Out**, o funcionamento de seu _game loop_, a arquitetura técnica adotada e o roteiro (_roadmap_) de desenvolvimento.
+Este documento serve como guia central para desenvolvedores e agentes autônomos que operam neste repositório. O projeto é dedicado exclusivamente ao jogo **Leveling Out**, detalhando sua visão conceitual, a convenção canônica de _game loop_, a arquitetura técnica baseada em Svelte e CSS, o sistema de estilos e o roteiro de desenvolvimento.
 
 ---
 
 ## 1. Visão Geral do Jogo: Leveling Out
 
-**Leveling Out** é um _party game_ multiplayer focado em **dedução, sintonia e empatia social**. Os jogadores competem em duas equipes tentando calibrar conceitos subjetivos ao longo de uma escala percentual contínua (0% a 100%).
+**Leveling Out** é um _party game_ multiplayer focado em dedução, sintonia e empatia social. Os jogadores competem em duas equipes tentando calibrar conceitos subjetivos ao longo de uma escala percentual contínua (0% a 100%).
 
 ### O Desafio Central
 
@@ -27,7 +27,7 @@ O ciclo de jogo divide-se em três etapas bem definidas:
 
 ### Parágrafo 1: Onboarding, Sala e Decisão de Turno
 
-O fluxo tem início quando o usuário acessa a plataforma em seu dispositivo e cria ou ingressa em uma sala via slug na URL (`/projeto/leveling-out/[sala]`), reunindo os participantes em um lobby compartilhado onde são divididos em duas equipes. Para definir quem começa a partida de forma rápida e divertida, o sistema engatilha um minijogo digital de pedra, papel e tesoura entre representantes de cada time; a equipe vencedora ganha o direito de iniciar a partida e escolhe a carta temática da primeira rodada, delimitando o espectro bipolar conceitual (ex.: "Famoso / Anônimo" ou "Fácil / Difícil"). Com os parâmetros estabelecidos e os papéis atribuídos, a rodada é sincronizada em tempo real em todas as telas conectadas.
+O fluxo tem início quando o usuário acessa a plataforma em seu dispositivo e cria ou ingressa em uma sala via slug na URL (`/[sala]`), reunindo os participantes em um lobby compartilhado onde são divididos em duas equipes. Para definir quem começa a partida de forma rápida e divertida, o sistema engatilha um minijogo digital de pedra, papel e tesoura entre representantes de cada time; a equipe vencedora ganha o direito de iniciar a partida e escolhe a carta temática da primeira rodada, delimitando o espectro bipolar conceitual (ex.: "Famoso / Anônimo" ou "Fácil / Difícil"). Com os parâmetros estabelecidos e os papéis atribuídos, a rodada é sincronizada em tempo real em todas as telas conectadas.
 
 ### Parágrafo 2: O Core Loop da Rodada (Dica, Palpite e Revelação)
 
@@ -39,16 +39,51 @@ A partida se desenvolve em turnos estritamente alternados entre as duas equipes,
 
 ---
 
-## 3. Arquitetura Técnica Escolhida
+## 3. Arquitetura Técnica e Game Loop Canônico
 
-O ecossistema equilibra hospedagem estática gratuita com um servidor em tempo real autohospedado de consumo mínimo de recursos.
+O projeto elimina completamente qualquer formato de portfólio ou runner de terceiros, dedicando-se inteiramente ao jogo **Leveling Out** como aplicação autônoma. O p5.js é expressamente descontinuado do ecossistema, sendo substituído por tecnologias web nativas (**Svelte 5**, **CSS** e **SVG/Canvas procedural dedicado**).
 
-### Front-end (SvelteKit + p5.js)
+### A Regra de Ouro do Game Loop: Input $\rightarrow$ Update $\rightarrow$ Render
 
-- **Hospedagem Estática:** Compilado via `@sveltejs/adapter-static` e servido no **GitHub Pages**.
-- **Slugs Aninhados:** A rota `/projeto/[slug]/[sala]` opera com `prerender = false; ssr = false;` e é resolvida em runtime através do fallback `404.html` do GitHub Pages.
-- **Motor Gráfico p5.js (p5-First):** Toda a renderização interativa (tubo de ensaio, fluidos, borbulhas, slider analógico, botões de ação e efeitos de pontuação) vive no canvas do **p5.js**.
-- **Runner Isolado:** O [P5Frame.svelte](file:///home/melo/Documentos/GitHub/portfolio_programacao_jogos/src/lib/components/P5Frame.svelte) executa as sketches dentro de um `<iframe>` com `srcdoc`, injetando `window.__ROOM_CODE__` e scripts de rede de forma limpa.
+Apesar de ser implementado sobre o DOM e componentes reativos do Svelte, todo o fluxo do jogo deve seguir a cadência estrita de um _game loop_ canônico, desacoplando o núcleo de regras da camada visual:
+
+1. **Fase de Input:**
+   - Captura eventos brutos de usuário (toque, arrasto do slider analógico, digitação de pistas, escolha de lances no PPT) e eventos assíncronos de rede (mensagens SSE do PocketBase).
+   - Normaliza os eventos em objetos de ação tipados (`GameAction`).
+   - Nenhum manipulador de evento de input altera diretamente elementos visuais ou estados de renderização sem passar pelo motor de atualização.
+
+2. **Fase de Update:**
+   - O núcleo do jogo (`GameEngine` / Máquina de Estados) processa a ação contra o estado atual da partida.
+   - Aplica regras de turno, transições de fase, cronômetros determinísticos, reconciliação otimista de rede e cálculo de pontuação aproximada.
+   - O estado do jogo permanece puro, desacoplado de dependências do navegador ou do Svelte, permitindo testes unitários headless com `bun test`.
+
+3. **Fase de Render:**
+   - A camada de componentes Svelte atua como função pura da projeção de estado (`UI = f(State)`).
+   - Reatividade declarativa via Svelte 5 Runes (`$state`, `$derived`, `$props`).
+   - Animações e transições visuais reagem a deltas de estado sem interferir na integridade do estado da partida.
+
+### Padrão de Composição (POO) em Refatorações
+
+Para garantir legibilidade, manutenibilidade e foco estrito de responsabilidade:
+
+- **Componentes Pontuais:** Cada componente Svelte deve focar única e exclusivamente em sua tarefa visual e estrutural pontual (Single Responsibility Principle). Componentes não devem acumular regras de negócio, cálculos matemáticos complexos ou lógica de rede em suas tags `<script>`.
+- **Composição sobre Herança:** Métodos gerais, ações utilitárias e rotinas amplamente reprodutíveis devem ser desacoplados em classes ou módulos composíveis orientados a objetos (ex.: `SliderDragController`, `RoundTimer`, `ScoreCalculator`, `RoomSessionManager`).
+- Os componentes Svelte instanciam ou recebem esses controladores por composição, delegando tarefas e observando mudanças de estado.
+
+### Sugestões de Ferramentas para Animação
+
+Com a remoção do p5.js, as animações do jogo (líquido do tubo, menisco, borbulhas, revelação de pontuação, transições de cartas) devem utilizar soluções modernas e performáticas:
+
+1. **Svelte Motion e Transitions Nativas (`svelte/motion` e `svelte/transition`):**
+   - Ideal para transições de interface, física de molas no slider analógico (`spring`), interpolações de valores numéricos de placar (`tweened`) e transições de tela (`fade`, `fly`, `scale`).
+   - Vantagens: Zero dependências externas, sincronização com o ciclo de vida do Svelte e baixíssimo overhead.
+2. **Motion (antigo Motion One) ou Web Animations API (WAAPI):**
+   - Execução direta na thread da GPU através da WAAPI nativa.
+   - Ideal para animações contínuas, flutuações e efeitos dinâmicos de alta performance sem quedas de frames na thread de JavaScript.
+3. **GSAP (GreenSock):**
+   - Excelente alternativa caso surja a necessidade de orquestrar timelines complexas e coreografadas na etapa de Revelação Dramática (subida do menisco, parada na meta oculta, expansão de ondas de acerto e incremento escalonado do placar).
+4. **SVG Procedural Reativo:**
+   - Renderização do tubo de ensaio, menisco curvo e borbulhas diretamente via paths e tags SVG reativas manipuladas por CSS e Svelte, garantindo nitidez vetorial infinita em telas de qualquer resolução.
 
 ### Backend Realtime: PocketBase Autohospedado
 
@@ -56,102 +91,112 @@ O ecossistema equilibra hospedagem estática gratuita com um servidor em tempo r
 - **Consumo de Recursos:** **~15 MB a 30 MB de RAM**, ideal para rodar em uma máquina pessoal ligada continuamente sem afetar o sistema.
 - **Exposição para a Internet:** Conectado através de um túnel reverso com certificado TLS automático (**Tailscale Funnel** ou **Cloudflare Tunnel**), permitindo conexões diretas de qualquer dispositivo em redes 4G/5G (com CGNAT) ou Wi-Fi doméstico.
 - **Protocolo Realtime:** _Server-Sent Events (SSE)_ nativo sobre HTTP com assinaturas por sala (`pb.collection('salas').subscribe(roomCode, ...)`).
-
-### Privacidade e Efemeridade por Design
-
-- **Usuários Anônimos:** Nenhum cadastro de conta, e-mail ou senha. Apenas identidades temporárias geradas para a sessão (`playerId`).
-- **Resiliência e Tolerância a Quedas:** O `sessionStorage` do navegador memoriza o `playerId` e o estado local da sala. Se o jogador tiver oscilação no 4G ou recarregar a aba, ele reconecta à mesma sala sem perder sua vaga nem o placar.
-- **Higienização Automática de Dados (Zero Bloat):** O banco de dados SQLite não retém histórico após o encerramento das partidas. Um hook agendado (`pb_hooks/cleanup.pb.js`) purga automaticamente salas e registros inativos há mais de 15 minutos, garantindo que o disco da máquina hospedeira não acumule lixo.
+- **Efemeridade e Privacidade:** Usuários anônimos identificados por `playerId` em `sessionStorage`. Higienização automática periódica via hook (`pb_hooks/cleanup.pb.js`) apagando salas inativas há mais de 15 minutos.
 
 ---
 
-## 4. Estrutura Modular da Sketch
+## 4. Estrutura Modular da Aplicação
 
-O código em [src/sketches/leveling-out/](./src/sketches/leveling-out/) foi desacoplado em módulos de responsabilidade única:
+O código do jogo organiza-se com desacoplamento rigoroso entre motor de lógica, controladores compostos e interface visual:
 
 ```text
-src/sketches/leveling-out/
-├── meta.json           <-- Metadados, tags de realtime e ordem das abas (filesOrder)
-├── icons.js            <-- Definições Path2D compiladas de ícones vetoriais (Game Icons)
-├── session.js          <-- Gerenciamento de sessão, identidade e reconexão (NetworkSession)
-├── network-actions.js  <-- Endpoints REST, lances PPT e heartbeat (NetworkActions)
-├── network.js          <-- Orquestrador de rede, assinaturas SSE e reconciliação (NetworkManager)
-├── game.js             <-- Máquina de estados do jogo, regras e cálculo de pontos (GameEngine)
-├── ui-components.js    <-- Cabeçalho, placar e tubo de ensaio (UIComponents)
-├── ui-screens.js       <-- Telas de estados: espera, lances, revelação e vitória (UIScreens)
-├── ui-overlays.js      <-- Overlays de sincronização e reconexão (UIOverlays)
-├── ui.js               <-- Fachada coordenadora de renderização e hit-testing (UIRenderer)
-└── sketch.js           <-- Ponto de entrada leve (< 100 linhas) de orquestração p5.js
+src/
+├── lib/
+│   ├── engine/                <-- Núcleo agnóstico do jogo (Game Loop puro)
+│   │   ├── state-machine.js   <-- Máquina de estados das fases da partida
+│   │   ├── score-rules.js     <-- Algoritmo de cálculo por proximidade
+│   │   └── types.js           <-- Definições de eventos e ações (Input/Update)
+│   ├── controllers/           <-- Classes composíveis (POO) reutilizáveis
+│   │   ├── drag-controller.js <-- Controlador de arrasto tátil para slider
+│   │   ├── round-timer.js     <-- Temporizador determinístico de rodada
+│   │   └── session-sync.js    <-- Reconciliação otimista e assinaturas SSE
+│   ├── components/            <-- Componentes Svelte pontuais e declarativos
+│   │   ├── TestTube.svelte    <-- Tubo de ensaio e líquido animado (SVG/CSS)
+│   │   ├── AnalogSlider.svelte<-- Marcador analógico com controlador composto
+│   │   ├── ScoreBoard.svelte  <-- Placar das equipes
+│   │   ├── SpectrumCard.svelte<-- Carta bipolar sorteada
+│   │   └── PptArena.svelte    <-- Minijogo de disputa de primeiro turno
+│   └── styles/
+│       ├── tokens.css         <-- Variáveis CSS da paleta e fontes
+│       └── base.css           <-- Estilos globais e reset
+└── routes/
+    ├── +layout.svelte         <-- Casca global com importação de tokens e Mona Sans
+    ├── +page.svelte           <-- Lobby de entrada e criação rápida de sala
+    └── [sala]/
+        └── +page.svelte       <-- Arena principal da partida de Leveling Out
 ```
 
----
+### Síntese de Localização Rápida (Onde Encontrar Cada Coisa)
 
-## 5. Roadmap de Desenvolvimento
+Esta tabela sintetiza as responsabilidades de implementação para consulta imediata de desenvolvedores e agentes:
 
-### Fase 1: Fundação & Prova de Conceito (Concluído)
-
-- [x] Definição conceitual e validação do game loop via Pitch.
-- [x] Implementação de slugs aninhados no SvelteKit (`/projeto/[slug]/[sala]`) compatíveis com SPA estática no GitHub Pages.
-- [x] Atualização do runner do p5.js para suportar passagem de sala e bibliotecas de rede externas.
-- [x] PoC de conectividade multiplayer funcional entre redes distintas (Wi-Fi vs 4G).
-- [x] Minijogo sincronizado em tempo real de Pedra, Papel e Tesoura.
-- [x] Camada de criptografia E2EE transparente via Web Crypto API.
-- [x] Modularização completa do sketch p5.js (`crypto`, `network`, `game`, `ui`, `sketch`).
-- [x] Definição arquitetural do backend: PocketBase com Tailscale/Tunnel.
-
-### Fase 2: Integração com PocketBase & Infraestrutura
-
-- [x] Instalar o binário do PocketBase na máquina servidora.
-- [x] Criar as coleções efêmeras particionadas em migrações declarativas:
-  - `salas`: `codigo`, `fase`, `rodada_atual`, `equipe_ativa`, `placar_a`, `placar_b`, `vencedor`.
-  - `rodadas`: `sala_codigo`, `numero`, `equipe`, `fase_rodada`, `espectro_esquerda`, `espectro_direita`, `meta_oculta`, `dica`, `palpite`, `pontos`.
-  - `jogadores`: `sala_codigo`, `player_id`, `nome`, `equipe`, `papel`, `last_seen`.
-- [x] Criar script de higienização periódica em `pb_hooks/cleanup.pb.js` com `cronAdd` para apagar salas, jogadores e rodadas inativas em cascata.
-- [x] Criar validações de integridade, sorteio de meta e cálculo de pontuação em `pb_hooks/game_rules.pb.js`.
-- [x] Adaptar o `network.js` da sketch para consumir as assinaturas SSE e REST do PocketBase (`salas`, `jogadores`, `/api/ppt/lance`).
-- [ ] Expor a porta do PocketBase via **Tailscale Funnel** ou **Cloudflare Tunnel**.
-
-### Fase 3: Gameplay Completa do Leveling Out (A Fazer)
-
-- [ ] **Renderização do Tubo de Ensaio:**
-  - Animação do líquido graduado de 0% a 100% com menisco e borbulhas em p5.js.
-  - Modo oculto: líquido visível apenas na tela do Codificador sorteado.
-- [ ] **Sistemas de Reatividade Otimista (Look & Feel):**
-  - Integrar padrões arquitetados (Optimistic UI, Heartbeat de Presença e tolerância a quedas) em todos os estágios do ciclo (ver `reactive_interactions_map.md`), garantindo feedback imediato e sem engasgos para os jogadores.
-- [ ] **Cartas de Espectro Conceitual:**
-  - Banco de tópicos polares (ex.: Famoso/Anônimo, Fácil/Difícil, Gostoso/Ruim, etc.).
-  - Interface de escolha de carta pelo time vencedor do minijogo.
-- [ ] **Sistema de Dicas & Input:**
-  - Input interativo em tela para envio da pista textual pelo Codificador.
-- [ ] **Slider Analógico Interativo:**
-  - Marcador arrastável tátil (touch/mouse) com indicador de precisão no p5.js.
-- [ ] **Algoritmo de Proximidade & Pontuação:**
-  - Cálculo de faixas de acerto: Na mosca (+4 pts), Muito perto (+3 pts), Perto (+2 pts), Fora da margem (0 pts).
-  - Revelação dramática do tubo e animação de preenchimento do placar.
-- [ ] **Divisão de Equipes & Alternância de Papéis:**
-  - Gerenciamento de 4+ jogadores em 2 equipes (Azul vs Vermelha).
-  - Rotação automática de quem codifica e quem palpita a cada rodada.
-- [ ] **Tela de Vitória & Métricas de Sintonia:**
-  - Painel final com destaques da partida e atalhos para Revanche rápida.
+| O que você precisa alterar / inspecionar  | Onde encontrar (Arquivo / Pasta)           | Responsabilidade Principal                                                                      |
+| :---------------------------------------- | :----------------------------------------- | :---------------------------------------------------------------------------------------------- |
+| **Paleta, tokens CSS, dark mode e temas** | `src/routes/layout.css`                    | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos).    |
+| **Importação de fontes e head global**    | `src/app.html`                             | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).          |
+| **Casca da aplicação e navegação**        | `src/routes/+layout.svelte`                | Estrutura comum que envolve todas as páginas e carrega os estilos globais.                      |
+| **Lobby de entrada e criação de sala**    | `src/routes/+page.svelte`                  | Tela inicial com Title Card, criação rápida de sala e entrada de apelido.                       |
+| **Arena principal do jogo (Partida)**     | `src/routes/[sala]/+page.svelte`           | Orquestração da sala, sincronização da partida e renderização das fases.                        |
+| **Motor canônico e regras puras do jogo** | `src/lib/engine/`                          | Máquina de estados, avanço de turnos determinístico e algoritmo de proximidade (+4, +3, +2, 0). |
+| **Controlador do Slider (POO)**           | `src/lib/controllers/drag-controller.js`   | Cálculo de arrasto, limites percentuais [0, 100], sensibilidade ao toque e snap.                |
+| **Temporizador determinístico (POO)**     | `src/lib/controllers/round-timer.js`       | Ticks determinísticos para contagem regressiva de rodadas.                                      |
+| **Sincronização SSE e Heartbeat (POO)**   | `src/lib/controllers/session-sync.js`      | Conexão com PocketBase, reconexão otimista e emissão de ações de rede.                          |
+| **Tubo de Ensaio e Menisco (Visual)**     | `src/lib/components/TestTube.svelte`       | Renderização SVG procedural do tubo, líquido graduado e borbulhas.                              |
+| **Marcador Analógico (Visual)**           | `src/lib/components/AnalogSlider.svelte`   | Componente visual do slider que recebe e delega para o `SliderDragController`.                  |
+| **Placar e Métricas (Visual)**            | `src/lib/components/ScoreBoard.svelte`     | Exibição da corrida de pontuação entre as Equipes A e B.                                        |
+| **Minijogo de Primeiro Turno (Visual)**   | `src/lib/components/PptArena.svelte`       | Disputa rápida de Pedra, Papel e Tesoura para definir quem começa.                              |
+| **Backend, Migrações e Hooks de Limpeza** | `backend/` (`pb_migrations/`, `pb_hooks/`) | Esquema do PocketBase SQLite e purga automática de salas inativas após 15 min.                  |
+| **Regras e Restrições para Agentes**      | `AGENTS.md` e `.agents/rules/`             | Proibições estritas (sem emojis, sem cards, sem travessões, sem bullets, Bun exclusivo).        |
 
 ---
 
-## 6. Diretrizes Estritas de Front-end e Estilo Visual
+## 5. Diretrizes de Estilo e Identidade Visual
+
+### Taxonomia Tipográfica Oficial
+
+O projeto divide sua tipografia em duas categorias complementares:
+
+1. **Aplicações Estilizadas (Identidade Bubbly & Amigável):**
+   - **Bagel Fat One:** Título principal, Title Card do jogo, momentos de celebração e aplicações de alto impacto onde chamar atenção e transmitir carisma é prioritário.
+   - **Capriola:** Subtítulos, pontes de transição entre introdução e blocos textuais, e rótulos intermediários.
+2. **Aplicações Utilitárias (Legibilidade, Concentração e Leitura Rápida):**
+   - **SN Pro:** Títulos utilitários, cabeçalhos de regras, avisos pontuais e seções onde o jogador precisa bater o olho e assimilar de imediato.
+   - **Mona Sans:** Textos corridos, explicações conceituais, termos de rodada e métricas.
+3. **Apoio Técnico Monospace:**
+   - **Fira Code:** Exclusiva para visualização e cópia de códigos de sala (`roomCode`).
+
+### Paleta de Cores Oficial e Extrapolações
+
+A paleta conta com matrizes base e extrapolações semânticas para os temas Light e Dark:
+
+#### Tema Light (Padrão)
+
+- **Base:** `--text: #271602`, `--background: #faf4eb`, `--primary: #e2931d`, `--secondary: #e5988b`, `--tertiary: #4bf762`, `--accent: #4c2bb1`
+- **Superfícies:** `--bg-base: #faf4eb`, `--bg-surface: #ffffff`, `--bg-surface-soft: #f4ece0`, `--bg-surface-elevated: #ede2d3`
+- **Bordas:** `--border-subtle: #e5d7c4`, `--border-medium: #d4c0a5`, `--border-strong: #271602`, `--border-accent: #4c2bb1`
+- **Textos:** `--text-primary: #271602`, `--text-muted: #6e563d`, `--text-subtle: #988066`, `--text-on-accent: #ffffff`
+- **Ações:** `--primary-hover: #cc7e12`, `--secondary-hover: #db8576`, `--tertiary-hover: #37df4e`, `--accent-hover: #3c2091`
+
+#### Tema Dark
+
+- **Base:** `--text: #fdecd8`, `--background: #140e05`, `--primary: #e2931d`, `--secondary: #74281a`, `--tertiary: #08b41f`, `--accent: #704ed4`
+- **Superfícies:** `--bg-base: #140e05`, `--bg-surface: #1e1509`, `--bg-surface-soft: #291e10`, `--bg-surface-elevated: #352717`
+- **Bordas:** `--border-subtle: #3a2b19`, `--border-medium: #4e3a24`, `--border-strong: #fdecd8`, `--border-accent: #704ed4`
+- **Textos:** `--text-primary: #fdecd8`, `--text-muted: #cbb49c`, `--text-subtle: #8e7a63`, `--text-on-accent: #ffffff`
+- **Ações:** `--primary-hover: #f0a32d`, `--secondary-hover: #8f3322`, `--tertiary-hover: #12cc2b`, `--accent-hover: #8666e8`
+
+### Restrições Visuais Estritas
 
 É **expressamente proibido** incluir no front-end:
 
-1. **Emojis**: Nenhuma utilização de emojis em títulos, botões, feedbacks, status ou canvas.
-2. **Cards**: Não utilizar elementos genéricos com estilo de "card" a menos que haja um comando explícito no prompt para tal.
-3. **Travessões (–, —) e suas variações**: Proibido o uso de travessões ou hífen como separador de títulos e textos de interface.
-4. **Bullet Points e Indicadores Circulares**:
-   - Proibido o uso de caracteres de ponto como "●", "○", "•", "▪", "✓".
-   - Proibido o uso de elementos circulares decorativos (como classes `rounded-full` em spans de status ou pings de presença).
-
-Qualquer exceção requer comando explícito e direto no prompt do usuário.
+1. **Emojis:** Nenhuma utilização de emojis em títulos, botões, feedbacks, status ou ilustrações.
+2. **Cards:** Não utilizar elementos genéricos com estilo de "card" flutuante ou contêineres decorativos padronizados.
+3. **Travessões (–, —) e suas variações:** Proibido o uso de travessões ou hífen como separador de títulos e textos de interface. Utilizar dois-pontos (`:`), barras (`/`), ou fluxo textual contínuo.
+4. **Bullet Points e Indicadores Circulares:** Proibido o uso de caracteres como "●", "○", "•", "▪", "✓", bem como círculos decorativos (`rounded-full` em spans de status ou pings de presença).
 
 ---
 
-## 7. Diretriz Estrita de Runtime e Gerenciador de Pacotes (Bun Exclusivo)
+## 6. Diretriz Estrita de Runtime e Gerenciador de Pacotes (Bun Exclusivo)
 
 Nesta máquina servidora e de desenvolvimento, o **Node.js** e o **npm** **NÃO estão instalados** no ambiente do sistema e é **expressamente proibido** tentar executar comandos `node`, `npm`, `npx` ou `pnpm`.
 
@@ -160,3 +205,31 @@ Nesta máquina servidora e de desenvolvimento, o **Node.js** e o **npm** **NÃO 
   - Instalação de dependências: `bun install` / `bun add [-d] <pacote>`
   - Execução de scripts e build: `bun run dev`, `bun run build`, `bun run check`, `bun run test`
   - Execução de scripts avulsos: `bun <caminho_do_arquivo.js>`
+
+---
+
+## 7. Roadmap de Desenvolvimento
+
+### Fase 1: Fundação & Migração para Svelte Nativo (Em Andamento)
+
+- [x] Definição conceitual e validação do game loop via Pitch.
+- [x] Backend PocketBase configurado com migrações declarativas e hooks de limpeza.
+- [x] PoC de conectividade multiplayer funcional entre redes distintas (Wi-Fi vs 4G).
+- [ ] Eliminar completamente o runner de p5.js, o iframe e códigos de portfólio.
+- [ ] Implementar sistema de tokens com as paletas Light e Dark e as 4 famílias tipográficas.
+- [ ] Implementar o motor desacoplado com arquitetura Input $\rightarrow$ Update $\rightarrow$ Render.
+
+### Fase 2: Componentes Compostos e Core Loop
+
+- [ ] Criar o Title Card animado do jogo (aplicando Bagel Fat One e Capriola) para identidade visual no lobby.
+- [ ] Criar o componente `TestTube.svelte` em SVG procedural com física de líquido e menisco.
+- [ ] Criar o componente `AnalogSlider.svelte` integrando a classe composível `SliderDragController`.
+- [ ] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
+- [ ] Implementar algoritmo de proximidade com faixas de acerto (+4, +3, +2, 0) testado com `bun test`.
+- [ ] Minijogo de Pedra, Papel e Tesoura refatorado em Svelte puro para decisão de turno.
+
+### Fase 3: Polimento e Experiência de Jogo
+
+- [ ] Animação da Revelação Dramática com cálculo de sintonia e preenchimento de placar.
+- [ ] Interface de Revanche imediata mantendo a sala e alternando posições.
+- [ ] Otimizações táteis e feedback háptico (`navigator.vibrate`) em dispositivos móveis.

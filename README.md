@@ -1,2 +1,3 @@
-# portfolio_programacao_jogos
-Portfólia para a cadeira de Programação para Jogos I
+# Leveling Out
+
+Party game multiplayer de dedução, sintonia e empatia social.

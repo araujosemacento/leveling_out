@@ -27,9 +27,11 @@ Identifique todos os repositórios Git presentes no diretório de trabalho atual
    ```
 2. **Repositórios Aninhados e Submódulos:**
    Procure pastas filhas contendo diretórios `.git` ou arquivos de ponte de submódulo:
+
    ```bash
    find . -maxdepth 3 -name ".git" -not -path "*/node_modules/*" -not -path "*/.venv/*"
    ```
+
    Também verifique se existe um arquivo `.gitmodules` na raiz.
 
 3. Registre a lista de caminhos de repositórios que possuem trabalho ativo.
@@ -44,11 +46,11 @@ Para **cada** repositório identificado no Passo 1:
    ```bash
    git -C <caminho_do_repo> status -s
    ```
-2. Inspecione o conteúdo das diferenças (tanto arquivos em *stage* quanto fora dele):
+2. Inspecione o conteúdo das diferenças (tanto arquivos em _stage_ quanto fora dele):
    ```bash
    # Diferenças de arquivos já modificados/rastreados
    git -C <caminho_do_repo> diff HEAD
-   
+
    # Para alterações já preparadas (staged)
    git -C <caminho_do_repo> diff --cached
    ```
@@ -104,11 +106,15 @@ Para cada repositório com alterações, formate a saída com a seguinte estrutu
    ```bash
    git -C <caminho_do_repo> add <arquivos_ou_.>
    git -C <caminho_do_repo> commit -m "<tipo>(<escopo>): <sumario_curto>" -m "<Parágrafo conciso de contextualização.
+   ```
 
 Principais alterações:
+
 1. <Primeira alteração técnica>
 2. <Segunda alteração técnica>
 3. <Terceira alteração técnica>"
+   ```
+
    ```
 
 ---
