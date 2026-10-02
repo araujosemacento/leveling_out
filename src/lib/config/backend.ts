@@ -10,10 +10,8 @@ import { env } from '$env/dynamic/public';
  * 3. Fallback nativo:
  *    - Se dev (Vite local): http://localhost:8090
  *    - Se build de produção: env.PUBLIC_BACKEND_URL ou fallback local
- *
- * @returns {string}
  */
-export function getBackendUrl() {
+export function getBackendUrl(): string {
 	const forcedEnv = env.PUBLIC_ENVIRONMENT ? env.PUBLIC_ENVIRONMENT.toLowerCase() : null;
 
 	if (forcedEnv === 'production') {

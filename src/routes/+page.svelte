@@ -51,7 +51,9 @@
 	</div>
 
 	<!-- Formulário de Entrada no Lobby -->
-	<div class="w-full rounded-2xl border border-border-subtle bg-bg-surface-soft p-6 shadow-sm sm:p-8">
+	<div
+		class="w-full rounded-2xl border border-border-subtle bg-bg-surface-soft p-6 shadow-sm sm:p-8"
+	>
 		<form onsubmit={handleEnterRoom} class="flex flex-col gap-5">
 			<!-- Campo de Apelido -->
 			<div class="flex flex-col gap-1.5">

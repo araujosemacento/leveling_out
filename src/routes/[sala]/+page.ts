@@ -1,9 +1,10 @@
+import type { PageLoad } from './$types';
+
 export const prerender = false;
 export const ssr = false;
 
-/** @type {import('./$types').PageLoad} */
-export function load({ params }) {
+export const load: PageLoad = ({ params }) => {
 	return {
 		roomCode: params.sala
 	};
-}
+};

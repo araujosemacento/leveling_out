@@ -47,27 +47,48 @@ O projeto elimina completamente qualquer formato de portfólio ou runner de terc
 
 Apesar de ser implementado sobre o DOM e componentes reativos do Svelte, todo o fluxo do jogo deve seguir a cadência estrita de um _game loop_ canônico, desacoplando o núcleo de regras da camada visual:
 
-1. **Fase de Input:**
+1. **Fase de Input (Intenção do Jogador):**
    - Captura eventos brutos de usuário (toque, arrasto do slider analógico, digitação de pistas, escolha de lances no PPT) e eventos assíncronos de rede (mensagens SSE do PocketBase).
+   - Aplica sanitização defensiva local (limites de caracteres e filtros de segurança).
    - Normaliza os eventos em objetos de ação tipados (`GameAction`).
    - Nenhum manipulador de evento de input altera diretamente elementos visuais ou estados de renderização sem passar pelo motor de atualização.
 
-2. **Fase de Update:**
+2. **Fase de Update (Reconciliação com o Servidor):**
    - O núcleo do jogo (`GameEngine` / Máquina de Estados) processa a ação contra o estado atual da partida.
-   - Aplica regras de turno, transições de fase, cronômetros determinísticos, reconciliação otimista de rede e cálculo de pontuação aproximada.
+   - Aplica transições de fase locais, cronômetros determinísticos e reconciliação com o estado autoritativo do PocketBase.
    - O estado do jogo permanece puro, desacoplado de dependências do navegador ou do Svelte, permitindo testes unitários headless com `bun test`.
 
-3. **Fase de Render:**
+3. **Fase de Render (Projeção e Coreografia Visual):**
    - A camada de componentes Svelte atua como função pura da projeção de estado (`UI = f(State)`).
    - Reatividade declarativa via Svelte 5 Runes (`$state`, `$derived`, `$props`).
    - Animações e transições visuais reagem a deltas de estado sem interferir na integridade do estado da partida.
+
+### Pilares de Segurança do Front-end (Zero Trust & Autoritarismo de Estado)
+
+Alinhado às diretrizes de [backend/SECURITY.md](file:///home/melo/Documentos/GitHub/leveling_out/backend/SECURITY.md), o front-end opera sob o princípio de **Confiança Zero (Zero Trust)**:
+
+1. **Autoritarismo do Servidor:** O front-end nunca calcula pontuações oficiais, não determina vencedores de PPT e não decide transições críticas de turno. O cliente envia unicamente _intenções_ (`SUBMIT_GUESS`, `SUBMIT_CLUE`, `SUBMIT_PPT_MOVE`). A verdade autoritativa reside exclusivamente nos hooks do PocketBase (`pb_hooks/game_rules.pb.js`).
+2. **Defesa em Profundidade e Sanitização:** Antes de transmitir qualquer dado à rede, o front-end sanitiza rigorosamente as entradas:
+   - Dicas conceituais: máximo de 60 caracteres, remoção de caracteres de controle e tags HTML.
+   - Apelidos de jogadores: máximo de 20 caracteres alfanuméricos com pontuação básica.
+   - Palpites do slider: número inteiro contido estritamente no intervalo fechado [0, 100].
+3. **Sigilo Absoluto da Meta Oculta:** O valor percentual da meta no tubo de ensaio (`meta_oculta`) nunca deve ser armazenado ou inferido no cliente antes da fase de revelação oficial (`RODADA_REVELACAO`) enviada pelo servidor, impedindo que participantes visualizem o volume secreto inspecionando o console ou a memória do navegador.
+4. **Papel de `score-rules.ts` no Front-end:** As regras de proximidade no cliente existem unicamente para pré-visualização visual de graduação ou feedback tátil imediato, jamais para gravar ou impor placares à sala.
+
+### TypeScript Nativo como Padrão de Engenharia
+
+Toda a lógica pura do motor (`src/lib/engine/`), controladores compostos (`src/lib/controllers/`), modelos de dados e testes em `tests/` devem ser escritos estritamente em **TypeScript (`.ts`)**:
+
+- **Contratos Tipados:** Ações de jogo (`GameAction`) modeladas via uniões discriminadas (_discriminated unions_), garantindo que cada evento carregue seu payload obrigatório correto.
+- **Svelte 5 Runes Tipados:** Aproveitamento total de tipos em `$props<T>()`, `$state<T>()` e nas classes de controladores orientados a objetos.
+- **Execução Nativa com Bun:** Zero sobrecarga de build, com compilação e execução imediata pelo Bun e Vite.
 
 ### Padrão de Composição (POO) em Refatorações
 
 Para garantir legibilidade, manutenibilidade e foco estrito de responsabilidade:
 
 - **Componentes Pontuais:** Cada componente Svelte deve focar única e exclusivamente em sua tarefa visual e estrutural pontual (Single Responsibility Principle). Componentes não devem acumular regras de negócio, cálculos matemáticos complexos ou lógica de rede em suas tags `<script>`.
-- **Composição sobre Herança:** Métodos gerais, ações utilitárias e rotinas amplamente reprodutíveis devem ser desacoplados em classes ou módulos composíveis orientados a objetos (ex.: `SliderDragController`, `RoundTimer`, `ScoreCalculator`, `RoomSessionManager`).
+- **Composição sobre Herança:** Métodos gerais, ações utilitárias e rotinas amplamente reprodutíveis devem ser desacoplados em classes ou módulos composíveis orientados a objetos (ex.: `SliderDragController`, `RoundTimer`, `RoomSessionManager`).
 - Os componentes Svelte instanciam ou recebem esses controladores por composição, delegando tarefas e observando mudanças de estado.
 
 ### Sugestões de Ferramentas para Animação
@@ -102,14 +123,21 @@ O código do jogo organiza-se com desacoplamento rigoroso entre motor de lógica
 ```text
 src/
 ├── lib/
-│   ├── engine/                <-- Núcleo agnóstico do jogo (Game Loop puro)
-│   │   ├── state-machine.js   <-- Máquina de estados das fases da partida
-│   │   ├── score-rules.js     <-- Algoritmo de cálculo por proximidade
-│   │   └── types.js           <-- Definições de eventos e ações (Input/Update)
-│   ├── controllers/           <-- Classes composíveis (POO) reutilizáveis
-│   │   ├── drag-controller.js <-- Controlador de arrasto tátil para slider
-│   │   ├── round-timer.js     <-- Temporizador determinístico de rodada
-│   │   └── session-sync.js    <-- Reconciliação otimista e assinaturas SSE
+│   ├── engine/                <-- Núcleo agnóstico do jogo em TypeScript (Game Loop puro)
+│   │   ├── types.ts           <-- Definições tipadas de ações (GameAction), fases e estados
+│   │   ├── input/             <-- Camada de Input (Intenções, sanitização defensiva e normalização)
+│   │   │   ├── sanitize.ts    <-- Higienização rigorosa contra HTML, limites de string e clamp
+│   │   │   └── intent-factory.ts <-- Criadores puros de GameAction a partir de eventos brutos
+│   │   ├── update/            <-- Camada de Update (Máquina de estados determinística e regras)
+│   │   │   ├── state-machine.ts <-- Reducer determinístico puro e transições de fase
+│   │   │   └── score-rules.ts <-- Algoritmo de referência por proximidade (+4, +3, +2, 0)
+│   │   ├── render/            <-- Camada de Render (Projeções de estado puras UI = f(State))
+│   │   │   └── projections.ts <-- Seletores e ViewModels desacoplados para os componentes Svelte
+│   │   └── game-engine.ts     <-- Motor canônico reativo coordenando Input -> Update -> Render
+│   ├── controllers/           <-- Classes composíveis (POO) reutilizáveis em TypeScript
+│   │   ├── drag-controller.ts <-- Controlador de arrasto tátil para slider analógico
+│   │   ├── round-timer.ts     <-- Temporizador determinístico de rodada
+│   │   └── session-sync.ts    <-- Reconciliação otimista e assinaturas SSE
 │   ├── components/            <-- Componentes Svelte pontuais e declarativos
 │   │   ├── TestTube.svelte    <-- Tubo de ensaio e líquido animado (SVG/CSS)
 │   │   ├── AnalogSlider.svelte<-- Marcador analógico com controlador composto
@@ -130,23 +158,26 @@ src/
 
 Esta tabela sintetiza as responsabilidades de implementação para consulta imediata de desenvolvedores e agentes:
 
-| O que você precisa alterar / inspecionar  | Onde encontrar (Arquivo / Pasta)           | Responsabilidade Principal                                                                      |
-| :---------------------------------------- | :----------------------------------------- | :---------------------------------------------------------------------------------------------- |
-| **Paleta, tokens CSS, dark mode e temas** | `src/routes/layout.css`                    | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos).    |
-| **Importação de fontes e head global**    | `src/app.html`                             | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).          |
-| **Casca da aplicação e navegação**        | `src/routes/+layout.svelte`                | Estrutura comum que envolve todas as páginas e carrega os estilos globais.                      |
-| **Lobby de entrada e criação de sala**    | `src/routes/+page.svelte`                  | Tela inicial com Title Card, criação rápida de sala e entrada de apelido.                       |
-| **Arena principal do jogo (Partida)**     | `src/routes/[sala]/+page.svelte`           | Orquestração da sala, sincronização da partida e renderização das fases.                        |
-| **Motor canônico e regras puras do jogo** | `src/lib/engine/`                          | Máquina de estados, avanço de turnos determinístico e algoritmo de proximidade (+4, +3, +2, 0). |
-| **Controlador do Slider (POO)**           | `src/lib/controllers/drag-controller.js`   | Cálculo de arrasto, limites percentuais [0, 100], sensibilidade ao toque e snap.                |
-| **Temporizador determinístico (POO)**     | `src/lib/controllers/round-timer.js`       | Ticks determinísticos para contagem regressiva de rodadas.                                      |
-| **Sincronização SSE e Heartbeat (POO)**   | `src/lib/controllers/session-sync.js`      | Conexão com PocketBase, reconexão otimista e emissão de ações de rede.                          |
-| **Tubo de Ensaio e Menisco (Visual)**     | `src/lib/components/TestTube.svelte`       | Renderização SVG procedural do tubo, líquido graduado e borbulhas.                              |
-| **Marcador Analógico (Visual)**           | `src/lib/components/AnalogSlider.svelte`   | Componente visual do slider que recebe e delega para o `SliderDragController`.                  |
-| **Placar e Métricas (Visual)**            | `src/lib/components/ScoreBoard.svelte`     | Exibição da corrida de pontuação entre as Equipes A e B.                                        |
-| **Minijogo de Primeiro Turno (Visual)**   | `src/lib/components/PptArena.svelte`       | Disputa rápida de Pedra, Papel e Tesoura para definir quem começa.                              |
-| **Backend, Migrações e Hooks de Limpeza** | `backend/` (`pb_migrations/`, `pb_hooks/`) | Esquema do PocketBase SQLite e purga automática de salas inativas após 15 min.                  |
-| **Regras e Restrições para Agentes**      | `AGENTS.md` e `.agents/rules/`             | Proibições estritas (sem emojis, sem cards, sem travessões, sem bullets, Bun exclusivo).        |
+| O que você precisa alterar / inspecionar     | Onde encontrar (Arquivo / Pasta)           | Responsabilidade Principal                                                                   |
+| :------------------------------------------- | :----------------------------------------- | :------------------------------------------------------------------------------------------- |
+| **Paleta, tokens CSS, dark mode e temas**    | `src/routes/layout.css`                    | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos). |
+| **Importação de fontes e head global**       | `src/app.html`                             | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).       |
+| **Casca da aplicação e navegação**           | `src/routes/+layout.svelte`                | Estrutura comum que envolve todas as páginas e carrega os estilos globais.                   |
+| **Lobby de entrada e criação de sala**       | `src/routes/+page.svelte`                  | Tela inicial com Title Card, criação rápida de sala e entrada de apelido.                    |
+| **Arena principal do jogo (Partida)**        | `src/routes/[sala]/+page.svelte`           | Orquestração da sala, sincronização da partida e renderização das fases.                     |
+| **Camada de Input (Intenção & Sanitização)** | `src/lib/engine/input/`                    | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts).        |
+| **Camada de Update (Máquina de Estados)**    | `src/lib/engine/update/`                   | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).       |
+| **Camada de Render (Projeções UI)**          | `src/lib/engine/render/`                   | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts).         |
+| **Orquestrador do Motor Canônico**           | `src/lib/engine/game-engine.ts`            | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições.          |
+| **Controlador do Slider (POO)**              | `src/lib/controllers/drag-controller.ts`   | Cálculo de arrasto, limites percentuais [0, 100], sensibilidade ao toque e snap.             |
+| **Temporizador determinístico (POO)**        | `src/lib/controllers/round-timer.ts`       | Ticks determinísticos para contagem regressiva de rodadas.                                   |
+| **Sincronização SSE e Heartbeat (POO)**      | `src/lib/controllers/session-sync.ts`      | Conexão com PocketBase, reconciliação autoritativa e emissão de intenções de rede.           |
+| **Tubo de Ensaio e Menisco (Visual)**        | `src/lib/components/TestTube.svelte`       | Renderização SVG procedural do tubo, líquido graduado e borbulhas.                           |
+| **Marcador Analógico (Visual)**              | `src/lib/components/AnalogSlider.svelte`   | Componente visual do slider que recebe e delega para o `SliderDragController`.               |
+| **Placar e Métricas (Visual)**               | `src/lib/components/ScoreBoard.svelte`     | Exibição da corrida de pontuação entre as Equipes A e B.                                     |
+| **Minijogo de Primeiro Turno (Visual)**      | `src/lib/components/PptArena.svelte`       | Disputa rápida de Pedra, Papel e Tesoura para definir quem começa.                           |
+| **Backend, Migrações e Hooks de Limpeza**    | `backend/` (`pb_migrations/`, `pb_hooks/`) | Esquema do PocketBase SQLite e purga automática de salas inativas após 15 min.               |
+| **Regras e Restrições para Agentes**         | `AGENTS.md` e `.agents/rules/`             | Proibições estritas (sem emojis, sem cards, sem travessões, sem bullets, Bun exclusivo).     |
 
 ---
 
@@ -215,14 +246,14 @@ Nesta máquina servidora e de desenvolvimento, o **Node.js** e o **npm** **NÃO 
 
 ## 7. Roadmap de Desenvolvimento
 
-### Fase 1: Fundação & Migração para Svelte Nativo (Em Andamento)
+### Fase 1: Fundação & Migração para Svelte Nativo (Concluída)
 
 - [x] Definição conceitual e validação do game loop via Pitch.
 - [x] Backend PocketBase configurado com migrações declarativas e hooks de limpeza.
 - [x] PoC de conectividade multiplayer funcional entre redes distintas (Wi-Fi vs 4G).
 - [x] Eliminar completamente o runner de p5.js, o iframe e códigos de portfólio.
 - [x] Implementar sistema de tokens com as paletas Light e Dark e as 4 famílias tipográficas.
-- [ ] Implementar o motor desacoplado com arquitetura Input $\rightarrow$ Update $\rightarrow$ Render.
+- [x] Implementar o motor desacoplado com arquitetura Input $\rightarrow$ Update $\rightarrow$ Render.
 
 ### Fase 2: Componentes Compostos e Core Loop
 
@@ -230,8 +261,8 @@ Nesta máquina servidora e de desenvolvimento, o **Node.js** e o **npm** **NÃO 
 - [ ] Implementar alternância dinâmica e manual entre os temas Light e Dark com transição suave de cores.
 - [ ] Criar o componente `TestTube.svelte` em SVG procedural com física de líquido e menisco.
 - [ ] Criar o componente `AnalogSlider.svelte` integrando a classe composível `SliderDragController`.
-- [ ] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
-- [ ] Implementar algoritmo de proximidade com faixas de acerto (+4, +3, +2, 0) testado com `bun test`.
+- [x] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
+- [x] Implementar algoritmo de proximidade com faixas de acerto (+4, +3, +2, 0) testado com `bun test`.
 - [ ] Minijogo de Pedra, Papel e Tesoura refatorado em Svelte puro para decisão de turno.
 
 ### Fase 3: Polimento e Experiência de Jogo
