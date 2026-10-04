@@ -5,7 +5,6 @@
 	import { page } from '$app/state';
 
 	let isRoomPage = $derived(!!page.params.sala);
-	let roomCode = $derived(page.params.sala || '');
 </script>
 
 <header
@@ -26,22 +25,15 @@
 
 		{#if isRoomPage}
 			<div class="flex items-center gap-3">
-				<div
-					class="flex items-baseline gap-1.5 rounded-lg border border-border-subtle bg-bg-surface px-3 py-1.5 text-xs"
-				>
-					<span class="font-util-body leading-none text-text-muted">Sala:</span>
-					<strong class="font-code text-sm leading-none font-semibold text-accent"
-						>{roomCode}</strong
-					>
-				</div>
-
 				<a
 					href={resolve('/')}
-					class="flex items-center gap-1.5 rounded-lg border border-border-subtle bg-bg-surface-soft px-3 py-1.5 font-util-body text-xs leading-none font-semibold text-accent transition hover:bg-bg-surface-elevated"
+					class="btn-soft-elevated group flex items-center gap-2 rounded-full px-4 py-2 font-util-heading text-xs font-semibold tracking-wide"
 					title="Sair da sala e voltar ao lobby"
 				>
 					<span>Sair da Sala</span>
-					<IconLogOut class="h-3.5 w-3.5" />
+					<IconLogOut
+						class="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
+					/>
 				</a>
 			</div>
 		{/if}

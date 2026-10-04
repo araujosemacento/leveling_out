@@ -105,6 +105,11 @@
 	--color-point-good: var(--tertiary);
 	--highlight: #fef08a;
 	--highlight-soft: #fef9c3;
+
+	/* Sombras Táteis Neumórficas (Estilo Soft UI Elevado) */
+	--shadow-neumorph-light: #ffffff;
+	--shadow-neumorph-dark: rgba(45, 28, 8, 0.22);
+	--shadow-neumorph-text: 1px 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 [data-theme='dark'] {
@@ -154,6 +159,11 @@
 	--color-point-good: var(--tertiary);
 	--highlight: #e2931d;
 	--highlight-soft: #382405;
+
+	/* Sombras Táteis Neumórficas (Estilo Soft UI Elevado) */
+	--shadow-neumorph-light: rgba(255, 235, 210, 0.09);
+	--shadow-neumorph-dark: rgba(0, 0, 0, 0.85);
+	--shadow-neumorph-text: 1px 1px 0 rgba(0, 0, 0, 0.85);
 }
 
 * {
@@ -224,4 +234,36 @@ code,
 pre,
 .font-code {
 	font-family: var(--font-code);
+}
+
+/* Botão Elevado Tátil (Soft UI / Neumorfismo Fiel ao Exemplo) */
+.btn-soft-elevated {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--bg-base);
+	color: var(--text-muted);
+	border: 0;
+	outline: none;
+	border-radius: 9999px;
+	text-decoration: none;
+	text-shadow: var(--shadow-neumorph-text);
+	box-shadow:
+		5px -5px 20px var(--shadow-neumorph-light),
+		-5px 5px 20px var(--shadow-neumorph-dark);
+	transition: all 0.2s ease-in-out;
+	cursor: pointer;
+}
+
+.btn-soft-elevated:hover {
+	color: var(--accent);
+	box-shadow:
+		2px -2px 5px var(--shadow-neumorph-light),
+		-2px 2px 5px var(--shadow-neumorph-dark);
+}
+
+.btn-soft-elevated:active {
+	box-shadow:
+		inset 1px 1px 2px var(--shadow-neumorph-dark),
+		inset -1px -1px 2px var(--shadow-neumorph-light);
 }
