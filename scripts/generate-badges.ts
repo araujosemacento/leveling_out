@@ -75,7 +75,9 @@ function run() {
 		writeFileSync(filePath, updatedSvg, 'utf-8');
 	}
 
-	console.log(`Regenerados ${files.length} SVGs com padding compacto, fonte ajustada e alinhamento ótico.`);
+	console.log(
+		`Regenerados ${files.length} SVGs com padding compacto, fonte ajustada e alinhamento ótico.`
+	);
 
 	// Normaliza o SGDD para sintaxe Markdown limpa sem atributos align
 	console.log('Atualizando SGDD:', SGDD_FILE);

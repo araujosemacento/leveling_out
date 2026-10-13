@@ -90,20 +90,29 @@ Com a eliminação total de runners antigos em p5.js, a camada visual apoia-se e
 
 O backend atua como autoridade soberana e exclusiva da fase de Update do sistema distribuído.
 
-### 5.1. Arquitetura Atual: Hooks em JavaScript (Goja)
+### 5.1. Arquitetura do Backend: Go Nativo com PocketBase Estendido
 
-Atualmente, o servidor utiliza o binário padrão do PocketBase com regras em JavaScript interpretadas via motor embutido Goja (`backend/pb_hooks/`):
+O backend opera como um executável nativo em Go estendendo o PocketBase como framework (`github.com/pocketbase/pocketbase`), estruturado rigorosamente de acordo com a arquitetura de **Entidades e Componentes Atômicos**:
 
-- **Arquitetura do Servidor:** Binário autohospedado em Go com SQLite embutido, consumindo cerca de 15 MB a 30 MB de RAM.
+- **Arquitetura do Servidor:** Binário autossuficiente compilado estaticamente em Go (`CGO_ENABLED=0`) com SQLite embutido via `modernc.org/sqlite`, sem dependência de interpretadores externos ou runtime Node/Goja.
 - **Transmissão em Tempo Real:** Server-Sent Events (SSE) nativos sobre HTTP através de inscrições por coleção e sala (`pb.collection('salas').subscribe(roomCode, ...)`).
-- **Hooks Autoritativos Atuais (`pb_hooks/`):**
-  - `game_rules.pb.js`: Validação de integridade na criação/atualização de rodadas e atualização em cascata do placar das salas.
-  - `iniciativa.pb.js`: Arbitragem de confrontos de PPT em memória compartilhada via `$app.store()`.
-  - `cleanup.pb.js`: Purga periódica de salas inativas após 15 minutos de ausência de conexões.
+- **Adequação do Backend à Composição por Entidades e Componentes:**
+  - **Entidades de Domínio no Servidor (`internal/entities/`):**
+    - `EntidadeSessao`: Gerencia o macro-estado da sala compartilhada (`SalaMatch`) e o ciclo micro-temporal da rodada (`RodadaAtiva`).
+    - `EntidadeParticipante`: Gerencia tanto os jogadores individuais conectados (`Jogador`) quanto a pontuação cumulativa das equipes (`EquipeCorvo` e `EquipeAguia`).
+    - `EntidadeDisputa`: Gerencia confrontos e momentos de tensão competitiva (`DisputaPpt` e `AfericaoProximidade`).
+  - **Componentes Atômicos de Backend (`internal/components/`):**
+    - `ArbitroPptComponent`: Arbitragem thread-safe de lances de PPT com resolução determinística de confrontos e empates protegida por primitivas nativas (`sync.RWMutex`).
+    - `RegraProximidadeComponent`: Algoritmo matemático autoritativo de proximidade e atribuição de faixas de pontuação (+4, +3, +2 ou 0).
+    - `SigiloMetaComponent`: Geração criptograficamente segura de `meta_oculta` (números pseudo-aleatórios com `crypto/rand` no intervalo [5, 95]) e blindagem de dados sensíveis.
+    - `CleanupComponent`: Rotina periódica em segundo plano para expurgação automática de conexões e salas ociosas.
+- **Workflow Automatizado de Releases (`backend/.github/workflows/release.yml`):**
+  - Hospedado no repositório dedicado `araujosemacento/backend_leveling_out`, mantendo o ciclo de compilação dos binários desacoplado do cliente web.
+  - Matriz de compilação cruzada nativa para Linux (`amd64`, `arm64`), macOS (`amd64`, `arm64`) e Windows (`amd64`).
+  - Extração procedural das notas de versão a partir do `CHANGELOG.md` do backend com fallback automático pelo histórico do Git.
+  - Geração automática de somas de verificação SHA256 (`SHA256SUMS.txt`) e publicação automática de assets nas Releases do GitHub ao criar tags de versão.
 
-### 5.2. Portabilidade para Go Nativo e Adequação a Entidades e Componentes
-
-Embora funcional para o protótipo inicial, a interpretação via Goja impõe limitações de concorrência, ausência de checagem estática de tipos e sobrecarga de memória por pool de VMs. A evolução arquitetural planejada consiste em estender o PocketBase diretamente como framework em Go (`github.com/pocketbase/pocketbase`), adequando o backend formalmente à estrutura de **Entidades e Componentes Atômicos**:
+### 5.2. Histórico de Evolução: Transição de Hooks JS para Go Puro
 
 1. **Adequação do Backend à Composição por Entidades e Componentes:**
    - **Entidades de Domínio no Servidor:** Agregadores conceituais amplos instanciados como structs Go em memória ou registros de banco:
@@ -137,3 +146,15 @@ Na implementação atual com hooks em JavaScript (`pb_hooks`), o fluxo de dados 
    - **No Core Loop Atual (Cadência por Turnos):** Como as ações dos jogadores ocorrem em intervalos humanos espaçados (~30 a 60 segundos por rodada), a latência do ciclo JSON permanece na casa de 0,5 ms a 2 ms, tornando a sobrecarga do Goja imperceptível para o gameplay.
    - **Cenário Crítico (Streaming Analógico Contínuo):** Caso o arrasto do slider venha a ser espelhado em tempo real para os parceiros de equipe (60 atualizações por segundo por jogador), a sobrecarga de reflexão e alocações repetidas de heap no Goja gerará gargalos severos de CPU e latência. A arquitetura mitiga essa hipótese através da migração para Go nativo, onde deltas voláteis de arrasto podem trafegar via WebSockets binários ou buffers pré-alocados sem passar pelo banco ou pela VM JS.
 
+### 5.4. Otimização de Leitura: SQL-Generated JSON (Zero-Copy Pass-Through)
+
+Para mitigar a sobrecarga de serialização em consultas agregadas ou volumosas, a arquitetura contempla o uso de **SQL-Generated JSON**:
+
+1. **Mecânica Direta no SQLite:**
+   - O SQLite provê funções nativas em C (`json_object` e `json_group_array`), permitindo estruturar e formatar árvores relacionais complexas (salas, jogadores e histórico de rodadas) em um único comando SQL.
+   - O servidor em Go lê o payload resultante diretamente como fatia de bytes bruta (`[]byte`) e o envia ao socket HTTP sem instanciar structs intermediárias na heap nem invocar `encoding/json` por reflexão.
+
+2. **Equilíbrio e Matriz de Aplicação no Jogo:**
+   - **Core Loop Volátil (Dicas, Palpites e PPT):** Mantém o pipeline tradicional em Go tipado, onde a legibilidade, validações defensivas e contratos estáticos são prioritários e o volume de dados por requisição é diminuto.
+   - **Snapshots Grandes e Métricas Finais:** Recomendado para o carregamento inicial de reconciliação de sala (`FULL_SYNC`) e para a tela de vitória, agregando todo o histórico de rodadas e dados de sintonia em um único roundtrip atômico no SQLite.
+   - **Cuidados Arquiteturais:** Exige aplicar filtros de permissão e sigilo diretamente nas cláusulas `WHERE` da query (já que bypassa o resolvedor automático de regras de coleção do PocketBase) e acopla a projeção do payload ao comando SQL.

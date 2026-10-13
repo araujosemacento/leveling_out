@@ -52,7 +52,7 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 - **Camada de Sincronização (Cliente - `src/lib/engine/update/`):** Reducer determinístico puro `gameReducer` (`state-machine.ts`) que reconcilia o estado da máquina cliente via Server-Sent Events (SSE) sem decidir regras por conta própria.
 - **Camada de Render (Cliente - `src/lib/engine/render/`):** Projeções puras `UI = f(State)` (`projections.ts`) que blindam a meta oculta e entregam ViewModels reativos para os componentes Svelte.
 - **Orquestrador Central (`src/lib/engine/game-engine.ts`):** Coordena o ciclo de vida e notifica os ouvintes reativos da interface.
-- **Análise de Serialização JSON e Gargalos:** No modelo atual com `pb_hooks`, o fluxo de dados atravessa um funil de três camadas (`HTTP` $\rightarrow$ `Go` $\rightarrow$ `Goja JS` $\rightarrow$ `SQLite/SSE`), incorrendo em conversão de tipos por reflexão em runtime (`reflect`) e alocações na heap da VM. Na cadência atual de turnos (ações esparsas a cada ~30s), o custo é irrelevante (~0,5 ms a 2 ms). Todavia, para transmissões contínuas em alta frequência (como espelhamento analógico de arrasto em tempo real a 60 fps), a solução exige a portabilidade para Go nativo com WebSockets duplex e parsing direto sem reflexão.
+- **Análise de Serialização JSON e Otimização:** No modelo atual com `pb_hooks`, o fluxo de dados atravessa um funil de três camadas (`HTTP` $\rightarrow$ `Go` $\rightarrow$ `Goja JS` $\rightarrow$ `SQLite/SSE`), incorrendo em conversão de tipos por reflexão em runtime (`reflect`) e alocações na heap da VM. Na cadência atual de turnos (ações esparsas a cada ~30s), o custo é irrelevante (~0,5 ms a 2 ms). Para tráfego contínuo em tempo real (arrasto do slider a 60 fps), a solução exige Go nativo com WebSockets duplex. Para snapshots volumosos (reconciliação `FULL_SYNC` e métricas finais), a arquitetura prevê a técnica de **SQL-Generated JSON** (`json_object` e `json_group_array` no SQLite) repassando bytes brutos diretamente ao HTTP sem overhead de serialização no Go.
 
 > Para detalhes de arquitetura, componentes atômicos e integração com PocketBase, consulte [docs/agents/architecture.md](docs/agents/architecture.md) e [docs/componentes/componentes.md](docs/componentes/componentes.md).
 
@@ -76,8 +76,7 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 | **Camada de Update (Máquina de Estados)**    | `src/lib/engine/update/`                   | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).                   |
 | **Camada de Render (Projeções UI)**          | `src/lib/engine/render/`                   | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts).                     |
 | **Orquestrador do Motor Canônico**           | `src/lib/engine/game-engine.ts`            | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições.                      |
-| **Controlador do Slider (POO)**              | `src/lib/controllers/drag-controller.ts`   | (Planejado para Fase 2) Cálculo de arrasto, limites percentuais [0, 100], sensibilidade ao toque e snap. |
-| **Backend, Migrações e Hooks Autoritativos** | `backend/` (`pb_migrations/`, `pb_hooks/`) | Esquema do PocketBase SQLite, hooks de regras de pontuação e purga automática de salas.                  |
+| **Backend Autoritativo em Go Nativo**        | `backend/` (`cmd/server/`, `internal/`)    | Servidor estendendo PocketBase, Entidades de Domínio, Componentes Atômicos e rotas pass-through.         |
 | **Regras e Restrições para Agentes**         | `AGENTS.md`, `docs/agents/` e `.agents/`   | Proibições estritas, guias aprofundados e convenções do repositório.                                     |
 
 ---
@@ -126,7 +125,7 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 - [x] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
 - [x] Implementar algoritmo de proximidade com faixas de acerto (+4, +3, +2, 0) testado com `bun test`.
 - [ ] Minijogo de Pedra, Papel e Tesoura refatorado em Svelte puro para decisão de turno.
-- [ ] Portabilidade autoritativa dos hooks para Go nativo com PocketBase estendido, adequando o backend à arquitetura de Entidades e Componentes atômicos.
+- [x] Portabilidade autoritativa dos hooks para Go nativo com PocketBase estendido, adequando o backend à arquitetura de Entidades e Componentes atômicos.
 
 ### Fase 3: Polimento e Experiência de Jogo
 
