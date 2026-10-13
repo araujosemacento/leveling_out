@@ -1,89 +1,139 @@
-# Arquitetura Técnica e Game Loop Canônico
+# Arquitetura Técnica, Sistema Distribuído e Composição por Componentes
 
-Este documento detalha os princípios de engenharia, a máquina de estados desacoplada, os pilares de segurança e as convenções de infraestrutura do projeto **Leveling Out**.
-
----
-
-## 1. A Regra de Ouro do Game Loop: Input $\rightarrow$ Update $\rightarrow$ Render
-
-Apesar de ser implementado sobre o DOM e componentes reativos do Svelte, todo o fluxo do jogo segue a cadência estrita de um _game loop_ canônico, desacoplando o núcleo de regras da camada visual:
-
-### 1.1. Fase de Input (Intenção do Jogador)
-
-- Captura eventos brutos de usuário (toque, arrasto do slider analógico, digitação de pistas, escolha de lances no PPT) e eventos assíncronos de rede (mensagens SSE do PocketBase).
-- Aplica sanitização defensiva local (limites de caracteres e filtros de segurança via `src/lib/engine/input/sanitize.ts`).
-- Normaliza os eventos em objetos de ação tipados (`GameAction` via `src/lib/engine/input/intent-factory.ts`).
-- Nenhum manipulador de evento de input altera diretamente elementos visuais ou estados de renderização sem passar pelo motor de atualização.
-
-### 1.2. Fase de Update (Reconciliação com o Servidor)
-
-- O núcleo agnóstico do jogo (`src/lib/engine/update/state-machine.ts`) processa a ação contra o estado atual da partida.
-- Aplica transições de fase locais, cronômetros determinísticos e reconciliação com o estado autoritativo do PocketBase.
-- O estado do jogo permanece puro, desacoplado de dependências do navegador ou do Svelte, permitindo testes unitários headless com `bun test`.
-
-### 1.3. Fase de Render (Projeção e Coreografia Visual)
-
-- A camada de componentes Svelte atua como função pura da projeção de estado (`UI = f(State)` via `src/lib/engine/render/projections.ts`).
-- Reatividade declarativa via Svelte 5 Runes (`$state`, `$derived`, `$props`).
-- Animações e transições visuais reagem a deltas de estado sem interferir na integridade do estado da partida.
+Este documento detalha os princípios de engenharia, o Game Loop distribuído, o paradigma de Entidades e Componentes, a máquina de estados desacoplada e as convenções de infraestrutura do projeto **Leveling Out**.
 
 ---
 
-## 2. Pilares de Segurança do Front-end (Zero Trust & Autoritarismo de Estado)
+## 1. O Game Loop como Sistema Distribuído: Input $\rightarrow$ Update $\rightarrow$ Render
 
-Alinhado às diretrizes de segurança do backend, o front-end opera sob o princípio de **Confiança Zero (Zero Trust)**:
+A arquitetura de _Leveling Out_ traduz o Game Loop clássico de motores de jogo para um **sistema distribuído autoritativo em tempo real**, onde a responsabilidade pelo ciclo de vida é estritamente dividida:
 
-1. **Autoritarismo do Servidor:** O front-end nunca calcula pontuações oficiais, não determina vencedores de PPT e não decide transições críticas de turno. O cliente envia unicamente _intenções_ (`SUBMIT_GUESS`, `SUBMIT_CLUE`, `SUBMIT_PPT_MOVE`). A verdade autoritativa reside exclusivamente nos hooks do PocketBase (`pb_hooks/game_rules.pb.js`).
-2. **Defesa em Profundidade e Sanitização:** Antes de transmitir qualquer dado à rede, o front-end sanitiza rigorosamente as entradas:
-   - Dicas conceituais: máximo de 60 caracteres, remoção de caracteres de controle e tags HTML.
-   - Apelidos de jogadores: máximo de 20 caracteres alfanuméricos com pontuação básica.
-   - Palpites do slider: número inteiro contido estritamente no intervalo fechado [0, 100].
-3. **Sigilo Absoluto da Meta Oculta:** O valor percentual da meta no tubo de ensaio (`meta_oculta`) nunca deve ser armazenado ou inferido no cliente antes da fase de revelação oficial (`RODADA_REVELACAO`) enviada pelo servidor, impedindo que participantes visualizem o volume secreto inspecionando o console ou a memória do navegador.
-4. **Papel de `score-rules.ts` no Front-end:** As regras de proximidade no cliente existem unicamente para pré-visualização visual de graduação ou feedback tátil imediato, jamais para gravar ou impor placares à sala.
+- O **Front-end (Cliente)** é responsável exclusivamente pelas fases de **Input** e **Render** (além de reconciliação reativa de estado).
+- O **Back-end (Servidor PocketBase)** detém a soberania autoritativa exclusiva sobre a fase de **Update** (regras de integridade, cálculo oficial de pontuação e sigilo da meta oculta).
 
----
+> Para a visualização cronológica completa passo a passo deste ciclo e a topologia de rede entre cliente e servidor, consulte o [Diagrama de Sequência e Topologia do Game Loop Distribuído](../diagramas/diagramas.md#4-diagrama-de-sequência-do-game-loop-distribuído).
 
-## 3. TypeScript Nativo como Padrão de Engenharia
+### 1.1. Fase de Input (Cliente / Front-end)
 
-Toda a lógica pura do motor (`src/lib/engine/`), controladores compostos (`src/lib/controllers/`), modelos de dados e testes em `tests/` são escritos estritamente em **TypeScript (`.ts`)**:
+- **Captura de Intenção:** Captura eventos brutos de toque, pointer e teclado na interface, além de lances no minijogo de iniciativa.
+- **Sanitização Defensiva (Defense in Depth):** Higienização imediata antes do envio (`src/lib/engine/input/sanitize.ts`). Textos são desprovidos de tags HTML, apelidos são limitados a 20 caracteres e valores do slider sofrem _clamping_ matemático para o intervalo $[0, 100]$.
+- **Emissão Tipada:** O cliente despacha unicamente objetos de intenção tipados (`GameAction` gerados por `src/lib/engine/input/intent-factory.ts`), jamais mutando o estado definitivo de pontuação ou rodadas.
 
-- **Contratos Tipados:** Ações de jogo (`GameAction`) modeladas via uniões discriminadas (_discriminated unions_), garantindo que cada evento carregue seu payload obrigatório correto.
-- **Svelte 5 Runes Tipados:** Aproveitamento total de tipos em `$props<T>()`, `$state<T>()` e nas classes de controladores orientados a objetos.
-- **Execução Nativa com Bun:** Zero sobrecarga de build, com compilação e execução imediata pelo Bun e Vite.
+### 1.2. Fase de Update (Servidor Autoritário / PocketBase)
 
----
+- **Autoritarismo de Estado:** A verdade do jogo reside exclusivamente nos hooks de backend do PocketBase (`backend/pb_hooks/game_rules.pb.js` e `iniciativa.pb.js`).
+- **Geração de Segredos:** Sorteio seguro de metas ocultas no tubo de ensaio ($5\%$ a $95\%$).
+- **Cálculo Oficial:** Comparação matemática $|\text{meta} - \text{palpite}|$ e distribuição de pontos (+4, +3, +2, 0) na coleção de rodadas e salas.
+- **Resolução de Conflitos:** Arbitragem em memória thread-safe (`$app.store()`) de lances simultâneos de Pedra, Papel e Tesoura.
 
-## 4. Padrão de Composição (POO) em Controladores
+### 1.3. Fase de Sincronização e Reconciliação (Cliente)
 
-Para garantir legibilidade, manutenibilidade e foco estrito de responsabilidade:
+- **Papel da Máquina de Estados Cliente:** A máquina de estados local em `src/lib/engine/update/state-machine.ts` **não toma decisões autônomas de jogo**. Seu papel no cliente é unicamente **sincronizar as mudanças ocorridas no servidor entre todos os jogadores**.
+- **Reconciliação Determinística:** Ao receber um evento de rede (SSE), o motor cliente despacha a reconciliação (`FULL_SYNC`, `RODADA_REVELADA`), garantindo que todas as telas conectadas convirjam exatamente para o mesmo estado autoritativo.
 
-- **Componentes Pontuais:** Cada componente Svelte foca única e exclusivamente em sua tarefa visual e estrutural pontual (Single Responsibility Principle). Componentes não acumulam regras de negócio, cálculos matemáticos complexos ou lógica de rede em suas tags `<script>`.
-- **Composição sobre Herança:** Métodos gerais, ações utilitárias e rotinas amplamente reprodutíveis são desacoplados em classes ou módulos composíveis orientados a objetos (ex.: `SliderDragController`, `RoundTimer`, `RoomSessionManager`).
-- Os componentes Svelte instanciam ou recebem esses controladores por composição, delegando tarefas e observando mudanças de estado.
+### 1.4. Fase de Render (Cliente / Projeção Visual)
 
----
-
-## 5. Ferramentas e Estratégias de Animação
-
-Com a descontinuação total do p5.js, as animações do jogo (líquido do tubo, menisco, borbulhas, revelação de pontuação, transições de cartas) utilizam soluções nativas de alto desempenho:
-
-1. **Svelte Motion e Transitions Nativas (`svelte/motion` e `svelte/transition`):**
-   - Transições de interface, física de molas no slider analógico (`spring`), interpolações de valores numéricos de placar (`tweened`) e transições de tela (`fade`, `fly`, `scale`).
-   - Vantagens: Zero dependências externas, sincronização com o ciclo de vida do Svelte e baixíssimo overhead.
-2. **Motion ou Web Animations API (WAAPI):**
-   - Execução direta na thread da GPU através da WAAPI nativa.
-   - Ideal para animações contínuas, flutuações e efeitos dinâmicos sem quedas de frames na thread de JavaScript.
-3. **GSAP (GreenSock):**
-   - Empregado caso surja a necessidade de orquestrar timelines complexas e coreografadas na etapa de Revelação Dramática (subida do menisco, parada na meta oculta, expansão de ondas de acerto e incremento escalonado do placar).
-4. **SVG Procedural Reativo:**
-   - Renderização do tubo de ensaio, menisco curvo e borbulhas diretamente via paths e tags SVG reativas manipuladas por CSS e Svelte, garantindo nitidez vetorial infinita.
+- **Função Pura:** A interface é uma função declarativa pura do estado sincronizado ($UI = f(State)$ via `src/lib/engine/render/projections.ts`).
+- **Svelte 5 Runes:** Reatividade através de `$state`, `$derived` e `$props`.
+- **Blindagem Zero Trust:** A projeção garante que a `meta_oculta` nunca seja exposta no DOM ou nas propriedades reativas para jogadores não autorizados antes da fase de revelação oficial.
 
 ---
 
-## 6. Backend Realtime: PocketBase Autohospedado
+## 2. Paradigma de Entidades e Componentes
 
-- **Tecnologia:** **PocketBase** (único binário executável em Go com SQLite embarcado).
-- **Consumo de Recursos:** **~15 MB a 30 MB de RAM**, ideal para rodar em uma máquina pessoal ligada continuamente sem afetar o sistema.
-- **Exposição para a Internet:** Conectado através de um túnel reverso com certificado TLS automático (**Tailscale Funnel** ou **Cloudflare Tunnel**), permitindo conexões diretas de qualquer dispositivo em redes 4G/5G (com CGNAT) ou Wi-Fi doméstico.
-- **Protocolo Realtime:** _Server-Sent Events (SSE)_ nativo sobre HTTP com assinaturas por sala (`pb.collection('salas').subscribe(roomCode, ...)`).
-- **Efemeridade e Privacidade:** Usuários anônimos identificados por `playerId` em `sessionStorage`. Higienização automática periódica via hook (`pb_hooks/cleanup.pb.js`) apagando salas inativas há mais de 15 minutos.
+Para garantir desacoplamento, testabilidade e expressividade típicos de uma game engine:
+
+### 2.1. Entidades com Papéis Abrangentes
+
+As entidades são modeladas como agregadores conceituais amplos. Quanto mais papéis uma entidade puder abranger conceitualmente, mais coesa se torna a arquitetura:
+
+- `EntidadeParticipante`: atua tanto como `JogadorIndividual` (com seus papéis voláteis de Codificador, Palpiteiro e Espectador) quanto como `EquipeColetiva` (Corvo vs Águia).
+- `EntidadeSessao`: atua como `SalaMatch` e como `RodadaAtiva`.
+- `EntidadeArtefato`: atua como `TuboDeEnsaio`, `MarcadorAnalogico` e `CartaEspectro`.
+- `EntidadeDisputa`: atua como `DisputaPpt` e como `JulgamentoProximidade`.
+- `EntidadePlacar`: atua como `CorridaPlacar` e como `MetricasSintonia`.
+
+### 2.2. Componentes Imperativamente Atômicos
+
+Os componentes são peças atômicas, reutilizáveis e de uso específico. São eles que verdadeiramente modelam a capacidade de uma entidade:
+
+- Cada componente possui responsabilidade estrita (ex.: `ArrastoAnalogicoComponent` trata apenas de física de slider; `SigiloMetaComponent` trata apenas de proteção de segredo; `RegraProximidadeComponent` trata apenas da tabela de pontuação).
+- Uma entidade ganha comportamento ao anexar componentes; remover um componente desativa aquela capacidade sem quebrar o restante da entidade.
+
+> Para a modelagem completa e visualização gráfica em grid, consulte o [Catálogo de Componentes](../componentes/componentes.md), a [Especificação de Entidades](../entidades/entidades.md) e os [Diagramas de Arquitetura, Entidades e Componentes](../diagramas/diagramas.md).
+
+---
+
+## 3. Padrão de Composição em Controladores (POO)
+
+Na camada de interface e cliente, o front-end adota Composição sobre Herança:
+
+- **Controladores Especializados:** Classes dedicadas em TypeScript isolam rotinas complexas da interface:
+  - `SliderDragController`: captura de toques, cálculo de offset percentual e sensibilidade tátil.
+  - `RoundTimer`: contagem regressiva determinística de tempo.
+  - `SessionSyncController`: gerenciamento de ciclo de vida da conexão SSE e emissão de intenções para o PocketBase.
+- **Componentes Visuais Finos:** Os componentes Svelte (`TestTube.svelte`, `AnalogSlider.svelte`, `ScoreBoard.svelte`) instanciam esses controladores por composição, mantendo as tags `<script>` limpas e dedicadas unicamente à ligação reativa de markup e estilos.
+
+---
+
+## 4. Estratégias de Animação e Renderização Vetorial
+
+Com a eliminação total de runners antigos em p5.js, a camada visual apoia-se em tecnologias nativas de alto desempenho:
+
+1. **SVG Procedural Reativo:** O tubo de ensaio, graduação e menisco são desenhados diretamente em vetores SVG controlados por CSS e Svelte, garantindo resolução infinita e animação de fluidos sem perda de nitidez em telas Retina e móveis.
+2. **Svelte Motion e Transitions:** Física de molas (`spring`) para o indicador do slider analógico, interpolação de números (`tweened`) para o placar e transições de tela (`fade`, `fly`).
+3. **Web Animations API (WAAPI):** Execução de animações contínuas (como borbulhas e oscilação de menisco) diretamente na GPU, prevenindo engasgos na thread principal do JavaScript.
+
+---
+
+## 5. Backend em Tempo Real: PocketBase e Evolução para Go Nativo
+
+O backend atua como autoridade soberana e exclusiva da fase de Update do sistema distribuído.
+
+### 5.1. Arquitetura Atual: Hooks em JavaScript (Goja)
+
+Atualmente, o servidor utiliza o binário padrão do PocketBase com regras em JavaScript interpretadas via motor embutido Goja (`backend/pb_hooks/`):
+
+- **Arquitetura do Servidor:** Binário autohospedado em Go com SQLite embutido, consumindo cerca de 15 MB a 30 MB de RAM.
+- **Transmissão em Tempo Real:** Server-Sent Events (SSE) nativos sobre HTTP através de inscrições por coleção e sala (`pb.collection('salas').subscribe(roomCode, ...)`).
+- **Hooks Autoritativos Atuais (`pb_hooks/`):**
+  - `game_rules.pb.js`: Validação de integridade na criação/atualização de rodadas e atualização em cascata do placar das salas.
+  - `iniciativa.pb.js`: Arbitragem de confrontos de PPT em memória compartilhada via `$app.store()`.
+  - `cleanup.pb.js`: Purga periódica de salas inativas após 15 minutos de ausência de conexões.
+
+### 5.2. Portabilidade para Go Nativo e Adequação a Entidades e Componentes
+
+Embora funcional para o protótipo inicial, a interpretação via Goja impõe limitações de concorrência, ausência de checagem estática de tipos e sobrecarga de memória por pool de VMs. A evolução arquitetural planejada consiste em estender o PocketBase diretamente como framework em Go (`github.com/pocketbase/pocketbase`), adequando o backend formalmente à estrutura de **Entidades e Componentes Atômicos**:
+
+1. **Adequação do Backend à Composição por Entidades e Componentes:**
+   - **Entidades de Domínio no Servidor:** Agregadores conceituais amplos instanciados como structs Go em memória ou registros de banco:
+     - `EntidadeSessao`: Gerencia o macro-estado da sala compartilhada (`SalaMatch`) e o ciclo micro-temporal da rodada (`RodadaAtiva`).
+     - `EntidadeParticipante`: Gerencia tanto os jogadores individuais conectados (`Jogador`) quanto a pontuação cumulativa das equipes (`Equipe`).
+     - `EntidadeDisputa`: Gerencia confrontos e momentos de tensão competitiva (`DisputaPpt` e `AfericaoProximidade`).
+   - **Componentes Atômicos de Backend:** Cada componente encapsula estritamente uma regra de integridade ou processamento autoritativo:
+     - `ArbitroPptComponent`: Arbitragem thread-safe de lances de PPT com resolução determinística de confrontos e empates.
+     - `RegraProximidadeComponent`: Algoritmo matemático autoritativo de proximidade e atribuição de faixas de pontuação (+4, +3, +2 ou 0).
+     - `SigiloMetaComponent`: Geração criptograficamente segura de `meta_oculta` e mascaramento estrito de dados sensíveis antes do despacho para o cliente.
+     - `CicloFasesComponent`: Máquina de transição autoritativa entre fases de jogo (Lobby $\rightarrow$ PPT $\rightarrow$ Rodada $\rightarrow$ Vitória).
+     - `ReconciliacaoRedeComponent`: Emissão de eventos SSE ou WebSockets com deltas de estado reconciliados para todos os clientes.
+
+2. **Ganhos Críticos de Segurança e Eficiência em Go Puro:**
+   - **Tipagem Estática em Compilação:** Eliminação de erros de digitação em nomes de colunas ou coerção de tipos em tempo de execução; contratos validados pelo compilador `go build`.
+   - **Concorrência Segura (Zero Race Conditions):** Arbitragem de lances de PPT e palpites simultâneos protegidos por primitivas nativas de sincronização (`sync.RWMutex`, `sync.Map` e `channels`), substituindo o mapa genérico `$app.store()`.
+   - **Eficiência Extrema:** Execução direta em código de máquina sem o custo de conversão de tipos Go/JavaScript, com consumo de memória inferior e escalabilidade nativa de _goroutines_.
+   - **Suporte Futuro a WebSockets Duplex:** Capacidade de acoplar rotas nativas de WebSockets para transmissão bidirecional em tempo real de baixa latência.
+
+### 5.3. Eficiência de Serialização e Desserialização JSON
+
+Na implementação atual com hooks em JavaScript (`pb_hooks`), o fluxo de dados JSON não é direto:
+
+1. **O Funil de Tradução de Três Camadas:**
+   - **HTTP $\rightarrow$ Go:** O payload JSON recebido via HTTP POST é decodificado via `encoding/json` do Go em structs ou mapas genéricos.
+   - **Go $\rightarrow$ Goja VM:** Para alimentar o hook em JavaScript (`game_rules.pb.js`), o runtime Goja utiliza reflexão dinâmica (`reflect`) para mapear tipos Go em objetos da heap JavaScript (`goja.Value`).
+   - **Goja VM $\rightarrow$ Go $\rightarrow$ SQLite:** Ao salvar alterações (`$app.save()`), os objetos JS são reconvertidos para a representação interna de Go e então gravados como texto UTF-8 no SQLite.
+   - **Go $\rightarrow$ SSE:** Para despachar eventos em tempo real aos clientes inscritos, o PocketBase serializa os registros atualizados novamente em strings JSON transmitidas sobre o canal de Server-Sent Events.
+
+2. **Avaliação Prática de Gargalo:**
+   - **No Core Loop Atual (Cadência por Turnos):** Como as ações dos jogadores ocorrem em intervalos humanos espaçados (~30 a 60 segundos por rodada), a latência do ciclo JSON permanece na casa de 0,5 ms a 2 ms, tornando a sobrecarga do Goja imperceptível para o gameplay.
+   - **Cenário Crítico (Streaming Analógico Contínuo):** Caso o arrasto do slider venha a ser espelhado em tempo real para os parceiros de equipe (60 atualizações por segundo por jogador), a sobrecarga de reflexão e alocações repetidas de heap no Goja gerará gargalos severos de CPU e latência. A arquitetura mitiga essa hipótese através da migração para Go nativo, onde deltas voláteis de arrasto podem trafegar via WebSockets binários ou buffers pré-alocados sem passar pelo banco ou pela VM JS.
+

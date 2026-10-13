@@ -12,12 +12,16 @@ description: >-
 O arquivo [AGENTS.md](file:///home/melo/Documentos/GitHub/leveling_out/AGENTS.md) é a fonte canônica da verdade e o hub central de regras do repositório, injetado no contexto de sistema de todas as sessões de agentes autônomos. Para manter a densidade semântica alta e evitar truncamentos de contexto pelo LLM, a documentação adota o padrão **Hub & Spoke**:
 
 1. **Hub Canônico Enxuto ([AGENTS.md](../../../AGENTS.md)):** Contém os conceitos centrais de cada tópico, mandamentos inegociáveis, proibições estritas, tabela de localização rápida, comandos da CLI e status do roadmap.
-2. **Especificações Detalhadas ([docs/agents/](../../../docs/agents/)):** Contém o aprofundamento técnico de cada domínio:
+2. **Especificações Detalhadas ([docs/](../../../docs/)):** Contém o aprofundamento técnico e as entregas acadêmicas:
+   - [docs/sgdd/sgdd.md](../../../docs/sgdd/sgdd.md): Short Game Design Document com texto corrido e listas de produção.
+   - [docs/entidades/entidades.md](../../../docs/entidades/entidades.md): Especificação das 5 grandes entidades conceituais abrangentes.
+   - [docs/componentes/componentes.md](../../../docs/componentes/componentes.md): Catálogo de componentes atômicos e matriz de associação.
+   - [docs/diagramas/diagramas.md](../../../docs/diagramas/diagramas.md): Diagramas visuais em grid de entidades, componentes e fluxo distribuído.
    - [docs/agents/game-design.md](../../../docs/agents/game-design.md): Regras conceituais, 3 pilares e o game loop narrativo em 3 etapas.
-   - [docs/agents/architecture.md](../../../docs/agents/architecture.md): Game loop canônico (Input -> Update -> Render), segurança Zero Trust, composição POO e backend PocketBase.
-   - [docs/agents/style-guide.md](../../../docs/agents/style-guide.md): Sistema tipográfico, paletas completas Light/Dark com tokens hexadecimais, Tailwind v4 e restrições visuais.
+   - [docs/agents/architecture.md](../../../docs/agents/architecture.md): Game loop distribuído (Input -> Update no servidor -> Sync e Render no cliente), Zero Trust e POO.
+   - [docs/agents/style-guide.md](../../../docs/agents/style-guide.md): Sistema tipográfico, paletas completas Light/Dark com tokens hexadecimais e Tailwind v4.
 
-Esta skill detalha o protocolo obrigatório para auditar e manter o [AGENTS.md](../../../AGENTS.md) e a pasta `docs/agents/` 100% sincronizados com o código real.
+Esta skill detalha o protocolo obrigatório para auditar e manter o [AGENTS.md](../../../AGENTS.md) e a pasta `docs/` 100% sincronizados com o código real.
 
 ---
 
@@ -61,15 +65,17 @@ No arquivo [AGENTS.md](../../../AGENTS.md), mantenha a concisão (~120 a 160 lin
 
 ---
 
-### Passo 3: Atualização das Especificações Modulares (docs/agents/)
+### Passo 3: Atualização das Especificações Modulares e Entregas (docs/)
 
-Sincronize os arquivos correspondentes na pasta [docs/agents/](../../../docs/agents/):
+Sincronize os arquivos correspondentes na pasta [docs/](../../../docs/):
 
-1. **Se a mudança for de Game Design ou Game Loop:**
-   - Atualize [docs/agents/game-design.md](../../../docs/agents/game-design.md) (regras de pontuação aproximada, dinâmica de turnos, narrativa do PPT ou revanche).
-2. **Se a mudança for de Arquitetura, Game Loop Canônico ou Segurança:**
-   - Atualize [docs/agents/architecture.md](../../../docs/agents/architecture.md) (máquina de estados, sanitização defensiva, blindagem de sigilo, composição POO ou PocketBase).
-3. **Se a mudança for de Estilo, Tokens ou Componentes Visuais:**
+1. **Se a mudança for de Game Design, SGDD ou Game Loop:**
+   - Atualize [docs/sgdd/sgdd.md](../../../docs/sgdd/sgdd.md) e [docs/agents/game-design.md](../../../docs/agents/game-design.md) (regras conceituais, faixas de pontuação, dinâmica de turnos, canal do fluxo, PPT ou revanche).
+2. **Se a mudança for de Arquitetura, Sistema Distribuído ou Segurança:**
+   - Atualize [docs/agents/architecture.md](../../../docs/agents/architecture.md) (game loop distribuído, máquina de estados, reconciliação SSE, sanitização defensiva, blindagem de sigilo Zero Trust e PocketBase).
+3. **Se a mudança for de Entidades ou Componentes:**
+   - Atualize [docs/entidades/entidades.md](../../../docs/entidades/entidades.md) (grandes entidades abrangentes e seus papéis conceituais) e [docs/componentes/componentes.md](../../../docs/componentes/componentes.md) (catálogo de componentes atômicos e matriz de associação).
+4. **Se a mudança for de Estilo, Tokens ou Componentes Visuais:**
    - Atualize [docs/agents/style-guide.md](../../../docs/agents/style-guide.md) (valores hexadecimais de cores, fontes, utilitários Tailwind ou convenção de ícones em botões).
 
 ---

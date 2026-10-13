@@ -1,38 +1,58 @@
 # Game Design e Game Loop: Leveling Out
 
-Este documento detalha as regras de design, a dinâmica social e o fluxo conceitual narrativo do jogo **Leveling Out**.
+Este documento detalha as regras de design, a dinâmica social, os pilares mecânicos e o fluxo narrativo do jogo **Leveling Out**, consolidando as diretrizes do pitch e do SGDD acadêmico.
 
 ---
 
 ## 1. Visão Geral do Jogo
 
-**Leveling Out** é um _party game_ multiplayer focado em dedução, sintonia e empatia social. Os jogadores competem em duas equipes tentando calibrar conceitos subjetivos ao longo de uma escala percentual contínua (0% a 100%).
+**Leveling Out** é um _party game_ multiplayer focado em dedução, sintonia e empatia social. Os jogadores competem divididos em duas equipes tentando calibrar conceitos subjetivos do cotidiano ao longo de uma escala percentual contínua (0% a 100%).
 
 ### O Desafio Central
 
-- **Codificar:** O membro sorteado da equipe (Codificador) recebe uma meta percentual secreta exibida dentro de um tubo de ensaio (ex.: 70%) e deve traduzir esse valor em uma pista conceitual compreensível a partir de um espectro bipolar sorteado (ex.: "Famoso / Anônimo" $\rightarrow$ dica: _"Keanu Reeves"_).
-- **Decodificar:** O parceiro de equipe (Palpiteiro) ouve a dica e tenta ler a mente do colega, posicionando um marcador analógico (_slider_) no ponto que acredita representar o nível real estipulado pelo jogo.
+- **Codificar:** O integrante sorteado da equipe ativa (Codificador) recebe uma meta percentual secreta exibida dentro de um tubo de ensaio (ex.: 70%) e deve traduzir esse valor quantitativo em uma pista associativa qualitativa a partir de uma carta de espectro bipolar (ex.: polo "Anônimo" e polo "Famoso" $\rightarrow$ dica: _"Keanu Reeves"_).
+- **Decodificar:** O parceiro de equipe (Palpiteiro) lê a dica na tela e tenta sintonizar com o raciocínio do colega, posicionando um marcador analógico (_slider_) no ponto exato em que estima estar o nível do líquido.
 
 ### Os 3 Pilares da Gameplay
 
-1. **Nível Oculto:** O preenchimento aleatório de um tubo de ensaio com volume visível unicamente para o Codificador da rodada.
-2. **Gerar Pistas:** Sistema associativo em que a pontuação depende do alinhamento cultural e social entre os jogadores de uma equipe.
-3. **Acerto Aproximado:** Algoritmo que calcula a distância entre o palpite e o valor real, recompensando precisão com pontos graduados (+4, +3, +2 ou 0).
+1. **Nível Oculto:** O preenchimento estocástico de um tubo de ensaio com volume percentual visível unicamente para o Codificador da rodada, blindado no backend por sigilo absoluto de rede.
+2. **Gerar Pistas:** Sistema associativo de comunicação livre onde a pontuação depende exclusivamente do alinhamento cultural e empático entre os jogadores da equipe.
+3. **Acerto Aproximado:** Algoritmo que calcula a distância absoluta entre o palpite e a meta real, recompensando a precisão com pontuações graduadas por tolerância de erro.
 
 ---
 
 ## 2. Game Loop Narrativo Detalhado
 
-O ciclo de jogo divide-se em três etapas bem definidas:
+O fluxo de jogo divide-se em três etapas bem definidas:
 
-### Etapa 1: Onboarding, Sala e Decisão de Turno
+### Etapa 1: Onboarding, Divisão de Equipes e Disputa de Iniciativa
 
-O fluxo tem início quando o usuário acessa a plataforma em seu dispositivo e cria ou ingressa em uma sala via slug na URL (`/[sala]`), reunindo os participantes em um lobby compartilhado onde são divididos em duas equipes. Para definir quem começa a partida de forma rápida e divertida, o sistema engatilha um minijogo digital de pedra, papel e tesoura entre representantes de cada time; a equipe vencedora ganha o direito de iniciar a partida e escolhe a carta temática da primeira rodada, delimitando o espectro bipolar conceitual (ex.: "Famoso / Anônimo" ou "Fácil / Difícil"). Com os parâmetros estabelecidos e os papéis atribuídos, a rodada é sincronizada em tempo real em todas as telas conectadas.
+O fluxo tem início quando os participantes acessam a plataforma em seus dispositivos móveis ou computadores via URL única (`/[sala]`), reunindo-se no lobby onde são divididos entre a **Equipe Corvo (Equipe A)** e a **Equipe Águia (Equipe B)**. Para definir democraticamente quem começa a partida e escolhe a carta temática inicial, o sistema engatilha um minijogo digital de **Pedra, Papel e Tesoura (PPT)** entre representantes de cada equipe. A equipe vencedora ganha o direito de iniciar a partida e escolhe a carta temática da primeira rodada (ex.: "Fácil / Difícil").
 
 ### Etapa 2: O Core Loop da Rodada (Dica, Palpite e Revelação)
 
-Na fase ativa, o sistema sorteia aleatoriamente um membro da equipe da vez para atuar como Codificador e preenche exclusivamente em sua tela um tubo de ensaio com nível percentual oculto (como 70%), invisível aos demais jogadores. Esse integrante analisa a carta de espectro e digita uma pista associativa contextualizada (ex.: "Keanu Reeves"), enviando-a ao seu parceiro de equipe; cabe ao Palpiteiro decodificar o raciocínio do colega e deslizar o marcador analógico até onde estima estar o líquido no tubo. Finalizado o palpite, ocorre a revelação simultânea para todos os participantes: um algoritmo calcula a margem de erro por proximidade, convertendo exatidão em pontuação no placar, ao passo que erros grosseiros resultam em zero pontos e transferem o _momentum_ competitivo diretamente para o início do turno da equipe adversária.
+Na fase ativa, o sistema sorteia um membro da equipe da vez para atuar como Codificador e preenche exclusivamente em sua tela um tubo de ensaio com nível percentual oculto (ex.: 70%), invisível aos demais jogadores. Esse integrante analisa a carta de espectro e digita uma pista associativa (máximo de 60 caracteres). O Palpiteiro recebe a dica e desliza o marcador analógico até onde estima estar o líquido. Finalizado o palpite, ocorre a revelação simultânea para todos os participantes: o tubo é aberto na tela de todos, exibindo a meta real e a linha do palpite, enquanto o algoritmo calcula os pontos obtidos.
 
-### Etapa 3: Progressão, Ritmo de Corrida e Conclusão com Revanche
+### Etapa 3: Progressão, Corrida e Conclusão com Revanche
 
-A partida se desenvolve em turnos estritamente alternados entre as duas equipes, estruturando uma corrida dinâmica rumo à pontuação-alvo predeterminada, em que cada acerto ou erro do rival atua como regulador de tensão e alívio no canal de fluxo dos competidores. O desfecho da disputa é alcançado no instante em que uma das equipes atinge a pontuação máxima, disparando a tela de vitória que consagra os campeões e exibe um painel de "Métricas de Sintonia", destacando os palpites milimetricamente certeiros e as gafes conceituais mais cômicas da partida. Essa interface final disponibiliza ações imediatas para iniciar uma Revanche mantendo as mesmas composições ou retornar ao lobby principal, fechando o ciclo e estimulando a rejogabilidade.
+A partida se desenvolve em turnos alternados entre as duas equipes em uma corrida vertical rumo à meta de 10 pontos. A equipe que atinge a pontuação máxima é consagrada campeã, disparando a tela de vitória com o painel de métricas de sintonia e o botão de Revanche imediata, que zera os placares e reinicia a partida sem desfazer a sala.
+
+---
+
+## 3. Sistema de Pontuação e Faixas de Proximidade
+
+A pontuação de cada rodada é computada autoritativamente pelo servidor PocketBase calculando a diferença absoluta $\Delta = |\text{meta} - \text{palpite}|$:
+
+| Faixa de Tolerância | Margem de Erro ($\Delta$) | Pontuação     | Classificação da Jogada            |
+| :------------------ | :------------------------ | :------------ | :--------------------------------- |
+| **Faixa 1**         | $\Delta \le 2\%$          | **+4 pontos** | Na Mosca (Calibração Exata)        |
+| **Faixa 2**         | $3\% \le \Delta \le 6\%$  | **+3 pontos** | Muito Perto (Sintonia Alta)        |
+| **Faixa 3**         | $7\% \le \Delta \le 12\%$ | **+2 pontos** | Perto (Aproximação Razoável)       |
+| **Faixa 4**         | $\Delta > 12\%$           | **0 pontos**  | Fora da Margem (Erro / Desconexão) |
+
+---
+
+## 4. O Peso da Falha e o Canal do Fluxo
+
+- **O Peso da Falha (Momentum):** O erro ($\Delta > 12\%$) não subtrai pontos conquistados, mas custa o tempo da rodada: a equipe pontua zero e entrega a iniciativa para o adversário, elevando a tensão da disputa.
+- **Canal do Fluxo (Desafio vs Habilidade):** O placar do oponente atua como uma curva dinâmica de dificuldade. O avanço do adversário eleva a ansiedade e a concentração; erros do rival trazem alívio e empurram os jogadores de volta ao centro do canal de engajamento ótimo.

@@ -103,7 +103,7 @@
 			<div
 				class="flex flex-col items-center rounded-xl border border-border-subtle bg-accent-soft/40 p-4"
 			>
-				<span class="font-util-heading text-xs font-bold text-accent">Equipe A (Índigo)</span>
+				<span class="font-util-heading text-xs font-bold text-accent">Equipe Corvo</span>
 				<span class="mt-2 font-util-body text-xs text-text-muted">1 participante</span>
 			</div>
 
@@ -111,7 +111,7 @@
 			<div
 				class="flex flex-col items-center rounded-xl border border-border-subtle bg-secondary-soft/40 p-4"
 			>
-				<span class="font-util-heading text-xs font-bold text-secondary">Equipe B (Pêssego)</span>
+				<span class="font-util-heading text-xs font-bold text-secondary">Equipe Águia</span>
 				<span class="mt-2 font-util-body text-xs text-text-muted">Aguardando conexão</span>
 			</div>
 		</div>

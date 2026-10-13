@@ -2,11 +2,15 @@
 
 Este documento é a fonte canônica da verdade e o hub central de navegação para desenvolvedores e agentes autônomos que operam neste repositório. O projeto é dedicado exclusivamente ao jogo multiplayer **Leveling Out**.
 
-Para especificações detalhadas de cada domínio, consulte os documentos satélites em `docs/agents/`:
+Para especificações detalhadas de cada domínio, consulte os documentos em `docs/`:
 
 - [Game Design e Mecânicas de Gameplay](docs/agents/game-design.md)
-- [Arquitetura Técnica, Game Loop e Segurança](docs/agents/architecture.md)
+- [Arquitetura Técnica, Sistema Distribuído e Composição](docs/agents/architecture.md)
 - [Diretrizes de Estilo, Tipografia e Cores](docs/agents/style-guide.md)
+- [SGDD Consolidado do Jogo](docs/sgdd/sgdd.md)
+- [Especificação de Entidades do Jogo](docs/entidades/entidades.md)
+- [Catálogo de Componentes Atômicos](docs/componentes/componentes.md)
+- [Diagramas de Arquitetura, Entidades e Componentes](docs/diagramas/diagramas.md)
 
 ---
 
@@ -15,12 +19,13 @@ Para especificações detalhadas de cada domínio, consulte os documentos satél
 Todo código, estilo ou modificação submetida neste repositório deve respeitar rigorosamente as seguintes restrições:
 
 1. **Runtime Bun Exclusivo:** O único runtime JavaScript/TypeScript e gerenciador de pacotes admitido é o **Bun** (`bun`). É expressamente proibido tentar executar comandos `node`, `npm`, `npx` ou `pnpm`.
-2. **Autoritarismo do Servidor (Zero Trust):** O front-end nunca calcula placares oficiais, não decide vencedores e não armazena a `meta_oculta` antes da fase `RODADA_REVELACAO`. O cliente emite apenas intenções tipadas; a verdade autoritativa reside nos hooks do PocketBase (`pb_hooks/game_rules.pb.js`).
-3. **Sem Emojis:** Proibido utilizar emojis em títulos, botões, status ou ilustrações.
-4. **Sem Cards Genéricos:** Proibido utilizar contêineres decorativos padronizados no formato de "card" flutuante.
-5. **Sem Travessões como Separadores:** Proibido utilizar travessões (`–`, `—`) ou hífen como separador de títulos ou textos de interface. Utilize dois-pontos (`:`), barras (`/`) ou formulação textual contínua.
-6. **Sem Bullets Decorativos:** Proibido utilizar marcadores como `●`, `○`, `•`, `▪`, `✓` ou círculos decorativos (`rounded-full` em pings de status).
-7. **TypeScript Nativo:** Toda a lógica de motor, controladores, modelos de dados e testes deve ser estritamente tipada em TypeScript (`.ts`), com ações modeladas por uniões discriminadas.
+2. **Sistema Distribuído e Autoritarismo do Servidor (Zero Trust):** O front-end é responsável exclusivamente por Input e Render. O servidor PocketBase detém autoridade soberana e exclusiva sobre a fase de Update (regras de integridade, cálculo oficial de pontuação e sigilo da `meta_oculta`). A máquina de estados cliente (`GameEngine`) atua unicamente para sincronizar e reconciliar as mudanças ocorridas no servidor entre os jogadores.
+3. **Composição por Entidades e Componentes:** Entidades são concebidas como agregadores conceituais amplos (quanto mais papéis uma entidade puder abranger, melhor), especializando-se na instanciação e nomeação. Já os componentes são necessária e imperativamente atômicos e de uso específico, sendo os responsáveis diretos por modelar e conferir capacidades a uma entidade.
+4. **Sem Emojis:** Proibido utilizar emojis em títulos, botões, status ou ilustrações.
+5. **Sem Cards Genéricos:** Proibido utilizar contêineres decorativos padronizados no formato de "card" flutuante.
+6. **Sem Travessões como Separadores:** Proibido utilizar travessões (`–`, `—`) ou hífen como separador de títulos ou textos de interface. Utilize dois-pontos (`:`), barras (`/`) ou formulação textual contínua.
+7. **Sem Bullets Decorativos:** Proibido utilizar marcadores como `●`, `○`, `•`, `▪`, `✓` ou círculos decorativos (`rounded-full` em pings de status).
+8. **TypeScript Nativo:** Toda a lógica de motor, controladores, modelos de dados e testes deve ser estritamente tipada em TypeScript (`.ts`), com ações modeladas por uniões discriminadas.
 
 ---
 
@@ -28,52 +33,52 @@ Todo código, estilo ou modificação submetida neste repositório deve respeita
 
 **Leveling Out** é um _party game_ multiplayer focado em dedução e sintonia social. Duas equipes competem tentando calibrar conceitos subjetivos ao longo de uma escala percentual contínua (0% a 100%).
 
-- **Desafio Central:** O Codificador da vez visualiza uma meta percentual secreta em um tubo de ensaio e digita uma pista associativa a partir de um espectro bipolar sorteado (ex.: "Famoso / Anônimo" $\rightarrow$ _"Keanu Reeves"_). O Palpiteiro da equipe ajusta o marcador analógico até onde estima estar o nível do líquido.
+- **Desafio Central:** O Codificador visualiza uma meta percentual secreta em um tubo de ensaio e digita uma pista associativa a partir de um espectro bipolar sorteado (ex.: "Anônimo / Famoso" $\rightarrow$ _"Keanu Reeves"_). O Palpiteiro da equipe ajusta o marcador analógico até onde estima estar o nível do líquido.
 - **Cadência Canônica do Loop:**
-  1. _Onboarding e Iniciativa:_ Criação/acesso de sala via slug (`/[sala]`), divisão em equipes e minijogo de Pedra, Papel e Tesoura para definir quem inicia e escolhe a carta.
-  2. _Core Loop da Rodada:_ Escolha do espectro, sorteio do codificador, envio de dica e arrasto do slider analógico com revelação simultânea por proximidade (+4, +3, +2 ou 0 pontos).
-  3. _Corrida e Revanche:_ Turnos alternados até a pontuação máxima, com tela de vitória, métricas de sintonia e reinício instantâneo por revanche.
+  1. _Onboarding e Iniciativa:_ Criação/acesso de sala via slug (`/[sala]`), divisão em equipes e minijogo de Pedra, Papel e Tesoura para definir quem inicia e escolhe a primeira carta.
+  2. _Core Loop da Rodada:_ Escolha do espectro, envio de dica e arrasto do slider analógico com revelação simultânea por tolerância de proximidade (+4, +3, +2 ou 0 pontos).
+  3. _Corrida e Revanche:_ Turnos alternados rumo à meta de 10 pontos, com tela de vitória, métricas de sintonia e reinício instantâneo por revanche.
 
-> Para a narrativa de gameplay completa e os 3 pilares, consulte [docs/agents/game-design.md](docs/agents/game-design.md).
+> Para a narrativa de gameplay completa e os 3 pilares, consulte [docs/agents/game-design.md](docs/agents/game-design.md) e [docs/sgdd/sgdd.md](docs/sgdd/sgdd.md).
 
 ---
 
-## 3. Arquitetura do Motor: Input $\rightarrow$ Update $\rightarrow$ Render
+## 3. Arquitetura do Motor: Input $\rightarrow$ Update (Servidor) $\rightarrow$ Sync & Render (Cliente)
 
-O motor do jogo adota o desacoplamento estrito do game loop canônico:
+O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 
-- **Camada de Input (`src/lib/engine/input/`):** Captura eventos de interface e mensagens de rede SSE, aplicando sanitização defensiva rigorosa (`sanitize.ts`) e convertendo-os em ações tipadas (`intent-factory.ts`).
-- **Camada de Update (`src/lib/engine/update/`):** Reducer determinístico puro `gameReducer` (`state-machine.ts`) e algoritmo de referência de proximidade (`score-rules.ts`), testáveis de forma headless sem depender do DOM.
-- **Camada de Render (`src/lib/engine/render/`):** Projeções puras `UI = f(State)` (`projections.ts`) que blindam a meta oculta e entregam ViewModels otimizados para os componentes Svelte.
-- **Orquestrador Central (`src/lib/engine/game-engine.ts`):** Coordena a cadência e notifica os ouvintes reativos da interface.
+- **Camada de Input (Cliente - `src/lib/engine/input/`):** Captura eventos de interface e gestos, aplica sanitização defensiva rigorosa (`sanitize.ts`) e despacha intenções tipadas (`intent-factory.ts`) para a rede.
+- **Camada de Update (Servidor Autoritário - `backend/`):** Executa em PocketBase. No protótipo atual, opera via hooks JavaScript (`game_rules.pb.js` e `iniciativa.pb.js`), com migração planejada para Go nativo estendendo o PocketBase como framework, formalizando as entidades de domínio e componentes atômicos autoritativos (`ArbitroPptComponent`, `RegraProximidadeComponent`, `SigiloMetaComponent`).
+- **Camada de Sincronização (Cliente - `src/lib/engine/update/`):** Reducer determinístico puro `gameReducer` (`state-machine.ts`) que reconcilia o estado da máquina cliente via Server-Sent Events (SSE) sem decidir regras por conta própria.
+- **Camada de Render (Cliente - `src/lib/engine/render/`):** Projeções puras `UI = f(State)` (`projections.ts`) que blindam a meta oculta e entregam ViewModels reativos para os componentes Svelte.
+- **Orquestrador Central (`src/lib/engine/game-engine.ts`):** Coordena o ciclo de vida e notifica os ouvintes reativos da interface.
+- **Análise de Serialização JSON e Gargalos:** No modelo atual com `pb_hooks`, o fluxo de dados atravessa um funil de três camadas (`HTTP` $\rightarrow$ `Go` $\rightarrow$ `Goja JS` $\rightarrow$ `SQLite/SSE`), incorrendo em conversão de tipos por reflexão em runtime (`reflect`) e alocações na heap da VM. Na cadência atual de turnos (ações esparsas a cada ~30s), o custo é irrelevante (~0,5 ms a 2 ms). Todavia, para transmissões contínuas em alta frequência (como espelhamento analógico de arrasto em tempo real a 60 fps), a solução exige a portabilidade para Go nativo com WebSockets duplex e parsing direto sem reflexão.
 
-> Para detalhes de arquitetura, ferramentas de animação e integração com PocketBase, consulte [docs/agents/architecture.md](docs/agents/architecture.md).
+> Para detalhes de arquitetura, componentes atômicos e integração com PocketBase, consulte [docs/agents/architecture.md](docs/agents/architecture.md) e [docs/componentes/componentes.md](docs/componentes/componentes.md).
 
 ---
 
 ## 4. Síntese de Localização Rápida (Onde Encontrar Cada Coisa)
 
-| O que você precisa alterar / inspecionar     | Onde encontrar (Arquivo / Pasta)           | Responsabilidade Principal                                                                   |
-| :------------------------------------------- | :----------------------------------------- | :------------------------------------------------------------------------------------------- |
-| **Paleta, tokens CSS, dark mode e temas**    | `src/routes/layout.css`                    | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos). |
-| **Importação de fontes e head global**       | `src/app.html`                             | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).       |
-| **Casca da aplicação e navegação**           | `src/routes/+layout.svelte`                | Estrutura comum que envolve todas as páginas e carrega os estilos globais.                   |
-| **Lobby de entrada e criação de sala**       | `src/routes/+page.svelte`                  | Tela inicial com Title Card, criação rápida de sala e entrada de apelido.                    |
-| **Arena principal do jogo (Partida)**        | `src/routes/[sala]/+page.svelte`           | Orquestração da sala, sincronização da partida e renderização das fases.                     |
-| **Camada de Input (Intenção & Sanitização)** | `src/lib/engine/input/`                    | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts).        |
-| **Camada de Update (Máquina de Estados)**    | `src/lib/engine/update/`                   | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).       |
-| **Camada de Render (Projeções UI)**          | `src/lib/engine/render/`                   | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts).         |
-| **Orquestrador do Motor Canônico**           | `src/lib/engine/game-engine.ts`            | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições.          |
-| **Controlador do Slider (POO)**              | `src/lib/controllers/drag-controller.ts`   | Cálculo de arrasto, limites percentuais [0, 100], sensibilidade ao toque e snap.             |
-| **Temporizador determinístico (POO)**        | `src/lib/controllers/round-timer.ts`       | Ticks determinísticos para contagem regressiva de rodadas.                                   |
-| **Sincronização SSE e Heartbeat (POO)**      | `src/lib/controllers/session-sync.ts`      | Conexão com PocketBase, reconciliação autoritativa e emissão de intenções de rede.           |
-| **Title Card e Identidade (Visual)**         | `src/lib/components/TitleCard.svelte`      | Identidade visual do jogo com Bagel Fat One e ícone placeholder de tubo.                     |
-| **Tubo de Ensaio e Menisco (Visual)**        | `src/lib/components/TestTube.svelte`       | Renderização SVG procedural do tubo, líquido graduado e borbulhas.                           |
-| **Marcador Analógico (Visual)**              | `src/lib/components/AnalogSlider.svelte`   | Componente visual do slider que recebe e delega para o `SliderDragController`.               |
-| **Placar e Métricas (Visual)**               | `src/lib/components/ScoreBoard.svelte`     | Exibição da corrida de pontuação entre as Equipes A e B.                                     |
-| **Minijogo de Primeiro Turno (Visual)**      | `src/lib/components/PptArena.svelte`       | Disputa rápida de Pedra, Papel e Tesoura para definir quem começa.                           |
-| **Backend, Migrações e Hooks de Limpeza**    | `backend/` (`pb_migrations/`, `pb_hooks/`) | Esquema do PocketBase SQLite e purga automática de salas inativas após 15 min.               |
-| **Regras e Restrições para Agentes**         | `AGENTS.md`, `docs/agents/` e `.agents/`   | Proibições estritas, guias aprofundados e convenções do repositório.                         |
+| O que você precisa alterar / inspecionar     | Onde encontrar (Arquivo / Pasta)           | Responsabilidade Principal                                                                               |
+| :------------------------------------------- | :----------------------------------------- | :------------------------------------------------------------------------------------------------------- |
+| **Página inicial do projeto e índice**       | `README.md`                                | Apresentação do jogo, integrantes e sumário de navegação com links diretos.                              |
+| **SGDD consolidado da versão atual**         | `docs/sgdd/sgdd.md`                        | Short Game Design Document (Motta & Trigueiro, SBGames 2013) com texto corrido e listas de produção.     |
+| **Modelagem de Entidades abrangentes**       | `docs/entidades/entidades.md`              | As 5 grandes entidades conceituais (`Participante`, `Sessao`, `Artefato`, `Disputa`, etc.).              |
+| **Catálogo de Componentes atômicos**         | `docs/componentes/componentes.md`          | Os 18 componentes atômicos, matriz de associação com entidades e justificativas técnicas.                |
+| **Diagramas de Entidades e Componentes**     | `docs/diagramas/diagramas.md`              | Diagramas visuais em grid de entidades, instanciações e composição com componentes.                      |
+| **Paleta, tokens CSS, dark mode e temas**    | `src/routes/layout.css`                    | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos).             |
+| **Importação de fontes e head global**       | `src/app.html`                             | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).                   |
+| **Casca da aplicação e navegação**           | `src/routes/+layout.svelte`                | Estrutura comum que envolve todas as páginas e carrega os estilos globais.                               |
+| **Lobby de entrada e criação de sala**       | `src/routes/+page.svelte`                  | Tela inicial com Title Card, criação rápida de sala e entrada de apelido.                                |
+| **Arena principal do jogo (Partida)**        | `src/routes/[sala]/+page.svelte`           | Orquestração da sala, sincronização da partida e renderização das fases.                                 |
+| **Camada de Input (Intenção & Sanitização)** | `src/lib/engine/input/`                    | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts).                    |
+| **Camada de Update (Máquina de Estados)**    | `src/lib/engine/update/`                   | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).                   |
+| **Camada de Render (Projeções UI)**          | `src/lib/engine/render/`                   | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts).                     |
+| **Orquestrador do Motor Canônico**           | `src/lib/engine/game-engine.ts`            | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições.                      |
+| **Controlador do Slider (POO)**              | `src/lib/controllers/drag-controller.ts`   | (Planejado para Fase 2) Cálculo de arrasto, limites percentuais [0, 100], sensibilidade ao toque e snap. |
+| **Backend, Migrações e Hooks Autoritativos** | `backend/` (`pb_migrations/`, `pb_hooks/`) | Esquema do PocketBase SQLite, hooks de regras de pontuação e purga automática de salas.                  |
+| **Regras e Restrições para Agentes**         | `AGENTS.md`, `docs/agents/` e `.agents/`   | Proibições estritas, guias aprofundados e convenções do repositório.                                     |
 
 ---
 
@@ -103,7 +108,7 @@ O motor do jogo adota o desacoplamento estrito do game loop canônico:
 
 ## 7. Roadmap de Desenvolvimento
 
-### Fase 1: Fundação & Migração para Svelte Nativo (Concluída)
+### Fase 1: Fundação, Migração e Especificações Acadêmicas (Concluída)
 
 - [x] Definição conceitual e validação do game loop via Pitch.
 - [x] Backend PocketBase configurado com migrações declarativas e hooks de limpeza.
@@ -111,6 +116,7 @@ O motor do jogo adota o desacoplamento estrito do game loop canônico:
 - [x] Eliminar completamente o runner de p5.js, o iframe e códigos de portfólio.
 - [x] Implementar sistema de tokens com as paletas Light e Dark e as 4 famílias tipográficas.
 - [x] Implementar o motor desacoplado com arquitetura Input $\rightarrow$ Update $\rightarrow$ Render em TypeScript nativo.
+- [x] Formalização do SGDD acadêmico, modelagem de Entidades abrangentes e catálogo de Componentes atômicos.
 
 ### Fase 2: Componentes Compostos e Core Loop (Em Andamento)
 
@@ -120,6 +126,7 @@ O motor do jogo adota o desacoplamento estrito do game loop canônico:
 - [x] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
 - [x] Implementar algoritmo de proximidade com faixas de acerto (+4, +3, +2, 0) testado com `bun test`.
 - [ ] Minijogo de Pedra, Papel e Tesoura refatorado em Svelte puro para decisão de turno.
+- [ ] Portabilidade autoritativa dos hooks para Go nativo com PocketBase estendido, adequando o backend à arquitetura de Entidades e Componentes atômicos.
 
 ### Fase 3: Polimento e Experiência de Jogo
 
