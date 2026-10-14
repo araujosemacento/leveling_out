@@ -3,7 +3,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { getBackendUrl } from '$lib/config/backend';
+	import { getBackendUrl, getProxySecret, getApiHeaders } from '$lib/config/backend';
 	import { GameEngine, type LobbyTeamChoice } from '$lib/engine';
 	import { sanitizeNickname } from '$lib/engine/input/sanitize';
 
@@ -42,7 +42,7 @@
 	let avisoTemporario = $state('');
 	let avisoTimeout: ReturnType<typeof setTimeout> | null = null;
 	let isStartingMatch = $state(false);
-	let backendUrl = $state('http://localhost:8090');
+	let backendUrl = $state(getBackendUrl());
 
 	// Instância desacoplada da GameEngine
 	let engine = $state<GameEngine | null>(null);
@@ -131,10 +131,10 @@
 					`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/ping`,
 					{
 						method: 'POST',
-						headers: {
+						headers: getApiHeaders({
 							'X-Player-Id': savedPlayerId,
 							'X-Session-Token': savedToken
-						}
+						})
 					}
 				);
 
@@ -184,7 +184,7 @@
 				`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/entrar`,
 				{
 					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
+					headers: getApiHeaders({ 'Content-Type': 'application/json' }),
 					body: JSON.stringify({
 						nome: nomeValidado
 					})
@@ -257,10 +257,10 @@
 					`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/ping`,
 					{
 						method: 'POST',
-						headers: {
+						headers: getApiHeaders({
 							'X-Player-Id': localPlayerId,
 							'X-Session-Token': sessionToken
-						}
+						})
 					}
 				);
 
@@ -288,7 +288,10 @@
 
 		try {
 			const res = await fetch(
-				`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/snapshot`
+				`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/snapshot`,
+				{
+					headers: getApiHeaders()
+				}
 			);
 
 			if (res.ok) {
@@ -344,7 +347,11 @@
 	function conectarRealtimePocketBase() {
 		try {
 			if (eventSource) eventSource.close();
-			eventSource = new EventSource(`${backendUrl}/api/realtime`);
+			const proxySec = getProxySecret();
+			const sseUrl = proxySec
+				? `${backendUrl}/api/realtime?x-proxy-secret=${encodeURIComponent(proxySec)}`
+				: `${backendUrl}/api/realtime`;
+			eventSource = new EventSource(sseUrl);
 
 			eventSource.addEventListener('PB_CONNECT', async (e: MessageEvent) => {
 				try {
@@ -353,7 +360,7 @@
 					if (clientId) {
 						await fetch(`${backendUrl}/api/realtime`, {
 							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
+							headers: getApiHeaders({ 'Content-Type': 'application/json' }),
 							body: JSON.stringify({
 								clientId,
 								subscriptions: ['salas/*', 'jogadores/*']
@@ -427,11 +434,11 @@
 				`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/equipe`,
 				{
 					method: 'POST',
-					headers: {
+					headers: getApiHeaders({
 						'Content-Type': 'application/json',
 						'X-Player-Id': localPlayerId,
 						'X-Session-Token': sessionToken
-					},
+					}),
 					body: JSON.stringify({ equipe: targetEquipe })
 				}
 			);
@@ -457,11 +464,11 @@
 				`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/iniciar`,
 				{
 					method: 'POST',
-					headers: {
+					headers: getApiHeaders({
 						'Content-Type': 'application/json',
 						'X-Player-Id': localPlayerId,
 						'X-Session-Token': sessionToken
-					},
+					}),
 					body: JSON.stringify({ playerId: localPlayerId })
 				}
 			);
@@ -498,10 +505,10 @@
 				`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/desfazer`,
 				{
 					method: 'POST',
-					headers: {
+					headers: getApiHeaders({
 						'X-Player-Id': localPlayerId,
 						'X-Session-Token': sessionToken
-					}
+					})
 				}
 			);
 

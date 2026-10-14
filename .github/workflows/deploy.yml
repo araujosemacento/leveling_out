@@ -38,7 +38,10 @@ jobs:
       - name: Build static site
         run: bun run build
         env:
-          BASE_PATH: '/portfolio_programacao_jogos'
+          BASE_PATH: '/leveling_out'
+          PUBLIC_ENVIRONMENT: 'production'
+          PUBLIC_PROD_URL: ${{ secrets.PUBLIC_PROD_URL }}
+          PUBLIC_PB_PROXY_SECRET: ${{ secrets.PUBLIC_PB_PROXY_SECRET }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

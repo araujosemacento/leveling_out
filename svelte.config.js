@@ -16,7 +16,7 @@ const config = {
 		paths: {
 			base: process.argv.includes('dev')
 				? ''
-				: (process.env.BASE_PATH ?? '/portfolio_programacao_jogos')
+				: (process.env.BASE_PATH ?? '/leveling_out')
 		}
 	}
 };
