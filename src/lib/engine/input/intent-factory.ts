@@ -5,26 +5,41 @@
  */
 
 import { clampGuess, sanitizeClue, sanitizeNickname } from './sanitize';
-import type { GameAction, PptMove, SpectrumCard, TeamId } from '../types';
+import type { GameAction, LobbyTeamChoice, PptMove, SpectrumCard } from '../types';
 
-export function createSetPlayerAction(id: string, rawNome: string, equipe: TeamId): GameAction {
+export function createSetPlayerAction(
+	id: string,
+	rawNome: string,
+	equipe: LobbyTeamChoice,
+	isHost?: boolean
+): GameAction {
 	return {
 		type: 'SET_PLAYER',
 		payload: {
 			id,
 			nome: sanitizeNickname(rawNome),
-			equipe
+			equipe,
+			isHost
 		}
 	};
 }
 
-export function createSwitchTeamAction(playerId: string, targetEquipe: TeamId): GameAction {
+export function createSwitchTeamAction(
+	playerId: string,
+	targetEquipe: LobbyTeamChoice
+): GameAction {
 	return {
 		type: 'SELECT_TEAM',
 		payload: {
 			playerId,
 			equipe: targetEquipe
 		}
+	};
+}
+
+export function createStartMatchAction(): GameAction {
+	return {
+		type: 'START_MATCH_INTENT'
 	};
 }
 

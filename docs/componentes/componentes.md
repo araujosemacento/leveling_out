@@ -59,13 +59,13 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 
 #### 1. `IdentidadeComponent`
 
-- **Atributos:** `id: string`, `nome: string`, `equipeId: 'A' | 'B'`.
-- **Comportamento:** Valida e sanitiza o apelido do jogador (limite de 20 caracteres alfanuméricos) e sua vinculação de equipe.
-- **Camada:** Compartilhada (Frontend para sessão local; Backend para integridade de banco).
+- **Atributos:** `id: string`, `nome: string`, `equipeId: 'A' | 'B' | 'ALEATORIO'`, `isHost: boolean`.
+- **Comportamento:** Valida e sanitiza o apelido do jogador (limite de 20 caracteres alfanuméricos), registra sua atribuição de equipe no lobby e identifica a prerrogativa de anfitrião (`isHost`) concedida ao criador/primeiro jogador da sala.
+- **Camada:** Compartilhada (Frontend para sessão local; Backend para integridade de banco e trava de quórum).
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go) (`ParticipantEntity`, campos `ID`, `Name` e `TeamID`).
-  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`Player`, `TeamId`) e [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeNickname`).
-- **Justificativa da Atomicidade:** Responsabilidade única de registrar _quem_ é a entidade.
+  - _Backend (Go):_ [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go) (`ParticipantEntity`, `Jogador`, campos `ID`, `Name`, `TeamID` e `IsHost`).
+  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`Player`, `LobbyTeamChoice`) e [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeNickname`).
+- **Justificativa da Atomicidade:** Responsabilidade única de registrar _quem_ é a entidade participante e seu status de autoridade de início no lobby.
 
 #### 2. `PresencaRedeComponent`
 

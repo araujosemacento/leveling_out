@@ -6,12 +6,14 @@
 
 import { calculateScore } from './score-rules';
 import { clampGuess, sanitizeClue, sanitizeNickname } from '../input/sanitize';
-import type { GameAction, GameState, TeamId } from '../types';
+import type { GameAction, GamePhase, GameState, TeamId } from '../types';
 
 export function createInitialGameState(salaCodigo: string): GameState {
 	return {
 		salaCodigo,
 		fase: 'LOBBY',
+		hostId: null,
+		jogadoresAleatorios: [],
 		equipes: {
 			A: {
 				id: 'A',
@@ -53,28 +55,33 @@ export function createInitialGameState(salaCodigo: string): GameState {
 export function gameReducer(state: GameState, action: GameAction): GameState {
 	switch (action.type) {
 		case 'SET_PLAYER': {
-			const { id, nome, equipe } = action.payload;
+			const { id, nome, equipe, isHost } = action.payload;
 			const cleanNome = sanitizeNickname(nome);
 
 			const updatedMembersA = state.equipes.A.membros.filter((m) => m.id !== id);
 			const updatedMembersB = state.equipes.B.membros.filter((m) => m.id !== id);
+			const updatedAleatorios = state.jogadoresAleatorios.filter((m) => m.id !== id);
 
-			const newPlayer = { id, nome: cleanNome, equipe, isOnline: true };
+			const newPlayer = { id, nome: cleanNome, equipe, isOnline: true, isHost };
 
 			if (equipe === 'A') {
 				updatedMembersA.push(newPlayer);
-			} else {
+			} else if (equipe === 'B') {
 				updatedMembersB.push(newPlayer);
+			} else {
+				updatedAleatorios.push(newPlayer);
 			}
 
 			return {
 				...state,
 				meuJogadorId: id,
 				minhaEquipe: equipe,
+				hostId: isHost ? id : state.hostId,
 				equipes: {
 					A: { ...state.equipes.A, membros: updatedMembersA },
 					B: { ...state.equipes.B, membros: updatedMembersB }
-				}
+				},
+				jogadoresAleatorios: updatedAleatorios
 			};
 		}
 
@@ -82,18 +89,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 			const { playerId, equipe } = action.payload;
 			const existingPlayer =
 				state.equipes.A.membros.find((m) => m.id === playerId) ||
-				state.equipes.B.membros.find((m) => m.id === playerId);
+				state.equipes.B.membros.find((m) => m.id === playerId) ||
+				state.jogadoresAleatorios.find((m) => m.id === playerId);
 
 			if (!existingPlayer) return state;
 
 			const updatedPlayer = { ...existingPlayer, equipe };
 			const updatedMembersA = state.equipes.A.membros.filter((m) => m.id !== playerId);
 			const updatedMembersB = state.equipes.B.membros.filter((m) => m.id !== playerId);
+			const updatedAleatorios = state.jogadoresAleatorios.filter((m) => m.id !== playerId);
 
 			if (equipe === 'A') {
 				updatedMembersA.push(updatedPlayer);
-			} else {
+			} else if (equipe === 'B') {
 				updatedMembersB.push(updatedPlayer);
+			} else {
+				updatedAleatorios.push(updatedPlayer);
 			}
 
 			return {
@@ -102,7 +113,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				equipes: {
 					A: { ...state.equipes.A, membros: updatedMembersA },
 					B: { ...state.equipes.B, membros: updatedMembersB }
-				}
+				},
+				jogadoresAleatorios: updatedAleatorios
+			};
+		}
+
+		case 'START_MATCH_INTENT': {
+			return {
+				...state,
+				fase: 'PPT_DISPUTA'
 			};
 		}
 
@@ -229,23 +248,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
 		case 'FULL_SYNC': {
 			const { sala, jogadores } = action.payload;
-			const fase = sala.fase || 'LOBBY';
+			let fase = (sala.fase as GamePhase) || 'LOBBY';
+			if ((sala.fase as string) === 'INICIATIVA') {
+				fase = 'PPT_DISPUTA';
+			}
 			const placarA = Number(sala.placar_a) || 0;
 			const placarB = Number(sala.placar_b) || 0;
 			const vencedor = (sala.vencedor as TeamId) || null;
 
 			const membrosA = (jogadores || []).filter((j) => j.equipe === 'A');
 			const membrosB = (jogadores || []).filter((j) => j.equipe === 'B');
+			const aleatorios = (jogadores || []).filter((j) => j.equipe !== 'A' && j.equipe !== 'B');
 
 			return {
 				...state,
 				fase,
+				hostId: sala.host_id ?? state.hostId,
 				vencedor,
 				equipeAtiva: sala.equipe_da_vez || state.equipeAtiva,
 				equipes: {
 					A: { ...state.equipes.A, pontos: placarA, membros: membrosA },
 					B: { ...state.equipes.B, pontos: placarB, membros: membrosB }
 				},
+				jogadoresAleatorios: aleatorios,
 				rodadaAtual: {
 					...state.rodadaAtual,
 					numero: Number(sala.rodada_atual) || 1
@@ -257,13 +282,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 			const { jogadores } = action.payload;
 			const membrosA = jogadores.filter((j) => j.equipe === 'A');
 			const membrosB = jogadores.filter((j) => j.equipe === 'B');
+			const aleatorios = jogadores.filter((j) => j.equipe !== 'A' && j.equipe !== 'B');
 
 			return {
 				...state,
 				equipes: {
 					A: { ...state.equipes.A, membros: membrosA },
 					B: { ...state.equipes.B, membros: membrosB }
-				}
+				},
+				jogadoresAleatorios: aleatorios
 			};
 		}
 

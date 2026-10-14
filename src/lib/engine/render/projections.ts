@@ -7,7 +7,7 @@
  * meta secreta para o palpiteiro durante a fase de adivinhação).
  */
 
-import type { GameState, Player, PlayerRole, TeamId } from '../types';
+import type { GameState, LobbyTeamChoice, Player, PlayerRole, TeamId } from '../types';
 
 export interface TubeProjection {
 	nivelLiquido: number;
@@ -265,5 +265,71 @@ export function getRoundSpectrumProjection(state: GameState): SpectrumProjection
 		numeroRodada: numero,
 		equipeAtiva,
 		equipeAtivaNome
+	};
+}
+
+export interface LobbyProjection {
+	membrosCorvo: Player[];
+	membrosAguia: Player[];
+	membrosAleatorio: Player[];
+	totalJogadores: number;
+	quorumCompleto: boolean;
+	isHost: boolean;
+	minhaEquipe: LobbyTeamChoice | null;
+	podeIniciarPartida: boolean;
+	podeEscolherCorvo: boolean;
+	podeEscolherAguia: boolean;
+	podeEscolherAleatorio: boolean;
+	statusTexto: string;
+}
+
+/**
+ * Projeta as equipes, membros, elegibilidade de quórum e autoridade de início do Lobby.
+ */
+export function getLobbyProjection(state: GameState, meuJogadorId: string | null): LobbyProjection {
+	const membrosCorvo = state.equipes.A.membros;
+	const membrosAguia = state.equipes.B.membros;
+	const membrosAleatorio = state.jogadoresAleatorios || [];
+
+	const totalJogadores = membrosCorvo.length + membrosAguia.length + membrosAleatorio.length;
+	const quorumCompleto = totalJogadores === 4;
+
+	const todosJogadores = [...membrosCorvo, ...membrosAguia, ...membrosAleatorio];
+	const meuJogador = todosJogadores.find((j) => j.id === meuJogadorId);
+	const minhaEquipe = meuJogador ? meuJogador.equipe : state.minhaEquipe;
+
+	// O jogador é considerado host se tiver isHost marcado, ou se seu ID for igual a state.hostId, ou se for o primeiro
+	const isHost = Boolean(
+		meuJogador?.isHost ||
+		(state.hostId && meuJogadorId && state.hostId === meuJogadorId) ||
+		(!state.hostId && todosJogadores.length > 0 && todosJogadores[0].id === meuJogadorId)
+	);
+
+	// Regras de lotação máxima: no máximo 2 integrantes por equipe (A ou B)
+	const podeEscolherCorvo = membrosCorvo.length < 2 || minhaEquipe === 'A';
+	const podeEscolherAguia = membrosAguia.length < 2 || minhaEquipe === 'B';
+	const podeEscolherAleatorio = true;
+
+	const podeIniciarPartida = isHost && quorumCompleto;
+
+	const statusTexto = quorumCompleto
+		? isHost
+			? 'Quórum atingido! Você pode iniciar a partida agora.'
+			: 'Quórum de 4 jogadores atingido! Aguardando o anfitrião iniciar a partida...'
+		: `Aguardando jogadores (${totalJogadores}/4)... Clique em uma caixa para escolher sua equipe`;
+
+	return {
+		membrosCorvo,
+		membrosAguia,
+		membrosAleatorio,
+		totalJogadores,
+		quorumCompleto,
+		isHost,
+		minhaEquipe,
+		podeIniciarPartida,
+		podeEscolherCorvo,
+		podeEscolherAguia,
+		podeEscolherAleatorio,
+		statusTexto
 	};
 }

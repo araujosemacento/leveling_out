@@ -22,9 +22,11 @@ Identifique todos os repositórios Git presentes no diretório de trabalho atual
 
 1. **Repositório Principal/Raiz:**
    Execute no diretório atual:
+
    ```bash
    git rev-parse --show-toplevel 2>/dev/null
    ```
+
 2. **Repositórios Aninhados e Submódulos:**
    Procure pastas filhas contendo diretórios `.git` ou arquivos de ponte de submódulo:
 
@@ -43,10 +45,13 @@ Identifique todos os repositórios Git presentes no diretório de trabalho atual
 Para **cada** repositório identificado no Passo 1:
 
 1. Obtenha a visão geral dos arquivos modificados, adicionados, renomeados ou deletados:
+
    ```bash
    git -C <caminho_do_repo> status -s
    ```
+
 2. Inspecione o conteúdo das diferenças (tanto arquivos em _stage_ quanto fora dele):
+
    ```bash
    # Diferenças de arquivos já modificados/rastreados
    git -C <caminho_do_repo> diff HEAD
@@ -54,6 +59,7 @@ Para **cada** repositório identificado no Passo 1:
    # Para alterações já preparadas (staged)
    git -C <caminho_do_repo> diff --cached
    ```
+
 3. Se houver arquivos novos não rastreados (`??`), examine brevemente seu propósito e estrutura através de comandos de leitura de arquivo ou busca.
 
 Se um repositório estiver limpo (sem nenhuma alteração pendente), informe explicitamente que ele não possui modificações para commit.
@@ -103,6 +109,7 @@ Para cada repositório com alterações, formate a saída com a seguinte estrutu
 
 3. **Comando Git Sugerido:**
    - Comando pronto para copiar e colar com o sumário no primeiro `-m` e o corpo completo (parágrafo + principais alterações) no segundo `-m`:
+
    ```bash
    git -C <caminho_do_repo> add <arquivos_ou_.>
    git -C <caminho_do_repo> commit -m "<tipo>(<escopo>): <sumario_curto>" -m "<Parágrafo conciso de contextualização.
@@ -113,9 +120,6 @@ Principais alterações:
 1. <Primeira alteração técnica>
 2. <Segunda alteração técnica>
 3. <Terceira alteração técnica>"
-   ```
-
-   ```
 
 ---
 

@@ -8,6 +8,7 @@ import {
 	createRematchAction,
 	createSelectSpectrumAction,
 	createSetPlayerAction,
+	createStartMatchAction,
 	createSubmitClueAction,
 	createSubmitGuessAction,
 	createSubmitPptAction,
@@ -15,17 +16,27 @@ import {
 	createUpdateSliderAction
 } from './input';
 import {
+	getLobbyProjection,
 	getPlayerRoleProjection,
 	getRoundSpectrumProjection,
 	getScoreBoardProjection,
 	getTubeProjection,
+	type LobbyProjection,
 	type PlayerRoleProjection,
 	type ScoreBoardProjection,
 	type SpectrumProjection,
 	type TubeProjection
 } from './render';
 import { createInitialGameState, gameReducer } from './update';
-import type { GameAction, GameState, Player, PptMove, SpectrumCard, TeamId } from './types';
+import type {
+	GameAction,
+	GameState,
+	LobbyTeamChoice,
+	Player,
+	PptMove,
+	SpectrumCard,
+	TeamId
+} from './types';
 
 export type StateListener = (state: GameState, action: GameAction) => void;
 
@@ -82,12 +93,16 @@ export class GameEngine {
 	// Fase de Input: Normalização e Disparo de Intenções do Jogador
 	// =========================================================================
 
-	public setPlayer(id: string, nome: string, equipe: TeamId): void {
-		this.dispatch(createSetPlayerAction(id, nome, equipe));
+	public setPlayer(id: string, nome: string, equipe: LobbyTeamChoice, isHost?: boolean): void {
+		this.dispatch(createSetPlayerAction(id, nome, equipe, isHost));
 	}
 
-	public selectTeam(playerId: string, equipe: TeamId): void {
+	public selectTeam(playerId: string, equipe: LobbyTeamChoice): void {
 		this.dispatch(createSwitchTeamAction(playerId, equipe));
+	}
+
+	public startMatch(): void {
+		this.dispatch(createStartMatchAction());
 	}
 
 	public submitPptMove(move: PptMove): void {
@@ -181,5 +196,9 @@ export class GameEngine {
 
 	public getSpectrumProjection(): SpectrumProjection {
 		return getRoundSpectrumProjection(this.state);
+	}
+
+	public getLobbyProjection(playerId: string | null = this.state.meuJogadorId): LobbyProjection {
+		return getLobbyProjection(this.state, playerId);
 	}
 }

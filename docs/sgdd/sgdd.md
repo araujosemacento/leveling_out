@@ -58,7 +58,8 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 - [ ] Tela de Lobby Multiplayer
 - [ ] Identificador de Sala em fonte Fira Code
 - [ ] Botão de Copiar Link de Convite com estado reativo de confirmação
-- [ ] Painel de Divisão de Equipes: Corvo (Equipe A) e Águia (Equipe B)
+- [ ] Painel Tripartite de Escolha de Equipes (Corvo, Aleatório em tons de cinza e Águia com watermarks dedicadas)
+- [ ] Botão de Iniciar Partida exclusivo do anfitrião (verde com ícone à direita e quórum de 4 jogadores)
 - [ ] Arena de Minijogo de Iniciativa (PPT)
 - [ ] Três botões com ícones vetoriais de Pedra, Papel e Tesoura
 - [ ] Tela de Escolha de Espectro
@@ -85,6 +86,7 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 - [ ] Geração dinâmica de slug de sala na URL (`/[sala]`) e inserção no banco de dados SQLite
 - [ ] Cópia para a área de transferência (`navigator.clipboard.writeText`) com feedback visual temporário
 - [ ] Sincronização de presença de jogadores em tempo real via Server-Sent Events (SSE)
+- [ ] Controle autoritativo de quórum (máx 4 jogadores por sala e máx 2 por equipe), sorteio estocástico de aleatórios e início pelo host
 - [ ] Envio de intenções tipadas (`GameAction`) via REST para o backend
 - [ ] Rota autoritativa POST `/api/ppt/lance` e arbitragem em memória thread-safe (`$app.store()`)
 - [ ] Resolução de confronto de PPT com desempate e reemissão automática

@@ -126,6 +126,7 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 - [ ] Criar o componente `AnalogSlider.svelte` integrando a classe composível `SliderDragController`.
 - [x] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
 - [x] Implementar algoritmo de proximidade com faixas de acerto (+4, +3, +2, 0) testado com `bun test`.
+- [ ] Implementar divisão tripartite de equipes no Lobby (Corvo, Aleatório, Águia), controle de quórum de 4 jogadores e início autoritativo pelo anfitrião.
 - [ ] Minijogo de Pedra, Papel e Tesoura refatorado em Svelte puro para decisão de turno.
 - [x] Portabilidade autoritativa dos hooks para Go nativo com PocketBase estendido, adequando o backend à arquitetura de Entidades e Componentes atômicos.
 

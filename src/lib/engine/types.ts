@@ -15,6 +15,8 @@ export type GamePhase =
 
 export type TeamId = 'A' | 'B';
 
+export type LobbyTeamChoice = 'A' | 'B' | 'ALEATORIO';
+
 export type PlayerRole = 'CODIFICADOR' | 'PALPITEIRO' | 'ESPECTADOR';
 
 export type PptMove = 'pedra' | 'papel' | 'tesoura';
@@ -39,8 +41,9 @@ export interface ScoreResult {
 export interface Player {
 	id: string;
 	nome: string;
-	equipe: TeamId;
+	equipe: LobbyTeamChoice;
 	isOnline: boolean;
+	isHost?: boolean;
 	lastSeen?: string;
 }
 
@@ -72,14 +75,16 @@ export interface RoundState {
 export interface GameState {
 	salaCodigo: string;
 	fase: GamePhase;
+	hostId: string | null;
 	equipes: Record<TeamId, TeamState>;
+	jogadoresAleatorios: Player[];
 	equipeAtiva: TeamId;
 	rodadaAtual: RoundState;
 	historicoRodadas: RoundState[];
 	metaPontuacao: number;
 	vencedor: TeamId | null;
 	meuJogadorId: string | null;
-	minhaEquipe: TeamId | null;
+	minhaEquipe: LobbyTeamChoice | null;
 }
 
 /**
@@ -88,8 +93,12 @@ export interface GameState {
  */
 export type GameAction =
 	// Intenções de entrada local do usuário
-	| { type: 'SET_PLAYER'; payload: { id: string; nome: string; equipe: TeamId } }
-	| { type: 'SELECT_TEAM'; payload: { playerId: string; equipe: TeamId } }
+	| {
+			type: 'SET_PLAYER';
+			payload: { id: string; nome: string; equipe: LobbyTeamChoice; isHost?: boolean };
+	  }
+	| { type: 'SELECT_TEAM'; payload: { playerId: string; equipe: LobbyTeamChoice } }
+	| { type: 'START_MATCH_INTENT' }
 	| { type: 'SUBMIT_PPT_INTENT'; payload: { move: PptMove } }
 	| { type: 'SELECT_SPECTRUM_INTENT'; payload: { carta: SpectrumCard } }
 	| { type: 'SUBMIT_CLUE_INTENT'; payload: { dica: string } }
@@ -102,7 +111,8 @@ export type GameAction =
 			payload: {
 				sala: {
 					codigo: string;
-					fase: GamePhase;
+					fase: GamePhase | string;
+					host_id?: string | null;
 					placar_a: number;
 					placar_b: number;
 					equipe_da_vez?: TeamId;

@@ -21,7 +21,9 @@ A arquitetura de _Leveling Out_ traduz o Game Loop clássico de motores de jogo 
 
 ### 1.2. Fase de Update (Servidor Autoritário / PocketBase)
 
-- **Autoritarismo de Estado:** A verdade do jogo reside exclusivamente nos hooks de backend do PocketBase (`backend/pb_hooks/game_rules.pb.js` e `iniciativa.pb.js`).
+- **Autoritarismo de Estado:** A verdade do jogo reside exclusivamente no servidor PocketBase (hooks e framework Go nativo).
+- **Gestão Autoritativa do Lobby e Quórum:** O servidor monitora a criação e atualização de registros na coleção `jogadores`. O primeiro participante a entrar é registrado como anfitrião (`is_host: true` e `host_id` na sala). O quórum é limitado estritamente a 4 integrantes por sala, e as equipes Corvo (`A`) e Águia (`B`) possuem limite rígido de 2 integrantes cada. A opção neutra `ALEATORIO` acolhe jogadores indecisos.
+- **Sorteio Estocástico e Inicialização (`POST /api/leveling/salas/{codigo}/iniciar`):** Endpoint exclusivo acionado pelo anfitrião quando o quórum atinge exatamente 4 jogadores. O backend valida a identidade do requisitante (`X-Player-Id`), embaralha criptograficamente (`crypto/rand`) os participantes em `ALEATORIO`, completa as vagas remanescentes de cada equipe para totalizar 2 em cada lado e transiciona a sala para a fase `INICIATIVA`.
 - **Geração de Segredos:** Sorteio seguro de metas ocultas no tubo de ensaio ($5\%$ a $95\%$).
 - **Cálculo Oficial:** Comparação matemática $|\text{meta} - \text{palpite}|$ e distribuição de pontos (+4, +3, +2, 0) na coleção de rodadas e salas.
 - **Resolução de Conflitos:** Arbitragem em memória thread-safe (`$app.store()`) de lances simultâneos de Pedra, Papel e Tesoura.

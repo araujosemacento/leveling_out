@@ -14,7 +14,7 @@
 			team="corvo"
 			showScale={true}
 			animated={true}
-			duration={5}
+			duration={10}
 			interactiveShake={true}
 			cycleHue={true}
 			class="h-32 w-auto sm:h-40"

@@ -38,16 +38,17 @@ Representa qualquer participante ou grupo de participantes com agência social e
 
 - **Papéis Abrangidos:**
   - _Ator Individual:_ O jogador humano utilizando seu navegador.
+  - _Anfitrião da Sessão (`Host`):_ Primeiro participante registrado na sala, dotado da prerrogativa autoritativa de disparar a partida após o preenchimento de todas as 4 vagas da sala.
   - _Codificador da Rodada:_ O participante ativo encarregado de observar o nível secreto e redigir a pista.
   - _Palpiteiro da Rodada:_ O participante ativo encarregado de ler a pista e deslizar o marcador analógico.
   - _Espectador Conectado:_ Jogadores da equipe inativa ou participantes observando a resolução da rodada.
-  - _Coletivo Competitivo (Equipe):_ A congregação de membros sob os ícones Corvo (Equipe A) ou Águia (Equipe B), detentora da pontuação coletiva e do _momentum_.
+  - _Coletivo Competitivo (Equipe):_ A congregação de membros sob os ícones Corvo (Equipe A) ou Águia (Equipe B), detentora da pontuação coletiva e do _momentum_, além do agrupamento neutro transitório (`ALEATORIO`) para sorteio de vagas.
 - **Especialização na Instanciação:**
-  - Instância `Jogador`: recebe componentes de identidade individual, presença de rede e papéis dinâmicos de turno.
+  - Instância `Jogador`: recebe componentes de identidade individual, presença de rede, status de anfitrião e papéis dinâmicos de turno.
   - Instância `Equipe`: recebe componentes de agrupamento, acumulação de placar e controle de posse de turno.
 - **Mapeamento de Arquivos no Código:**
-  - _Backend (Go):_ [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go) (estruturas `ParticipantEntity`, `PlayerState` e métodos de agregação de equipe).
-  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (tipos discriminados `Player`, `TeamId`, `TeamSummary`) e [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeNickname`).
+  - _Backend (Go):_ [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go) (estruturas `ParticipantEntity`, `Jogador`, `PlayerState` e métodos de agregação de equipe).
+  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (tipos discriminados `Player`, `TeamId`, `LobbyTeamChoice`, `TeamSummary`) e [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeNickname`).
 
 ---
 
@@ -56,11 +57,11 @@ Representa qualquer participante ou grupo de participantes com agência social e
 Representa o contêiner espacial e temporal da experiência multijogador, orquestrando desde a criação do ambiente compartilhado até as iterações cíclicas de jogo.
 
 - **Papéis Abrangidos:**
-  - _Sala de Conexão (Lobby):_ Ponto de encontro distribuído associado a um código de slug (`/[sala]`), permitindo entrada via URL.
+  - _Sala de Conexão (Lobby):_ Ponto de encontro distribuído associado a um código de slug (`/[sala]`), gerenciando capacidade rigorosa de 4 participantes no total e no máximo 2 integrantes por equipe definida.
   - _Partida Global:_ Orquestrador do macro-estado do jogo (da disputa inicial de iniciativa até a celebração da vitória).
   - _Rodada Operacional:_ Ciclo micro-temporal da jogada atual (início, dica, palpite, revelação e cálculo de pontuação).
 - **Especialização na Instanciação:**
-  - Instância `SalaMatch`: orquestra a máquina de estados global, a reconciliação de conexões e a persistência no PocketBase.
+  - Instância `SalaMatch`: orquestra o quórum de 4 jogadores, a identificação do anfitrião (`host_id`), a máquina de estados global, o sorteio estocástico de equipes e a persistência no PocketBase.
   - Instância `RodadaCiclo`: orquestra o índice numérico da rodada, os ponteiros para a equipe da vez e o histórico de rodadas passadas.
 - **Mapeamento de Arquivos no Código:**
   - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (estrutura `SessionEntity`, controle de fases `GamePhase` e métodos de avanço de turno).
