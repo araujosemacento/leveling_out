@@ -26,6 +26,7 @@ Todo código, estilo ou modificação submetida neste repositório deve respeita
 6. **Sem Travessões como Separadores:** Proibido utilizar travessões (`–`, `—`) ou hífen como separador de títulos ou textos de interface. Utilize dois-pontos (`:`), barras (`/`) ou formulação textual contínua.
 7. **Sem Bullets Decorativos:** Proibido utilizar marcadores como `●`, `○`, `•`, `▪`, `✓` ou círculos decorativos (`rounded-full` em pings de status).
 8. **TypeScript Nativo:** Toda a lógica de motor, controladores, modelos de dados e testes deve ser estritamente tipada em TypeScript (`.ts`), com ações modeladas por uniões discriminadas.
+9. **Proibição de Commits e Pushes Autônomos:** Agentes de IA são expressamente proibidos de executar comandos de commit (`git commit`), criação de tags (`git tag`) ou envio para remotos (`git push`) de forma autônoma. A responsabilidade do agente restringe-se a fornecer propostas de sumário, descrição detalhada e o comando git sugerido pronto para que o desenvolvedor humano execute a ação por conta própria.
 
 ---
 
@@ -60,24 +61,25 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 
 ## 4. Síntese de Localização Rápida (Onde Encontrar Cada Coisa)
 
-| O que você precisa alterar / inspecionar     | Onde encontrar (Arquivo / Pasta)           | Responsabilidade Principal                                                                               |
-| :------------------------------------------- | :----------------------------------------- | :------------------------------------------------------------------------------------------------------- |
-| **Página inicial do projeto e índice**       | `README.md`                                | Apresentação do jogo, integrantes e sumário de navegação com links diretos.                              |
-| **SGDD consolidado da versão atual**         | `docs/sgdd/sgdd.md`                        | Short Game Design Document (Motta & Trigueiro, SBGames 2013) com texto corrido e listas de produção.     |
-| **Modelagem de Entidades abrangentes**       | `docs/entidades/entidades.md`              | As 5 grandes entidades conceituais (`Participante`, `Sessao`, `Artefato`, `Disputa`, etc.).              |
-| **Catálogo de Componentes atômicos**         | `docs/componentes/componentes.md`          | Os 18 componentes atômicos, matriz de associação com entidades e justificativas técnicas.                |
-| **Diagramas de Entidades e Componentes**     | `docs/diagramas/diagramas.md`              | Diagramas visuais em grid de entidades, instanciações e composição com componentes.                      |
-| **Paleta, tokens CSS, dark mode e temas**    | `src/routes/layout.css`                    | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos).             |
-| **Importação de fontes e head global**       | `src/app.html`                             | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).                   |
-| **Casca da aplicação e navegação**           | `src/routes/+layout.svelte`                | Estrutura comum que envolve todas as páginas e carrega os estilos globais.                               |
-| **Lobby de entrada e criação de sala**       | `src/routes/+page.svelte`                  | Tela inicial com Title Card, criação rápida de sala e entrada de apelido.                                |
-| **Arena principal do jogo (Partida)**        | `src/routes/[sala]/+page.svelte`           | Orquestração da sala, sincronização da partida e renderização das fases.                                 |
-| **Camada de Input (Intenção & Sanitização)** | `src/lib/engine/input/`                    | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts).                    |
-| **Camada de Update (Máquina de Estados)**    | `src/lib/engine/update/`                   | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).                   |
-| **Camada de Render (Projeções UI)**          | `src/lib/engine/render/`                   | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts).                     |
-| **Orquestrador do Motor Canônico**           | `src/lib/engine/game-engine.ts`            | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições.                      |
-| **Backend Autoritativo em Go Nativo**        | `backend/` (`cmd/server/`, `internal/`)    | Servidor estendendo PocketBase, Entidades de Domínio, Componentes Atômicos e rotas pass-through.         |
-| **Regras e Restrições para Agentes**         | `AGENTS.md`, `docs/agents/` e `.agents/`   | Proibições estritas, guias aprofundados e convenções do repositório.                                     |
+| O que você precisa alterar / inspecionar     | Onde encontrar (Arquivo / Pasta)         | Responsabilidade Principal                                                                           |
+| :------------------------------------------- | :--------------------------------------- | :--------------------------------------------------------------------------------------------------- |
+| **Página inicial do projeto e índice**       | `README.md`                              | Apresentação do jogo, integrantes e sumário de navegação com links diretos.                          |
+| **SGDD consolidado da versão atual**         | `docs/sgdd/sgdd.md`                      | Short Game Design Document (Motta & Trigueiro, SBGames 2013) com texto corrido e listas de produção. |
+| **Modelagem de Entidades abrangentes**       | `docs/entidades/entidades.md`            | As 5 grandes entidades conceituais (`Participante`, `Sessao`, `Artefato`, `Disputa`, etc.).          |
+| **Catálogo de Componentes atômicos**         | `docs/componentes/componentes.md`        | Os 18 componentes atômicos, matriz de associação com entidades e justificativas técnicas.            |
+| **Diagramas de Entidades e Componentes**     | `docs/diagramas/diagramas.md`            | Diagramas visuais em grid de entidades, instanciações e composição com componentes.                  |
+| **Paleta, tokens CSS, dark mode e temas**    | `src/routes/layout.css`                  | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos).         |
+| **Importação de fontes e head global**       | `src/app.html`                           | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).               |
+| **Casca da aplicação e navegação**           | `src/routes/+layout.svelte`              | Estrutura comum que envolve todas as páginas e carrega os estilos globais.                           |
+| **Lobby de entrada e criação de sala**       | `src/routes/+page.svelte`                | Tela inicial com Title Card, criação rápida de sala e entrada de apelido.                            |
+| **Arena principal do jogo (Partida)**        | `src/routes/[sala]/+page.svelte`         | Orquestração da sala, sincronização da partida e renderização das fases.                             |
+| **Componente do Tubo de Ensaio (SVG)**       | `src/lib/components/TestTube.svelte`     | Tubo procedural SVG, dupla camada de menisco contínuo e física de agitação tátil.                    |
+| **Camada de Input (Intenção & Sanitização)** | `src/lib/engine/input/`                  | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts).                |
+| **Camada de Update (Máquina de Estados)**    | `src/lib/engine/update/`                 | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).               |
+| **Camada de Render (Projeções UI)**          | `src/lib/engine/render/`                 | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts).                 |
+| **Orquestrador do Motor Canônico**           | `src/lib/engine/game-engine.ts`          | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições.                  |
+| **Backend Autoritativo em Go Nativo**        | `backend/` (`cmd/server/`, `internal/`)  | Servidor estendendo PocketBase, Entidades de Domínio, Componentes Atômicos e rotas pass-through.     |
+| **Regras e Restrições para Agentes**         | `AGENTS.md`, `docs/agents/` e `.agents/` | Proibições estritas, guias aprofundados e convenções do repositório.                                 |
 
 ---
 
@@ -120,7 +122,7 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 ### Fase 2: Componentes Compostos e Core Loop (Em Andamento)
 
 - [ ] Implementar alternância dinâmica e manual entre os temas Light e Dark com transição suave de cores.
-- [ ] Criar o componente `TestTube.svelte` em SVG procedural com física de líquido e menisco.
+- [x] Criar o componente `TestTube.svelte` em SVG procedural com física de líquido, menisco senoidal contínuo e easter egg interativo de chacoalho.
 - [ ] Criar o componente `AnalogSlider.svelte` integrando a classe composível `SliderDragController`.
 - [x] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
 - [x] Implementar algoritmo de proximidade com faixas de acerto (+4, +3, +2, 0) testado com `bun test`.
@@ -129,7 +131,8 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 
 ### Fase 3: Polimento e Experiência de Jogo
 
-- [ ] Criar ícone animado procedural da identidade visual (substituindo o placeholder atual do favicon).
+- [x] Criar ícone animado procedural da identidade visual (substituindo o placeholder do favicon no Title Card pelo `TestTube`).
+- [ ] Dinamizar a aceleração do menisco em função da pontuação acumulada das equipes (Canal do Fluxo / Modulador de Tensão: duração de 5.0s a 0.25s).
 - [ ] Animação da Revelação Dramática com cálculo de sintonia e preenchimento de placar.
 - [ ] Interface de Revanche imediata mantendo a sala e alternando posições.
 - [ ] Otimizações táteis e feedback háptico (`navigator.vibrate`) em dispositivos móveis.

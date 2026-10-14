@@ -62,10 +62,10 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 - [ ] Arena de Minijogo de Iniciativa (PPT)
 - [ ] Três botões com ícones vetoriais de Pedra, Papel e Tesoura
 - [ ] Tela de Escolha de Espectro
-- [ ] Carta de Espectro Bipolar com polos conceituais opostos
-- [ ] Tubo de Ensaio Procedural em SVG com graduação de 10% em 10%
-- [ ] Renderização de Líquido Procedural em SVG com menisco curvo
+- [x] Tubo de Ensaio Procedural em SVG com graduação de 10% em 10% (TestTube.svelte)
+- [x] Renderização de Líquido Procedural em SVG com dupla camada de menisco senoidal contínuo
 - [ ] Animação vetorial contínua de micro-borbulhas de fluido
+- [ ] Modulador de Tensão Visual: aceleração do menisco em função dos pontos da equipe (5.0s a 0.25s)
 - [ ] Mensagem de Status de Ocultamento de Visão da Meta
 - [ ] Campo de Entrada de Dica Contextualizada com contador de caracteres
 - [ ] Balão de Fala de Exibição da Pista Enviada
@@ -96,6 +96,8 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 - [ ] Controlador de física e arrasto analógico (`SliderDragController`) com clamp matemático em [0, 100]
 - [ ] Acionamento de feedback háptico por vibração móvel (`navigator.vibrate`) a cada dezena percorrida
 - [ ] Submissão do palpite e transmissão via SSE da fase de revelação para todos os clientes
+- [x] Integração temporal contínua da fase do menisco (requestAnimationFrame) e física aditiva de agitação no lobby
+- [ ] Dinamização da velocidade da onda do menisco em função do placar da equipe (5.0s a 0.25s)
 - [ ] Animação vetorial SVG do menisco subindo até o valor real do líquido
 - [ ] Algoritmo autoritativo de acerto aproximado por faixas de tolerância (|meta - palpite|: <=2%, <=6%, <=12%, >12%)
 - [ ] Atualização autoritativa em cascata dos placares na coleção `salas`

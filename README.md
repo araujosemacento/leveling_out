@@ -27,10 +27,12 @@ Para garantir legibilidade e organização modular na entrega da disciplina, a e
 - [Front-end / Client Engine (src/)](src/): Interface do usuário em SvelteKit e motor cliente. Responsável exclusivo pela captura de **Input** e pela apresentação de **Render**, além da reconciliação de estado.
 - [Back-end / Server Engine (backend/)](backend/): Motor autoritativo autohospedado em PocketBase (SQLite + Goja, com migração planejada para Go puro). Responsável exclusivo pela fase de **Update** autoritária, regras de validação Zero Trust e resolução de confrontos via componentes atômicos.
 
-### 3. Recursos Estáticos e Design (static/)
+### 3. Recursos Estáticos e Assets (`static/`)
 
-- [Recursos Estáticos Públicos (static/)](static/): Fontes tipográficas, ilustrações, favicons e sons do jogo, servidos nativamente pelo Vite e SvelteKit.
-- [Diretrizes de Estilo e Cores (docs/agents/style-guide.md)](docs/agents/style-guide.md): Especificação do sistema de design, paletas Light e Dark e taxonomia tipográfica.
+> **Nota sobre a Pasta de Assets:** Por exigência e convenção técnica do framework **SvelteKit** e do bundler **Vite**, o diretório de recursos estáticos não-processados (imagens, favicons, sons e fontes) chama-se obrigatoriamente **`static/`** na raiz do projeto (correspondendo exatamente à pasta `assets/` sugerida nas diretrizes de entrega). Os arquivos aqui contidos são servidos de forma direta na raiz pública sem hashing ou recompilação.
+
+- [Recursos Estáticos e Mídias (static/)](static/): Fontes tipográficas, ilustrações, favicons e sons do jogo.
+- [Diretrizes de Estilo, Tipografia e Cores (docs/agents/style-guide.md)](docs/agents/style-guide.md): Especificação do sistema de design, paletas Light e Dark e taxonomia tipográfica.
 
 ---
 
@@ -38,21 +40,28 @@ Para garantir legibilidade e organização modular na entrega da disciplina, a e
 
 O desenvolvimento de _Leveling Out_ adota duas diretrizes arquiteturais essenciais:
 
-### 1. O Game Loop como Sistema Distribuído
+### 1. O Game Loop como Sistema Distribuído (Zero Trust)
 
 O ciclo de vida do jogo é desacoplado entre cliente e servidor sob a cadência canônica do Game Loop:
 
-- **Input (Cliente / Front-end):** Captura interações analógicas (arrasto do slider, toques, seleção de lances no PPT), sanitiza entradas contra injeção e emite intenções tipadas (`GameAction`) para a rede.
-- **Update (Servidor / Back-end PocketBase):** O servidor detém a verdade autoritativa soberana. Ele sorteia as metas ocultas de forma segura (Zero Trust), arbitra disputas e calcula a pontuação por proximidade. Nenhuma pontuação é definida pelo cliente.
-- **Sincronização / Reconciliação (Cliente):** A máquina de estados cliente (`GameEngine`) não toma decisões autônomas de regras; ela atua como ouvinte reativo de Server-Sent Events (SSE), atualizando a réplica local para sincronizar as mudanças decididas pelo servidor entre todos os jogadores.
-- **Render (Cliente / Front-end):** A interface em Svelte 5 atua como uma função pura do estado recebido ($UI = f(State)$), projetando visualmente o tubo de ensaio, os marcadores e os placares.
+- **Input (Cliente / Front-end - `src/lib/engine/input/`):** Captura interações analógicas (arrasto do slider, toques, seleção de lances no PPT), sanitiza entradas contra injeção (`sanitize.ts`) e despacha intenções tipadas (`intent-factory.ts`) para a rede.
+- **Update (Servidor / Back-end Go PocketBase - `backend/`):** O servidor detém autoridade soberana e exclusiva sobre a integridade da partida. Ele sorteia a `meta_oculta` de forma criptograficamente segura (Zero Trust), arbitra disputas de PPT e calcula pontuações oficiais por proximidade. Nenhuma pontuação é definida pelo cliente.
+- **Sincronização / Reconciliação (Cliente - `src/lib/engine/update/`):** A máquina de estados cliente (`state-machine.ts` / `GameEngine`) atua unicamente como ouvinte reativo de Server-Sent Events (SSE), reconciliando o estado local determinístico sem decidir regras por conta própria.
+- **Render (Cliente / Front-end - `src/lib/engine/render/` e `src/lib/components/`):** A interface em Svelte 5 atua como uma projeção pura do estado recebido ($UI = f(State)$ em `projections.ts`), projetando o tubo de ensaio procedural (`TestTube.svelte`), o marcador analógico e os placares.
 
-### 2. Entidades Abrangentes e Componentes Atômicos
+### 2. Onde Encontrar as Entidades e Componentes no Código
 
-Inspirado na arquitetura de engines profissionais (como Godot e Unity):
+A tabela a seguir orienta a localização direta de cada entidade e componente atômico no repositório:
 
-- **Entidades Amplas:** Em vez de dezenas de classes isoladas, o domínio é estruturado em grandes entidades polimórficas que abrangem múltiplos papéis conceituais. A especialização ocorre na sua instanciação e na combinação de seus componentes.
-- **Componentes Atômicos:** Cada componente possui escopo pontual e responsabilidade única. São os componentes atômicos que verdadeiramente modelam e conferem capacidades e comportamentos a uma entidade.
+| Entidade Conceitual        | Instanciações de Domínio                              | Componentes Atômicos Associados                                                                                                         | Implementação no Backend (Go)                                                                                                                                                                                                                                          | Implementação no Frontend (TS/Svelte)                                                                                                                                                                                                      |
+| :------------------------- | :---------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`EntidadeParticipante`** | Jogador Individual, Equipe                            | `IdentidadeComponent`<br>`PresencaRedeComponent`<br>`PapelTurnoComponent`<br>`AcumuladorPontosComponent`                                | [`backend/internal/entities/participant.go`](backend/internal/entities/participant.go)<br>[`backend/internal/components/cleanup.go`](backend/internal/components/cleanup.go)                                                                                           | [`src/lib/engine/input/sanitize.ts`](src/lib/engine/input/sanitize.ts)<br>[`src/lib/engine/render/projections.ts`](src/lib/engine/render/projections.ts)                                                                                   |
+| **`EntidadeSessao`**       | SalaMatch (Lobby), RodadaAtiva                        | `CicloFasesComponent`<br>`ProgressaoRodadaComponent`<br>`ReconciliacaoRedeComponent`                                                    | [`backend/internal/entities/session.go`](backend/internal/entities/session.go)                                                                                                                                                                                         | [`src/lib/engine/update/state-machine.ts`](src/lib/engine/update/state-machine.ts)<br>[`src/lib/engine/game-engine.ts`](src/lib/engine/game-engine.ts)                                                                                     |
+| **`EntidadeArtefato`**     | Tubo de Ensaio, Marcador Analógico, Carta de Espectro | `NivelLiquidoComponent`<br>`SigiloMetaComponent`<br>`ArrastoAnalogicoComponent`<br>`PolosSemanticosComponent`<br>`DicaTextualComponent` | [`backend/internal/components/secret_target.go`](backend/internal/components/secret_target.go)                                                                                                                                                                         | [`src/lib/components/TestTube.svelte`](src/lib/components/TestTube.svelte)<br>[`src/lib/engine/input/sanitize.ts`](src/lib/engine/input/sanitize.ts)<br>[`src/lib/engine/input/intent-factory.ts`](src/lib/engine/input/intent-factory.ts) |
+| **`EntidadeDisputa`**      | Disputa PPT, Aferição de Proximidade                  | `LancePptComponent`<br>`ArbitroPptComponent`<br>`RegraProximidadeComponent`                                                             | [`backend/internal/entities/contest.go`](backend/internal/entities/contest.go)<br>[`backend/internal/components/ppt_arbiter.go`](backend/internal/components/ppt_arbiter.go)<br>[`backend/internal/components/proximity.go`](backend/internal/components/proximity.go) | [`src/lib/engine/input/intent-factory.ts`](src/lib/engine/input/intent-factory.ts)<br>[`src/lib/engine/update/score-rules.ts`](src/lib/engine/update/score-rules.ts)                                                                       |
+| **`EntidadePlacar`**       | Corrida de Pontos, Painel de Celebração               | `BarraProgressoComponent`<br>`ModuladorTensaoComponent`<br>`DisparadorRevancheComponent`                                                | [`backend/internal/entities/session.go`](backend/internal/entities/session.go)                                                                                                                                                                                         | [`src/lib/engine/render/projections.ts`](src/lib/engine/render/projections.ts)<br>[`src/routes/[sala]/+page.svelte`](src/routes/[sala]/+page.svelte)                                                                                       |
+
+> Para o detalhamento conceitual de cada componente e entidade, consulte [docs/entidades/entidades.md](docs/entidades/entidades.md) e [docs/componentes/componentes.md](docs/componentes/componentes.md).
 
 ---
 

@@ -4,6 +4,7 @@ import js from '@eslint/js';
 import svelte from 'eslint-plugin-svelte';
 import { defineConfig, includeIgnoreFile } from 'eslint/config';
 import globals from 'globals';
+import ts from 'typescript-eslint';
 
 const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 
@@ -13,21 +14,28 @@ export default defineConfig([
 		ignores: ['static/**', 'build/**', '.svelte-kit/**', 'backend/**']
 	},
 	js.configs.recommended,
-	svelte.configs.recommended,
+	...ts.configs.recommended,
+	...svelte.configs.recommended,
 	prettier,
-	svelte.configs.prettier,
+	...svelte.configs.prettier,
 	{
 		languageOptions: { globals: { ...globals.browser, ...globals.node } }
 	},
 
 	{
 		files: ['**/*.svelte', '**/*.svelte.js'],
-		languageOptions: { parserOptions: {} }
+		languageOptions: {
+			parserOptions: {
+				parser: ts.parser
+			}
+		}
 	},
 
 	{
 		// Override or add rule settings here, such as:
-		// 'svelte/button-has-type': 'error'
-		rules: {}
+		rules: {
+			'@typescript-eslint/no-explicit-any': 'off',
+			'no-control-regex': 'off'
+		}
 	}
 ]);

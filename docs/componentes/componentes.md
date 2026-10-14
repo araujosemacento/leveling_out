@@ -31,27 +31,27 @@ A agregação de componentes nas entidades atende à separação estrita de resp
 
 ## 3. Matriz de Composição: Entidade $\times$ Componentes
 
-A tabela a seguir consolida quais componentes atômicos equipam cada instância das entidades do jogo:
+A tabela a seguir consolida quais componentes atômicos equipam cada instância das entidades do jogo, indicando suas respectivas camadas e arquivos de implementação no código:
 
-| Entidade Conceitual        | Instância Específica       | Componentes Atômicos Associados                                           | Camada Principal                |
-| :------------------------- | :------------------------- | :------------------------------------------------------------------------ | :------------------------------ |
-| **`EntidadeParticipante`** | **Jogador Individual**     | `IdentidadeComponent`<br>`PresencaRedeComponent`<br>`PapelTurnoComponent` | Frontend / Backend              |
-| **`EntidadeParticipante`** | **Equipe Coletiva**        | `IdentidadeComponent`<br>`AcumuladorPontosComponent`                      | Backend autoritário             |
-| **`EntidadeSessao`**       | **SalaMatch (Lobby/Jogo)** | `CicloFasesComponent`<br>`ReconciliacaoRedeComponent`                     | Backend autoritário / Frontend  |
-| **`EntidadeSessao`**       | **RodadaAtiva**            | `ProgressaoRodadaComponent`<br>`CicloFasesComponent`                      | Backend autoritário             |
-| **`EntidadeArtefato`**     | **Tubo de Ensaio**         | `NivelLiquidoComponent`<br>`SigiloMetaComponent`                          | Render (Front) / Segredo (Back) |
-| **`EntidadeArtefato`**     | **Marcador Analógico**     | `ArrastoAnalogicoComponent`                                               | Input (Front)                   |
-| **`EntidadeArtefato`**     | **Carta de Espectro**      | `PolosSemanticosComponent`<br>`DicaTextualComponent`                      | Catálogo / Sanitização          |
-| **`EntidadeDisputa`**      | **Disputa PPT**            | `LancePptComponent`<br>`ArbitroPptComponent`                              | Input (Front) / Árbitro (Back)  |
-| **`EntidadeDisputa`**      | **Aferição Proximidade**   | `RegraProximidadeComponent`                                               | Update autoritário (Back)       |
-| **`EntidadePlacar`**       | **Corrida de Pontos**      | `BarraProgressoComponent`<br>`ModuladorTensaoComponent`                   | Render (Front)                  |
-| **`EntidadePlacar`**       | **Painel de Celebração**   | `DisparadorRevancheComponent`                                             | Input / Update                  |
+| Entidade Conceitual        | Instância Específica       | Componentes Atômicos Associados                                           | Camada Principal                | Arquivos no Código (Backend / Frontend)                                                                                                                                                                                                                                              |
+| :------------------------- | :------------------------- | :------------------------------------------------------------------------ | :------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`EntidadeParticipante`** | **Jogador Individual**     | `IdentidadeComponent`<br>`PresencaRedeComponent`<br>`PapelTurnoComponent` | Frontend / Backend              | [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go)<br>[`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts)<br>[`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts)                 |
+| **`EntidadeParticipante`** | **Equipe Coletiva**        | `IdentidadeComponent`<br>`AcumuladorPontosComponent`                      | Backend autoritário             | [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go)<br>[`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/types.ts`](../../src/lib/engine/types.ts)                                   |
+| **`EntidadeSessao`**       | **SalaMatch (Lobby/Jogo)** | `CicloFasesComponent`<br>`ReconciliacaoRedeComponent`                     | Backend autoritário / Frontend  | [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/game-engine.ts`](../../src/lib/engine/game-engine.ts)<br>[`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte)                                           |
+| **`EntidadeSessao`**       | **RodadaAtiva**            | `ProgressaoRodadaComponent`<br>`CicloFasesComponent`                      | Backend autoritário             | [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts)                                                                                                     |
+| **`EntidadeArtefato`**     | **Tubo de Ensaio**         | `NivelLiquidoComponent`<br>`SigiloMetaComponent`                          | Render (Front) / Segredo (Back) | [`backend/internal/components/secret_target.go`](../../backend/internal/components/secret_target.go)<br>[`src/lib/components/TestTube.svelte`](../../src/lib/components/TestTube.svelte)<br>[`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts)     |
+| **`EntidadeArtefato`**     | **Marcador Analógico**     | `ArrastoAnalogicoComponent`                                               | Input (Front)                   | [`src/lib/engine/input/slider-controller.ts`](../../src/lib/engine/input/slider-controller.ts)<br>[`src/lib/components/AnalogSlider.svelte`](../../src/lib/components/AnalogSlider.svelte)                                                                                           |
+| **`EntidadeArtefato`**     | **Carta de Espectro**      | `PolosSemanticosComponent`<br>`DicaTextualComponent`                      | Catálogo / Sanitização          | [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts)<br>[`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts)<br>[`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts)                                               |
+| **`EntidadeDisputa`**      | **Disputa PPT**            | `LancePptComponent`<br>`ArbitroPptComponent`                              | Input (Front) / Árbitro (Back)  | [`backend/internal/entities/contest.go`](../../backend/internal/entities/contest.go)<br>[`backend/internal/components/ppt_arbiter.go`](../../backend/internal/components/ppt_arbiter.go)<br>[`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts) |
+| **`EntidadeDisputa`**      | **Aferição Proximidade**   | `RegraProximidadeComponent`                                               | Update autoritário (Back)       | [`backend/internal/components/proximity.go`](../../backend/internal/components/proximity.go)<br>[`src/lib/engine/update/score-rules.ts`](../../src/lib/engine/update/score-rules.ts)                                                                                                 |
+| **`EntidadePlacar`**       | **Corrida de Pontos**      | `BarraProgressoComponent`<br>`ModuladorTensaoComponent`                   | Render (Front)                  | [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts)                                                                                                         |
+| **`EntidadePlacar`**       | **Painel de Celebração**   | `DisparadorRevancheComponent`                                             | Input / Update                  | [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts)                                                                                                     |
 
 ---
 
 ## 4. Catálogo Detalhado dos Componentes Atômicos
 
-Para cada componente escolhido, são definidos seus dados atômicos, comportamentos e a justificativa técnica de sua existência.
+Para cada componente escolhido, são definidos seus dados atômicos, comportamentos, camadas de execução, arquivos de implementação no código e a justificativa técnica de sua existência.
 
 ---
 
@@ -62,6 +62,9 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `id: string`, `nome: string`, `equipeId: 'A' | 'B'`.
 - **Comportamento:** Valida e sanitiza o apelido do jogador (limite de 20 caracteres alfanuméricos) e sua vinculação de equipe.
 - **Camada:** Compartilhada (Frontend para sessão local; Backend para integridade de banco).
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go) (`ParticipantEntity`, campos `ID`, `Name` e `TeamID`).
+  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`Player`, `TeamId`) e [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeNickname`).
 - **Justificativa da Atomicidade:** Responsabilidade única de registrar _quem_ é a entidade.
 
 #### 2. `PresencaRedeComponent`
@@ -69,6 +72,9 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `isOnline: boolean`, `ultimoPing: number`.
 - **Comportamento:** Emite heartbeats e detecta desconexões. O backend engatilha a purga por inatividade após 15 minutos sem ping.
 - **Camada:** Sistema Distribuído (Input periódico no front; verificação de integridade no PocketBase).
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/components/cleanup.go`](../../backend/internal/components/cleanup.go) (`SessionCleaner`, rotina de limpeza de inatividade) e [`backend/pb_hooks/cleanup.pb.js`](../../backend/pb_hooks/cleanup.pb.js).
+  - _Frontend (TypeScript/Svelte):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`Player.isOnline`) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte) (heartbeats e inscrições SSE).
 - **Justificativa da Atomicidade:** Focado estritamente no estado de conectividade do jogador, sem poluir dados conceituais de gameplay.
 
 #### 3. `PapelTurnoComponent`
@@ -76,13 +82,19 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `papelAtual: 'CODIFICADOR' | 'PALPITEIRO' | 'ESPECTADOR'`.
 - **Comportamento:** Avalia dinamicamente se o jogador tem permissão para interagir na tela no momento corrente (ex.: digitar dica ou arrastar o slider).
 - **Camada:** Frontend (Projeções reativas de permissão via `getPlayerRoleProjection`).
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (controle de equipe ativa e papéis de turno).
+  - _Frontend (TypeScript):_ [`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts) (`getPlayerRoleProjection`) e [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`PlayerRole`).
 - **Justificativa da Atomicidade:** O papel de um jogador varia a cada rodada, enquanto sua identidade permanece fixa. Desacoplar este componente permite alternar quem codifica e quem palpita sem alterar a instância do jogador.
 
 #### 4. `AcumuladorPontosComponent`
 
 - **Atributos:** `pontos: number`.
 - **Comportamento:** Incrementa valores inteiros positivos quando a equipe pontua.
-- **Camada:** Backend autoritativo (`game_rules.pb.js`). O cliente apenas espelha o valor recebido.
+- **Camada:** Backend autoritativo (`game_rules.pb.js` / Go). O cliente apenas espelha o valor recebido.
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (mapa `Scores` com pontuação oficial das equipes Corvo e Águia) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`GameState.scores`) e [`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts).
 - **Justificativa da Atomicidade:** Gerencia única e exclusivamente o placar numérico da equipe, blindando-o contra adulterações do lado cliente.
 
 ---
@@ -94,6 +106,9 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `faseAtual: GamePhase` (`LOBBY`, `PPT_DISPUTA`, `RODADA_DICA`, `RODADA_PALPITE`, `RODADA_REVELACAO`, `VITORIA`).
 - **Comportamento:** Valida a máquina de estados, impedindo transições ilegais (ex.: avançar para palpite sem antes haver uma dica).
 - **Camada:** Backend autoritativo com espelhamento determinístico no Reducer cliente.
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (constantes `PhaseLobby`, `PhaseRoundClue`, etc., e validação de transição) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`GamePhase`) e [`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts) (`gameReducer`).
 - **Justificativa da Atomicidade:** Isola as regras de transição de fase da aplicação das mecânicas individuais de cada fase.
 
 #### 6. `ProgressaoRodadaComponent`
@@ -101,6 +116,9 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `numeroRodada: number`, `equipeAtivaId: 'A' | 'B'`.
 - **Comportamento:** Incrementa o contador de rodadas e alterna a posse de turno (_momentum_) entre as equipes Corvo e Águia.
 - **Camada:** Backend autoritativo.
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (`CurrentRound`, `ActiveTeamID`, métodos de transição de rodada).
+  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`GameState.currentRound`, `GameState.activeTeamId`) e [`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts).
 - **Justificativa da Atomicidade:** Focado unicamente na cadência sequencial das rodadas da partida.
 
 #### 7. `ReconciliacaoRedeComponent`
@@ -108,6 +126,9 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `inscricaoSseAtiva: boolean`, `versaoEstadoServidor: number`.
 - **Comportamento:** Escuta eventos SSE disparados pelo PocketBase e injeta ações tipadas (`FULL_SYNC`, `RODADA_REVELADA`) no `GameEngine` cliente.
 - **Camada:** Frontend (Controlador de rede cliente).
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ Servidor de eventos SSE em PocketBase e [`backend/cmd/server/main.go`](../../backend/cmd/server/main.go).
+  - _Frontend (TypeScript):_ [`src/lib/engine/game-engine.ts`](../../src/lib/engine/game-engine.ts) (`GameEngine.subscribe` e reconciliação determinística) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte).
 - **Justificativa da Atomicidade:** Desacopla o protocolo de transporte de rede da lógica matemática interna das regras do jogo.
 
 ---
@@ -117,15 +138,20 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 #### 8. `NivelLiquidoComponent`
 
 - **Atributos:** `percentualAtual: number` ($0 \le x \le 100$).
-- **Comportamento:** Controla a altura procedural de renderização do fluido e a física visual do menisco curvo em SVG.
+- **Comportamento:** Controla a altura procedural de renderização do fluido, a física visual do menisco curvo em SVG com ondas contra-propagantes em loop infinito e a graduação métrica de 1 a 10.
 - **Camada:** Frontend (Camada de Render passiva).
-- **Justificativa da Atomicidade:** Cuida unicamente da representação gráfica vetorial do volume de fluido.
+- **Arquivo(s) no Código:**
+  - _Frontend (Svelte/SVG):_ [`src/lib/components/TestTube.svelte`](../../src/lib/components/TestTube.svelte) (renderizador procedural vetorial) e [`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts) (`getTubeProjection`).
+- **Justificativa da Atomicidade:** Cuida unicamente da representação gráfica vetorial do volume de fluido e de sua dinâmica orgânica.
 
 #### 9. `SigiloMetaComponent`
 
 - **Atributos:** `metaOculta: number` ($5 \le x \le 95$).
 - **Comportamento:** No backend, sorteia o valor secreto aleatório. No frontend, impede categoricamente a transmissão da meta para participantes que não sejam o Codificador da vez até a fase oficial de revelação (Princípio Zero Trust).
 - **Camada:** Backend autoritativo (Armazenamento) / Frontend (Blindagem de sigilo).
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/components/secret_target.go`](../../backend/internal/components/secret_target.go) (`SecretTargetComponent.GenerateSecretTarget` com sorteio seguro) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Frontend (TypeScript):_ [`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts) (`getSecretTargetProjection` aplicando a máscara Zero Trust).
 - **Justificativa da Atomicidade:** A segurança da meta oculta é um dos pilares inegociáveis do jogo. Centralizar o sigilo em um componente atômico garante que nenhuma inspeção de DOM ou console revele o segredo precocemente.
 
 #### 10. `ArrastoAnalogicoComponent`
@@ -133,13 +159,18 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `posicaoPx: number`, `percentualPalpite: number` ($0 \le x \le 100$), `isArrastando: boolean`.
 - **Comportamento:** Captura eventos de toque/arrasto do ponteiro (`pointermove`, `touchmove`), computa a projeção percentual relativa, aplica limites matemáticos (_clamp_) e emite feedback tátil via `navigator.vibrate`.
 - **Camada:** Frontend (Camada de Input via `SliderDragController`).
+- **Arquivo(s) no Código:**
+  - _Frontend (TypeScript/Svelte):_ [`src/lib/engine/input/slider-controller.ts`](../../src/lib/engine/input/slider-controller.ts) (`SliderDragController`), [`src/lib/components/AnalogSlider.svelte`](../../src/lib/components/AnalogSlider.svelte) e [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`clampGuess`).
 - **Justificativa da Atomicidade:** Isola toda a complexidade de física analógica de entrada do restante da lógica do jogo.
 
 #### 11. `PolosSemanticosComponent`
 
 - **Atributos:** `poloEsquerdo: string`, `poloDireito: string`.
 - **Comportamento:** Fornece os descritores conceituais opostos da carta de espectro sorteada (ex.: "Famoso" e "Anônimo").
-- **Camada:** Compartilhada (Catálogo estático de tópicos).
+- **Camada:** Compartilhada (Catálogo estático de tópicos no banco e espelhamento cliente).
+- **Arquivo(s) no Código:**
+  - _Backend (PocketBase):_ Migrações declarativas da coleção `cartas_espectro` em [`backend/pb_migrations/`](../../backend/pb_migrations/).
+  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`SpectrumCard`).
 - **Justificativa da Atomicidade:** Fornece apenas o substrato textual da escala semântica.
 
 #### 12. `DicaTextualComponent`
@@ -147,6 +178,9 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `conteudoDica: string`.
 - **Comportamento:** Captura a entrada de texto do Codificador, higieniza contra injeção de tags HTML ou quebras de linha e limita o comprimento estritamente a 60 caracteres.
 - **Camada:** Frontend (Sanitização defensiva de Input) e Backend (Armazenamento).
+- **Arquivo(s) no Código:**
+  - _Backend (PocketBase):_ Regras de integridade de campo na coleção `rodadas` e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Frontend (TypeScript):_ [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeClue`) e [`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts) (`createSubmitClueIntent`).
 - **Justificativa da Atomicidade:** Trata unicamente da validação, integridade e sanitização da pista enviada.
 
 ---
@@ -158,13 +192,19 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `lance: 'pedra' | 'papel' | 'tesoura'`.
 - **Comportamento:** Captura a escolha do representante da equipe na disputa de primeiro turno e despacha a intenção tipada para o backend.
 - **Camada:** Frontend (Camada de Input).
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/contest.go`](../../backend/internal/entities/contest.go) (`PptMove`, `PptContest`) e [`backend/pb_hooks/iniciativa.pb.js`](../../backend/pb_hooks/iniciativa.pb.js).
+  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`PptMove`) e [`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts) (`createPptMoveIntent`).
 - **Justificativa da Atomicidade:** Encapsula unicamente a seleção de jogada de um participante.
 
 #### 14. `ArbitroPptComponent`
 
 - **Atributos:** `lancesRecebidos: Record<string, string>`, `resultadoDisputa: 'A' | 'B' | 'EMPATE'`.
 - **Comportamento:** Armazena lances em memória atômica thread-safe no PocketBase (`$app.store()`), avalia o confronto das regras clássicas e declara a equipe vencedora para selecionar a primeira carta.
-- **Camada:** Backend autoritativo (`iniciativa.pb.js`).
+- **Camada:** Backend autoritativo (`iniciativa.pb.js` / Go).
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/components/ppt_arbiter.go`](../../backend/internal/components/ppt_arbiter.go) (`PptArbiterComponent.ResolveMoves`) e [`backend/pb_hooks/iniciativa.pb.js`](../../backend/pb_hooks/iniciativa.pb.js).
+  - _Frontend (TypeScript):_ [`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts) (`gameReducer` espelhamento de resultado).
 - **Justificativa da Atomicidade:** Responsabilidade exclusiva de arbitrar o minijogo de iniciativa.
 
 #### 15. `RegraProximidadeComponent`
@@ -172,6 +212,9 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `tabelaFaixas: Array<{ deltaMax: number, pontos: number, rotulo: string }>`.
 - **Comportamento:** Computa a diferença absoluta $\Delta = |\text{meta} - \text{palpite}|$ e retorna os pontos devidos (+4 para $\le 2\%$, +3 para $\le 6\%$, +2 para $\le 12\%$, 0 para erros maiores).
 - **Camada:** Backend autoritativo (Cálculo oficial) e Frontend (Pré-visualização e feedback sonoro/visual).
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/components/proximity.go`](../../backend/internal/components/proximity.go) (`ProximityComponent.Calculate`) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Frontend (TypeScript):_ [`src/lib/engine/update/score-rules.ts`](../../src/lib/engine/update/score-rules.ts) (`calculateRoundScore`, `PROXIMITY_TIERS`).
 - **Justificativa da Atomicidade:** Encapsula exclusivamente a fórmula matemática de tolerância de erro que define o pilar de _Acerto Aproximado_.
 
 ---
@@ -183,6 +226,9 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `progressoPercentualA: number`, `progressoPercentualB: number`, `metaVitoria: number` (10 pontos).
 - **Comportamento:** Converte pontos acumulados em frações percentuais [0, 100] para movimentar suavemente a corrida vertical dos ícones das equipes.
 - **Camada:** Frontend (Projeção reativa em `getScoreBoardProjection`).
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (pontuações acumuladas `ScoreA` e `ScoreB`).
+  - _Frontend (TypeScript/Svelte):_ [`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts) (`getScoreBoardProjection`) e componentes de placar em Svelte.
 - **Justificativa da Atomicidade:** Trata exclusivamente do cálculo geométrico de avanço do placar.
 
 #### 17. `ModuladorTensaoComponent`
@@ -190,6 +236,8 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `diferencaPontos: number`, `equipeLiderId: 'A' | 'B' | 'EMPATE'`.
 - **Comportamento:** Avalia o equilíbrio competitivo da partida. Se a diferença for alta, induz dinamismo no estilo de interface; se houver empate próximo a 10 pontos, intensifica a sinalização visual de momento decisivo.
 - **Camada:** Frontend (Render reativo para sustentar o Canal do Fluxo).
+- **Arquivo(s) no Código:**
+  - _Frontend (TypeScript):_ [`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts) (`getTensionStateProjection`) e [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts).
 - **Justificativa da Atomicidade:** Responsável por traduzir métricas numéricas frias em elementos de atmosfera e engajamento emocional.
 
 #### 18. `DisparadorRevancheComponent`
@@ -197,4 +245,7 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Atributos:** `solicitacoesRevanche: Set<string>`.
 - **Comportamento:** Registra o consentimento mútuo das equipes para reiniciar a partida mantendo os mesmos participantes na sala, resetando placares e voltando à fase de PPT.
 - **Camada:** Sistema Distribuído (Intenção no cliente; reinício de registros no PocketBase).
+- **Arquivo(s) no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (`ResetForRematch`) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Frontend (TypeScript/Svelte):_ [`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts) (`createRequestRematchIntent`) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte).
 - **Justificativa da Atomicidade:** Isola o gatilho de reinício do restante da máquina de estados do jogo ativo.

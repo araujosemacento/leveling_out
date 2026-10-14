@@ -28,7 +28,7 @@ function estimateTextWidth(text: string): number {
 	let width = 0;
 	for (const char of text) {
 		if (/[il1.,;:!'|]/.test(char)) width += 3.6;
-		else if (/[ \-_()\[\]]/.test(char)) width += 4.2;
+		else if (/[ \-_()[\]]/.test(char)) width += 4.2;
 		else if (/[mwMW]/.test(char)) width += 9.6;
 		else if (/[A-Z]/.test(char)) width += 7.8;
 		else if (/[a-z0-9]/.test(char)) width += 6.5;

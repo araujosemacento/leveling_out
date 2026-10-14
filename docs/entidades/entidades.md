@@ -45,6 +45,9 @@ Representa qualquer participante ou grupo de participantes com agência social e
 - **Especialização na Instanciação:**
   - Instância `Jogador`: recebe componentes de identidade individual, presença de rede e papéis dinâmicos de turno.
   - Instância `Equipe`: recebe componentes de agrupamento, acumulação de placar e controle de posse de turno.
+- **Mapeamento de Arquivos no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go) (estruturas `ParticipantEntity`, `PlayerState` e métodos de agregação de equipe).
+  - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (tipos discriminados `Player`, `TeamId`, `TeamSummary`) e [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeNickname`).
 
 ---
 
@@ -59,6 +62,9 @@ Representa o contêiner espacial e temporal da experiência multijogador, orques
 - **Especialização na Instanciação:**
   - Instância `SalaMatch`: orquestra a máquina de estados global, a reconciliação de conexões e a persistência no PocketBase.
   - Instância `RodadaCiclo`: orquestra o índice numérico da rodada, os ponteiros para a equipe da vez e o histórico de rodadas passadas.
+- **Mapeamento de Arquivos no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (estrutura `SessionEntity`, controle de fases `GamePhase` e métodos de avanço de turno).
+  - _Frontend (TypeScript):_ [`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts) (`gameReducer`) e [`src/lib/engine/game-engine.ts`](../../src/lib/engine/game-engine.ts) (`GameEngine`).
 
 ---
 
@@ -74,6 +80,10 @@ Representa qualquer instrumento mecânico, visual ou sensorial com o qual os par
   - Instância `TuboDeEnsaio`: dotada de componentes de nível de líquido e blindagem de sigilo Zero Trust da meta.
   - Instância `MarcadorAnalogico`: dotada de componentes de cálculo de arrasto analógico, clamp matemático e feedback háptico.
   - Instância `CartaEspectro`: dotada de componentes de polaridade semântica e armazenamento da dica textual sanitizada.
+- **Mapeamento de Arquivos no Código:**
+  - _Tubo de Ensaio (Svelte/SVG):_ [`src/lib/components/TestTube.svelte`](../../src/lib/components/TestTube.svelte) (renderização procedural de menisco em contra-propagação).
+  - _Sigilo da Meta (Go/TS):_ [`backend/internal/components/secret_target.go`](../../backend/internal/components/secret_target.go) (sorteio criptográfico) e [`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts) (`getTubeProjection`).
+  - _Entrada e Sanitização (TS):_ [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeClue`, `clampGuess`).
 
 ---
 
@@ -87,6 +97,9 @@ Representa qualquer mecanismo formal do jogo projetado para resolver conflitos d
 - **Especialização na Instanciação:**
   - Instância `DisputaPpt`: recebe componentes de submissão de lances e tabela de resolução de confrontos em memória thread-safe.
   - Instância `JulgamentoProximidade`: recebe componentes com a regra matemática de tolerância de erro por faixas percentuais.
+- **Mapeamento de Arquivos no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/contest.go`](../../backend/internal/entities/contest.go), [`backend/internal/components/ppt_arbiter.go`](../../backend/internal/components/ppt_arbiter.go) e [`backend/internal/components/proximity.go`](../../backend/internal/components/proximity.go).
+  - _Frontend (TypeScript):_ [`src/lib/engine/update/score-rules.ts`](../../src/lib/engine/update/score-rules.ts) (`calculateScore`) e [`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts) (`createSubmitPptAction`).
 
 ---
 
@@ -101,15 +114,18 @@ Representa o monitor contínuo do progresso competitivo, responsável por retroa
 - **Especialização na Instanciação:**
   - Instância `CorridaPlacar`: recebe componentes de acumulação de pontos, cálculo de barras de progresso e verificação de condição de vitória.
   - Instância `MetricasSintonia`: recebe componentes de agregação de acertos na mosca, maiores gafes e estatísticas de empatia.
+- **Mapeamento de Arquivos no Código:**
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (rastreamento oficial de `ScoreTeamA` e `ScoreTeamB`).
+  - _Frontend (TS/Svelte):_ [`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts) (`getScoreBoardProjection`) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte) (renderização dos marcadores).
 
 ---
 
 ## 4. Síntese Comparativa das Entidades
 
-| Entidade Conceitual        | Instanciações Típicas                          | Papéis Aglutinados                                                   | O que a Modela (Componentes Chave)                                    |
-| :------------------------- | :--------------------------------------------- | :------------------------------------------------------------------- | :-------------------------------------------------------------------- |
-| **`EntidadeParticipante`** | Jogador, Equipe                                | Agente humano, Codificador, Palpiteiro, Espectador, Time Competitivo | Identidade, Presença de Rede, Papel de Turno, Acumulador de Pontos    |
-| **`EntidadeSessao`**       | SalaMatch, RodadaAtiva                         | Lobby de sala, Partida global, Ciclo temporal de rodada              | Ciclo de Fases, Progressão de Rodada, Reconciliação SSE               |
-| **`EntidadeArtefato`**     | TuboDeEnsaio, MarcadorAnalogico, CartaEspectro | Recipiente visual, Slider de calibração, Carta temática bipolar      | Nível de Líquido, Sigilo de Meta, Arrasto Analógico, Polos Semânticos |
-| **`EntidadeDisputa`**      | DisputaPpt, JulgamentoProximidade              | Decisor de primeiro turno, Avaliador de proximidade                  | Lance de PPT, Árbitro de Regras, Tolerância por Faixas                |
-| **`EntidadePlacar`**       | CorridaPlacar, MetricasSintonia                | Rastreador de corrida, Regulador do Canal do Fluxo, Tela de vitória  | Progresso de Pontos, Modulador de Tensão, Disparador de Revanche      |
+| Entidade Conceitual        | Instanciações Típicas                          | Papéis Aglutinados                                                   | O que a Modela (Componentes Chave)                                    | Arquivo no Backend (Go)                                                                                                                                                                            | Arquivo no Frontend (TS/Svelte)                                                                                                     |
+| :------------------------- | :--------------------------------------------- | :------------------------------------------------------------------- | :-------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
+| **`EntidadeParticipante`** | Jogador, Equipe                                | Agente humano, Codificador, Palpiteiro, Espectador, Time Competitivo | Identidade, Presença de Rede, Papel de Turno, Acumulador de Pontos    | [`participant.go`](../../backend/internal/entities/participant.go)                                                                                                                                 | [`types.ts`](../../src/lib/engine/types.ts), [`sanitize.ts`](../../src/lib/engine/input/sanitize.ts)                                |
+| **`EntidadeSessao`**       | SalaMatch, RodadaAtiva                         | Lobby de sala, Partida global, Ciclo temporal de rodada              | Ciclo de Fases, Progressão de Rodada, Reconciliação SSE               | [`session.go`](../../backend/internal/entities/session.go)                                                                                                                                         | [`state-machine.ts`](../../src/lib/engine/update/state-machine.ts), [`game-engine.ts`](../../src/lib/engine/game-engine.ts)         |
+| **`EntidadeArtefato`**     | TuboDeEnsaio, MarcadorAnalogico, CartaEspectro | Recipiente visual, Slider de calibração, Carta temática bipolar      | Nível de Líquido, Sigilo de Meta, Arrasto Analógico, Polos Semânticos | [`secret_target.go`](../../backend/internal/components/secret_target.go)                                                                                                                           | [`TestTube.svelte`](../../src/lib/components/TestTube.svelte), [`sanitize.ts`](../../src/lib/engine/input/sanitize.ts)              |
+| **`EntidadeDisputa`**      | DisputaPpt, JulgamentoProximidade              | Decisor de primeiro turno, Avaliador de proximidade                  | Lance de PPT, Árbitro de Regras, Tolerância por Faixas                | [`contest.go`](../../backend/internal/entities/contest.go), [`ppt_arbiter.go`](../../backend/internal/components/ppt_arbiter.go), [`proximity.go`](../../backend/internal/components/proximity.go) | [`score-rules.ts`](../../src/lib/engine/update/score-rules.ts), [`intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts) |
+| **`EntidadePlacar`**       | CorridaPlacar, MetricasSintonia                | Rastreador de corrida, Regulador do Canal do Fluxo, Tela de vitória  | Progresso de Pontos, Modulador de Tensão, Disparador de Revanche      | [`session.go`](../../backend/internal/entities/session.go)                                                                                                                                         | [`projections.ts`](../../src/lib/engine/render/projections.ts), [`+page.svelte`](../../src/routes/[sala]/+page.svelte)              |
