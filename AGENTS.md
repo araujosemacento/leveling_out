@@ -66,7 +66,7 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 | **Página inicial do projeto e índice**       | `README.md`                              | Apresentação do jogo, integrantes e sumário de navegação com links diretos.                          |
 | **SGDD consolidado da versão atual**         | `docs/sgdd/sgdd.md`                      | Short Game Design Document (Motta & Trigueiro, SBGames 2013) com texto corrido e listas de produção. |
 | **Modelagem de Entidades abrangentes**       | `docs/entidades/entidades.md`            | As 5 grandes entidades conceituais (`Participante`, `Sessao`, `Artefato`, `Disputa`, etc.).          |
-| **Catálogo de Componentes atômicos**         | `docs/componentes/componentes.md`        | Os 18 componentes atômicos, matriz de associação com entidades e justificativas técnicas.            |
+| **Catálogo de Componentes atômicos**         | `docs/componentes/componentes.md`        | Os 19 componentes atômicos, matriz de associação com entidades e justificativas técnicas.            |
 | **Diagramas de Entidades e Componentes**     | `docs/diagramas/diagramas.md`            | Diagramas visuais em grid de entidades, instanciações e composição com componentes.                  |
 | **Paleta, tokens CSS, dark mode e temas**    | `src/routes/layout.css`                  | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos).         |
 | **Importação de fontes e head global**       | `src/app.html`                           | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).               |
@@ -125,10 +125,12 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 - [x] Criar o componente `TestTube.svelte` em SVG procedural com física de líquido, menisco senoidal contínuo e easter egg interativo de chacoalho.
 - [ ] Criar o componente `AnalogSlider.svelte` integrando a classe composível `SliderDragController`.
 - [x] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
-- [x] Implementar algoritmo de proximidade com faixas de acerto (+4, +3, +2, 0) testado com `bun test`.
-- [ ] Implementar divisão tripartite de equipes no Lobby (Corvo, Aleatório, Águia), controle de quórum de 4 jogadores e início autoritativo pelo anfitrião.
-- [ ] Minijogo de Pedra, Papel e Tesoura refatorado em Svelte puro para decisão de turno.
+- [x] Implementar divisão tripartite de equipes no Lobby (Corvo, Aleatório, Águia), controle de quórum de 4 jogadores e início autoritativo pelo anfitrião.
+- [x] Fluxo de ingresso autoritativo Zero Trust: tela inicial exclusiva por código de sala, diálogo bloqueante de apelido e validação com token de sessão.
+- [x] Monitoramento de presença por heartbeats periódicos (ping a cada 5s) e protocolo de desconexão/reconexão autoritativo.
 - [x] Portabilidade autoritativa dos hooks para Go nativo com PocketBase estendido, adequando o backend à arquitetura de Entidades e Componentes atômicos.
+- [ ] Minijogo de Pedra, Papel e Tesoura refatorado em Svelte puro para decisão de turno.
+- [ ] Moderação autoritativa no Lobby: expulsão de participante pelo anfitrião (kick de jogador) com revogação de assento, liberação imediata de vaga e notificação SSE dedicada.
 
 ### Fase 3: Polimento e Experiência de Jogo
 

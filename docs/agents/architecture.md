@@ -17,12 +17,13 @@ A arquitetura de _Leveling Out_ traduz o Game Loop clássico de motores de jogo 
 
 - **Captura de Intenção:** Captura eventos brutos de toque, pointer e teclado na interface, além de lances no minijogo de iniciativa.
 - **Sanitização Defensiva (Defense in Depth):** Higienização imediata antes do envio (`src/lib/engine/input/sanitize.ts`). Textos são desprovidos de tags HTML, apelidos são limitados a 20 caracteres e valores do slider sofrem _clamping_ matemático para o intervalo $[0, 100]$.
-- **Emissão Tipada:** O cliente despacha unicamente objetos de intenção tipados (`GameAction` gerados por `src/lib/engine/input/intent-factory.ts`), jamais mutando o estado definitivo de pontuação ou rodadas.
+- **Emissão Tipada:** O cliente despacha unicamente objetos de intenção tipados (`GameAction` gerados por `src/lib/engine/input/intent-factory.ts`, como seleção de equipe, disparos de moderação do anfitrião ou lances de PPT), jamais mutando o estado definitivo de pontuação ou rodadas.
 
 ### 1.2. Fase de Update (Servidor Autoritário / PocketBase)
 
 - **Autoritarismo de Estado:** A verdade do jogo reside exclusivamente no servidor PocketBase (hooks e framework Go nativo).
 - **Gestão Autoritativa do Lobby e Quórum:** O servidor monitora a criação e atualização de registros na coleção `jogadores`. O primeiro participante a entrar é registrado como anfitrião (`is_host: true` e `host_id` na sala). O quórum é limitado estritamente a 4 integrantes por sala, e as equipes Corvo (`A`) e Águia (`B`) possuem limite rígido de 2 integrantes cada. A opção neutra `ALEATORIO` acolhe jogadores indecisos.
+- **Moderação Soberana pelo Anfitrião (`POST /api/leveling/salas/{codigo}/expulsar`):** Endpoint exclusivo pelo qual o anfitrião pode revogar autoritativamente o assento de qualquer outro participante no Lobby. O servidor valida a titularidade do host (`host_id`), impede auto-expulsão, exclui o registro do jogador no SQLite, libera imediatamente a vaga da equipe e emite evento SSE de exclusão para toda a rede.
 - **Sorteio Estocástico e Inicialização (`POST /api/leveling/salas/{codigo}/iniciar`):** Endpoint exclusivo acionado pelo anfitrião quando o quórum atinge exatamente 4 jogadores. O backend valida a identidade do requisitante (`X-Player-Id`), embaralha criptograficamente (`crypto/rand`) os participantes em `ALEATORIO`, completa as vagas remanescentes de cada equipe para totalizar 2 em cada lado e transiciona a sala para a fase `INICIATIVA`.
 - **Geração de Segredos:** Sorteio seguro de metas ocultas no tubo de ensaio ($5\%$ a $95\%$).
 - **Cálculo Oficial:** Comparação matemática $|\text{meta} - \text{palpite}|$ e distribuição de pontos (+4, +3, +2, 0) na coleção de rodadas e salas.
@@ -31,7 +32,7 @@ A arquitetura de _Leveling Out_ traduz o Game Loop clássico de motores de jogo 
 ### 1.3. Fase de Sincronização e Reconciliação (Cliente)
 
 - **Papel da Máquina de Estados Cliente:** A máquina de estados local em `src/lib/engine/update/state-machine.ts` **não toma decisões autônomas de jogo**. Seu papel no cliente é unicamente **sincronizar as mudanças ocorridas no servidor entre todos os jogadores**.
-- **Reconciliação Determinística:** Ao receber um evento de rede (SSE), o motor cliente despacha a reconciliação (`FULL_SYNC`, `RODADA_REVELADA`), garantindo que todas as telas conectadas convirjam exatamente para o mesmo estado autoritativo.
+- **Reconciliação Determinística:** Ao receber um evento de rede (SSE), o motor cliente despacha a reconciliação (`FULL_SYNC`, `RODADA_REVELADA`), garantindo que todas as telas conectadas convirjam exatamente para o mesmo estado autoritativo. Caso o participante local identifique que seu assento foi revogado pelo anfitrião (evento de exclusão em `jogadores`), o motor transiciona imediatamente para o estado de sessão revogada, abortando o heartbeat e exibindo aviso informativo de retorno à tela inicial.
 
 ### 1.4. Fase de Render (Cliente / Projeção Visual)
 

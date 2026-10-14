@@ -27,6 +27,7 @@ Para aproximar a arquitetura das convenções de engines profissionais (como God
 Alinhado ao documento `backend/SECURITY.md`:
 
 - **Autoritarismo do Servidor:** O front-end nunca arbitra pontuações, vencedores de turnos ou do jogo. O cliente transmite apenas _intenções_ (`SUBMIT_GUESS`, `SUBMIT_CLUE`, `SUBMIT_PPT_MOVE`). A verdade autoritativa reside nos hooks do PocketBase (`pb_hooks/game_rules.pb.js`).
+- **Governança do Lobby e Moderação Soberana:** A expulsão de participantes indesejados é prerrogativa exclusiva do anfitrião (`host_id`) e validada com Zero Trust no backend (`POST /api/leveling/salas/{codigo}/expulsar`). O front-end nunca remove participantes localmente por conta própria; despacha a intenção e aguarda a reconciliação autoritativa do evento SSE.
 - **Sanitização Defensiva (Defense in Depth):** Sanitização prévia no cliente: limite de 60 caracteres em dicas sem HTML, 20 caracteres em apelidos e palpites restritos a inteiros em $[0, 100]$.
 - **Sigilo Absoluto da Meta Oculta:** O front-end nunca guarda ou infere a `meta_oculta` antes da fase `RODADA_REVELACAO` emitida pelo servidor.
 - **TypeScript como Padrão de Engenharia:** Todo o motor, controladores, modelos e testes devem ser estritamente tipados em TypeScript (`.ts`), com ações modeladas por uniões discriminadas.

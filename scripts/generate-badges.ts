@@ -55,7 +55,47 @@ function generateSvg(text: string, colorHex: string): string {
 </svg>`;
 }
 
+const NEW_BADGES: Array<{ file: string; text: string; colorHex: string }> = [
+	{ file: 'campo_do_código_da_sala.svg', text: 'campo do código da sala', colorHex: 'FAF4EB' },
+	{ file: 'diálogo_de_apelido.svg', text: 'diálogo de apelido', colorHex: 'FAF4EB' },
+	{ file: 'digitar_o_apelido.svg', text: 'digitar o apelido', colorHex: '4C2BB1' },
+	{ file: 'handshake_com_o_servidor.svg', text: 'handshake com o servidor', colorHex: '4C2BB1' },
+	{ file: 'botão_de_iniciar_partida.svg', text: 'botão de iniciar partida', colorHex: 'FAF4EB' },
+	{ file: 'aviso_de_desconexão.svg', text: 'aviso de desconexão', colorHex: 'FAF4EB' },
+	{
+		file: 'aviso_sonoro_de_desconexão.svg',
+		text: 'aviso sonoro de desconexão',
+		colorHex: 'E2931D'
+	},
+	{ file: 'aguardar_a_reconexão.svg', text: 'aguardar a reconexão', colorHex: '4C2BB1' },
+	{ file: 'desfazer_a_sala.svg', text: 'desfazer a sala', colorHex: '4C2BB1' },
+	{ file: 'reassunção_de_assento.svg', text: 'reassunção de assento', colorHex: '4C2BB1' },
+	{ file: 'aprovação_do_anfitrião.svg', text: 'aprovação do anfitrião', colorHex: '4C2BB1' },
+	{ file: 'vitória_por_wo.svg', text: 'vitória por WO', colorHex: '4C2BB1' },
+	{
+		file: 'fanfarra_de_vitória_por_wo.svg',
+		text: 'fanfarra de vitória por WO',
+		colorHex: 'E2931D'
+	},
+	{
+		file: 'expulsar_participante_da_sala.svg',
+		text: 'expulsar participante da sala',
+		colorHex: '4C2BB1'
+	},
+	{
+		file: 'botão_para_expulsar_participante.svg',
+		text: 'botão para expulsar participante',
+		colorHex: 'FAF4EB'
+	}
+];
+
 function run() {
+	// Garante que todas as badges novas necessárias estejam criadas
+	for (const b of NEW_BADGES) {
+		const targetPath = join(BADGES_DIR, b.file);
+		writeFileSync(targetPath, generateSvg(b.text, b.colorHex), 'utf-8');
+	}
+
 	console.log('Lendo SVGs existentes em:', BADGES_DIR);
 	const files = readdirSync(BADGES_DIR).filter((f) => f.endsWith('.svg'));
 

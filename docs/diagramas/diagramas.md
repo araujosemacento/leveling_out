@@ -16,7 +16,7 @@ Para as especificações textuais detalhadas de cada conceito, consulte:
 A modelagem de _Leveling Out_ adota o princípio de **Composição por Componentes**:
 
 1. **Entidades Amplas e Polimórficas:** As 5 entidades conceituais cobrem todo o domínio da aplicação. Elas não contêm regras hardcoded de mecânicas; sua especialização emerge de sua instanciação e dos componentes acoplados.
-2. **Componentes Atômicos:** Os 18 componentes são imperativamente atômicos e de propósito único, sendo os reais responsáveis por conferir capacidades e comportamentos a uma entidade.
+2. **Componentes Atômicos:** Os 19 componentes são imperativamente atômicos e de propósito único, sendo os reais responsáveis por conferir capacidades e comportamentos a uma entidade.
 3. **Distribuição em Grid:** Para otimizar a visualização em telas convencionais e evitar diagramas excessivamente horizontais, as representações são organizadas em um grid semântico de três camadas:
    - _Coordenação e Presença Social_ (Participante e Sessão)
    - _Mecânicas de Jogo e Interação_ (Artefato e Disputa)
@@ -114,6 +114,7 @@ flowchart TB
             ES --- C_Ciclo["CicloFasesComponent"]
             ES --- C_Prog["ProgressaoRodadaComponent"]
             ES --- C_Reconc["ReconciliacaoRedeComponent"]
+            ES --- C_Mod["ModeracaoLobbyComponent"]
         end
     end
 

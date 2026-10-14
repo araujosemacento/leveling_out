@@ -38,7 +38,7 @@ Representa qualquer participante ou grupo de participantes com agência social e
 
 - **Papéis Abrangidos:**
   - _Ator Individual:_ O jogador humano utilizando seu navegador.
-  - _Anfitrião da Sessão (`Host`):_ Primeiro participante registrado na sala, dotado da prerrogativa autoritativa de disparar a partida após o preenchimento de todas as 4 vagas da sala.
+  - _Anfitrião da Sessão (`Host`):_ Primeiro participante registrado na sala, dotado da prerrogativa autoritativa de moderação para expulsar participantes indesejados durante o lobby e disparar a partida após o preenchimento de todas as 4 vagas da sala.
   - _Codificador da Rodada:_ O participante ativo encarregado de observar o nível secreto e redigir a pista.
   - _Palpiteiro da Rodada:_ O participante ativo encarregado de ler a pista e deslizar o marcador analógico.
   - _Espectador Conectado:_ Jogadores da equipe inativa ou participantes observando a resolução da rodada.
@@ -57,7 +57,7 @@ Representa qualquer participante ou grupo de participantes com agência social e
 Representa o contêiner espacial e temporal da experiência multijogador, orquestrando desde a criação do ambiente compartilhado até as iterações cíclicas de jogo.
 
 - **Papéis Abrangidos:**
-  - _Sala de Conexão (Lobby):_ Ponto de encontro distribuído associado a um código de slug (`/[sala]`), gerenciando capacidade rigorosa de 4 participantes no total e no máximo 2 integrantes por equipe definida.
+  - _Sala de Conexão (Lobby):_ Ponto de encontro distribuído associado a um código de slug (`/[sala]`), gerenciando capacidade rigorosa de 4 participantes no total, moderação ativa de assentos pelo anfitrião e no máximo 2 integrantes por equipe definida.
   - _Partida Global:_ Orquestrador do macro-estado do jogo (da disputa inicial de iniciativa até a celebração da vitória).
   - _Rodada Operacional:_ Ciclo micro-temporal da jogada atual (início, dica, palpite, revelação e cálculo de pontuação).
 - **Especialização na Instanciação:**

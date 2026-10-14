@@ -23,7 +23,7 @@ Num mundo saturado de opiniões divergentes, duas equipes rivais de amigos decid
 > - ![Programação](../assets/badges/programação.svg): Ações do jogador, mecânicas e lógica do sistema (Roxo acento).
 > - ![Áudio](../assets/badges/áudio.svg): Músicas de fundo e efeitos sonoros (Laranja primário).
 
-Começa o jogo com a ![tela de carregamento](../assets/badges/tela_de_carregamento.svg) exibindo o ![logotipo do jogo](../assets/badges/logotipo_do_jogo.svg), em seguida a ![tela inicial](../assets/badges/tela_inicial.svg) ![música de lobby](../assets/badges/música_de_lobby.svg) com um ![campo para digitar](../assets/badges/campo_para_digitar.svg) o ![apelido](../assets/badges/apelido.svg) e um ![botão para entrar](../assets/badges/botão_para_entrar.svg) ![som: clique](../assets/badges/som_clique.svg). Ao ![confirmar a entrada](../assets/badges/confirmar_a_entrada.svg), o jogador é direcionado para o ![lobby da sala](../assets/badges/lobby_da_sala.svg), onde visualiza o ![código da sala](../assets/badges/código_da_sala.svg), um ![botão para copiar link](../assets/badges/botão_para_copiar_link.svg) ![som: confirmação de cópia](../assets/badges/som_confirmação_de_cópia.svg) e o ![painel de divisão de equipes](../assets/badges/painel_de_divisão_de_equipes.svg), onde os participantes ![escolhem seu time](../assets/badges/escolhem_seu_time.svg) entre a ![Equipe Corvo](../assets/badges/equipe_corvo.svg) e a ![Equipe Águia](../assets/badges/equipe_águia.svg) em ![tempo real](../assets/badges/tempo_real.svg).
+Começa o jogo com a ![tela de carregamento](../assets/badges/tela_de_carregamento.svg) exibindo o ![logotipo do jogo](../assets/badges/logotipo_do_jogo.svg), em seguida a ![tela inicial](../assets/badges/tela_inicial.svg) ![música de lobby](../assets/badges/música_de_lobby.svg) com o ![campo do código da sala](../assets/badges/campo_do_código_da_sala.svg) e um ![botão para entrar](../assets/badges/botão_para_entrar.svg) ![som: clique](../assets/badges/som_clique.svg). Ao acessar a sala, seja por criação direta ou por link compartilhado, o jogador recebe o ![diálogo de apelido](../assets/badges/diálogo_de_apelido.svg) com um ![campo de texto](../assets/badges/campo_de_texto.svg) para ![digitar o apelido](../assets/badges/digitar_o_apelido.svg) obrigatório e ![confirmar a entrada](../assets/badges/confirmar_a_entrada.svg) ![som: clique](../assets/badges/som_clique.svg). O jogo realiza o ![handshake com o servidor](../assets/badges/handshake_com_o_servidor.svg) para validar a existência da sala e a disponibilidade no quórum máximo de 4 jogadores. Confirmada a entrada, o jogador é direcionado para o ![lobby da sala](../assets/badges/lobby_da_sala.svg), onde visualiza o ![código da sala](../assets/badges/código_da_sala.svg), um ![botão para copiar link](../assets/badges/botão_para_copiar_link.svg) ![som: confirmação de cópia](../assets/badges/som_confirmação_de_cópia.svg) e o ![painel de divisão de equipes](../assets/badges/painel_de_divisão_de_equipes.svg), onde os participantes ![escolhem seu time](../assets/badges/escolhem_seu_time.svg) entre a ![Equipe Corvo](../assets/badges/equipe_corvo.svg) e a ![Equipe Águia](../assets/badges/equipe_águia.svg) em ![tempo real](../assets/badges/tempo_real.svg), com alocação opcional em equipe aleatória. Durante a permanência no lobby, o anfitrião detém a prerrogativa de moderação através do ![botão para expulsar participante](../assets/badges/botão_para_expulsar_participante.svg) para ![expulsar participante da sala](../assets/badges/expulsar_participante_da_sala.svg), liberando a vaga ocupada e notificando o expulso. Estando a sala completa com 4 jogadores, o anfitrião aciona o ![botão de iniciar partida](../assets/badges/botão_de_iniciar_partida.svg) ![som: clique](../assets/badges/som_clique.svg).
 
 Havendo participantes em ambos os lados, tem início a ![disputa de iniciativa](../assets/badges/disputa_de_iniciativa.svg) ![música de contagem rápida](../assets/badges/música_de_contagem_rápida.svg): cada equipe escolhe um representante para disputar um minijogo de Pedra, Papel e Tesoura através de ![três botões com ícones](../assets/badges/três_botões_com_ícones.svg) ![som: seleção de lance](../assets/badges/som_seleção_de_lance.svg). O jogo ![compara as escolhas](../assets/badges/compara_as_escolhas.svg): em caso de ![empate](../assets/badges/empate.svg), o confronto se ![repete na hora](../assets/badges/repete_na_hora.svg); em caso de ![vitória](../assets/badges/vitória.svg), a equipe vencedora ganha o direito de começar e ![escolhe a carta da rodada](../assets/badges/escolhe_a_carta_da_rodada.svg) ![fanfarra de vitória PPT](../assets/badges/fanfarra_de_vitória_ppt.svg).
 
@@ -42,6 +42,8 @@ O jogo inicia a revelação dramática ![música de suspense em crescendo](../as
 
 A pontuação ![aumenta no placar vertical](../assets/badges/aumenta_no_placar_vertical.svg) de cada equipe em uma corrida animada até a meta de 10 pontos. Se nenhuma equipe alcançou 10 pontos, o jogo ![alterna a posse de turno](../assets/badges/alterna_a_posse_de_turno.svg) e a outra equipe joga a próxima rodada.
 
+Caso ocorra queda de conexão de algum participante durante a partida, o anfitrião visualiza o ![aviso de desconexão](../assets/badges/aviso_de_desconexão.svg) ![aviso sonoro de desconexão](../assets/badges/aviso_sonoro_de_desconexão.svg), podendo escolher entre ![aguardar a reconexão](../assets/badges/aguardar_a_reconexão.svg) ou ![desfazer a sala](../assets/badges/desfazer_a_sala.svg). Se o participante desconectado tentar reconectar através de outro dispositivo com o mesmo apelido, o sistema executa o protocolo de ![reassunção de assento](../assets/badges/reassunção_de_assento.svg) mediante ![aprovação do anfitrião](../assets/badges/aprovação_do_anfitrião.svg). Se a ausência persistir e o tempo do turno ativo do ausente esgotar, o jogo declara ![vitória por WO](../assets/badges/vitória_por_wo.svg) ![fanfarra de vitória por WO](../assets/badges/fanfarra_de_vitória_por_wo.svg) para a equipe adversária.
+
 Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg), a partida termina e abre a ![tela de vitória final](../assets/badges/tela_de_vitória_final.svg) consagrando os campeões ![música épica de vitória](../assets/badges/música_épica_de_vitória.svg), com o ![painel de métricas de sintonia](../assets/badges/painel_de_métricas_de_sintonia.svg) exibindo o maior acerto e a maior gafe da partida, além do ![botão de revanche](../assets/badges/botão_de_revanche.svg) ![som: clique de revanche](../assets/badges/som_clique_de_revanche.svg), que ![reinicia e recomeça a partida](../assets/badges/reinicia_e_recomeça_a_partida.svg) na mesma sala, e o ![botão para voltar ao início](../assets/badges/botão_para_voltar_ao_início.svg).
 
 ---
@@ -50,16 +52,21 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 
 ### ![Arte](../assets/badges/arte.svg) Arte
 
-- [ ] Tela de Carregamento Inicial (Loading)
-- [ ] Logotipo oficial do jogo em tipografia Bagel Fat One
-- [ ] Tela de Entrada Principal (Title Card)
-- [ ] Campo de entrada e rótulos de Apelido do Jogador
-- [ ] Botão de Ação: Criar Sala / Entrar na Sala
-- [ ] Tela de Lobby Multiplayer
-- [ ] Identificador de Sala em fonte Fira Code
-- [ ] Botão de Copiar Link de Convite com estado reativo de confirmação
-- [ ] Painel Tripartite de Escolha de Equipes (Corvo, Aleatório em tons de cinza e Águia com watermarks dedicadas)
-- [ ] Botão de Iniciar Partida exclusivo do anfitrião (verde com ícone à direita e quórum de 4 jogadores)
+- [x] Tela de Carregamento Inicial (Loading)
+- [x] Logotipo oficial do jogo em tipografia Bagel Fat One
+- [x] Tela de Entrada Principal com Campo do Código da Sala
+- [x] Diálogo Modal Bloqueante de Apelido com Campo de Texto
+- [x] Botão de Ação: Criar Sala / Entrar na Sala
+- [x] Tela de Lobby Multiplayer
+- [x] Identificador de Sala em fonte Fira Code
+- [x] Botão de Copiar Link de Convite com estado reativo de confirmação
+- [x] Painel Tripartite de Escolha de Equipes (Corvo, Aleatório em tons de cinza e Águia com watermarks dedicadas)
+- [x] Botão de Iniciar Partida exclusivo do anfitrião (verde com ícone à direita e quórum de 4 jogadores)
+- [ ] Botão para Expulsar Participante exclusivo do anfitrião na listagem de equipes
+- [ ] Diálogo Informativo de Notificação para Participante Expulso
+- [x] Painel de Aviso de Desconexão para o Anfitrião (opções de Aguardar Reconexão ou Desfazer Sala)
+- [ ] Diálogo Modal de Aprovação de Reassunção de Assento pelo Anfitrião
+- [ ] Selo visual de consagração de Vitória por WO
 - [ ] Arena de Minijogo de Iniciativa (PPT)
 - [ ] Três botões com ícones vetoriais de Pedra, Papel e Tesoura
 - [ ] Tela de Escolha de Espectro
@@ -81,33 +88,42 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 
 ### ![Programação](../assets/badges/programação.svg) Programação
 
-- [ ] Inicialização do cliente SvelteKit e verificação de saúde do backend PocketBase
-- [ ] Sanitização defensiva de apelidos de jogador contra injeção de tags HTML (máximo 20 caracteres)
-- [ ] Geração dinâmica de slug de sala na URL (`/[sala]`) e inserção no banco de dados SQLite
-- [ ] Cópia para a área de transferência (`navigator.clipboard.writeText`) com feedback visual temporário
-- [ ] Sincronização de presença de jogadores em tempo real via Server-Sent Events (SSE)
-- [ ] Controle autoritativo de quórum (máx 4 jogadores por sala e máx 2 por equipe), sorteio estocástico de aleatórios e início pelo host
-- [ ] Envio de intenções tipadas (`GameAction`) via REST para o backend
-- [ ] Rota autoritativa POST `/api/ppt/lance` e arbitragem em memória thread-safe (`$app.store()`)
-- [ ] Resolução de confronto de PPT com desempate e reemissão automática
-- [ ] Sorteio estocástico de cartas bipolares a partir do catálogo temático
-- [ ] Criação autoritativa de rodadas e sorteio da meta percentual secreta no intervalo [5%, 95%]
-- [ ] Blindagem de sigilo Zero Trust da meta oculta (ocultação inviolável antes da revelação oficial)
-- [ ] Sanitização defensiva de pistas textuais (remoção de HTML e truncamento em 60 caracteres)
-- [ ] Transição autoritativa de fase de Dica para Palpite no backend (`game_rules.pb.js`)
+- [x] Inicialização do cliente SvelteKit e verificação de saúde do backend PocketBase
+- [x] Handshake autoritativo Zero Trust e validação de sala no PocketBase
+- [x] Diálogo bloqueante de identificação de apelido em acessos diretos por link
+- [x] Sanitização defensiva de apelidos de jogador contra injeção de tags HTML (máximo 20 caracteres)
+- [x] Geração dinâmica de slug de sala na URL (`/[sala]`) e inserção no banco de dados SQLite
+- [x] Cópia para a área de transferência (`navigator.clipboard.writeText`) com feedback visual temporário
+- [x] Sincronização de presença de jogadores em tempo real via Server-Sent Events (SSE)
+- [x] Controle autoritativo de quórum (máx 4 jogadores por sala e máx 2 por equipe), sorteio estocástico de aleatórios e início pelo host
+- [ ] Rota autoritativa POST `/api/leveling/salas/{codigo}/expulsar` com validação soberana de host_id e liberação imediata de vaga
+- [ ] Tratamento no cliente para interceptação de expulsão, encerramento de sessão e redirecionamento à tela inicial
+- [x] Monitoramento de presença por heartbeats periódicos e detecção de desconexão
+- [x] Notificação autoritativa de desconexão em tempo real ao anfitrião
+- [x] Ação de desfazer sala com encerramento de conexões SSE e limpeza de registros
+- [x] Protocolo de reassunção de assento com verificação de threshold de inatividade e aprovação do anfitrião
+- [ ] Resolução automática de rodada por WO em caso de ausência continuada do jogador ativo
+- [x] Envio de intenções tipadas (`GameAction`) via REST para o backend
+- [x] Rota autoritativa POST `/api/ppt/lance` e arbitragem em memória thread-safe (`$app.store()`)
+- [x] Resolução de confronto de PPT com desempate e reemissão automática
+- [x] Sorteio estocástico de cartas bipolares a partir do catálogo temático
+- [x] Criação autoritativa de rodadas e sorteio da meta percentual secreta no intervalo [5%, 95%]
+- [x] Blindagem de sigilo Zero Trust da meta oculta (ocultação inviolável antes da revelação oficial)
+- [x] Sanitização defensiva de pistas textuais (remoção de HTML e truncamento em 60 caracteres)
+- [x] Transição autoritativa de fase de Dica para Palpite no backend (`game_rules.pb.js`)
 - [ ] Controlador de física e arrasto analógico (`SliderDragController`) com clamp matemático em [0, 100]
 - [ ] Acionamento de feedback háptico por vibração móvel (`navigator.vibrate`) a cada dezena percorrida
-- [ ] Submissão do palpite e transmissão via SSE da fase de revelação para todos os clientes
+- [x] Submissão do palpite e transmissão via SSE da fase de revelação para todos os clientes
 - [x] Integração temporal contínua da fase do menisco (requestAnimationFrame) e física aditiva de agitação no lobby
 - [ ] Dinamização da velocidade da onda do menisco em função do placar da equipe (5.0s a 0.25s)
 - [ ] Animação vetorial SVG do menisco subindo até o valor real do líquido
-- [ ] Algoritmo autoritativo de acerto aproximado por faixas de tolerância (|meta - palpite|: <=2%, <=6%, <=12%, >12%)
-- [ ] Atualização autoritativa em cascata dos placares na coleção `salas`
+- [x] Algoritmo autoritativo de acerto aproximado por faixas de tolerância (|meta - palpite|: <=2%, <=6%, <=12%, >12%)
+- [x] Atualização autoritativa em cascata dos placares na coleção `salas`
 - [ ] Interpolação numérica suave do placar via Svelte Runes / tweened
-- [ ] Alternância de posse de turno (_momentum_) e avanço do número da rodada
-- [ ] Verificação de condição de vitória ao atingir a meta de 10 pontos
-- [ ] Disparo de ação de Revanche (`REMATCH_INTENT`) com reset dos placares e reinício no PPT
-- [ ] Hook de higienização periódica (`cleanup.pb.js`) apagando salas inativas há mais de 15 minutos
+- [x] Alternância de posse de turno (_momentum_) e avanço do número da rodada
+- [x] Verificação de condição de vitória ao atingir a meta de 10 pontos
+- [x] Disparo de ação de Revanche (`REMATCH_INTENT`) com reset dos placares e reinício no PPT
+- [x] Hook de higienização periódica (`cleanup.pb.js`) apagando salas inativas há mais de 15 minutos
 
 ### ![Áudio](../assets/badges/áudio.svg) Áudio
 
@@ -120,6 +136,8 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 - [ ] Efeito sonoro (SFX): confirmação de cópia de link da sala
 - [ ] Efeito sonoro (SFX): seleção de lance de Pedra, Papel e Tesoura
 - [ ] Efeito sonoro (SFX): fanfarra de vitória na disputa de PPT
+- [ ] Efeito sonoro (SFX): aviso sonoro de desconexão de participante
+- [ ] Efeito sonoro (SFX): fanfarra de vitória por WO
 - [ ] Efeito sonoro (SFX): líquido borbulhando dentro do tubo de ensaio
 - [ ] Efeito sonoro (SFX): envio confirmado da dica conceitual
 - [ ] Efeito sonoro (SFX): ruído mecânico de deslizamento contínuo do slider
