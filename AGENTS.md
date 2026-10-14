@@ -61,25 +61,30 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 
 ## 4. Síntese de Localização Rápida (Onde Encontrar Cada Coisa)
 
-| O que você precisa alterar / inspecionar     | Onde encontrar (Arquivo / Pasta)         | Responsabilidade Principal                                                                           |
-| :------------------------------------------- | :--------------------------------------- | :--------------------------------------------------------------------------------------------------- |
-| **Página inicial do projeto e índice**       | `README.md`                              | Apresentação do jogo, integrantes e sumário de navegação com links diretos.                          |
-| **SGDD consolidado da versão atual**         | `docs/sgdd/sgdd.md`                      | Short Game Design Document (Motta & Trigueiro, SBGames 2013) com texto corrido e listas de produção. |
-| **Modelagem de Entidades abrangentes**       | `docs/entidades/entidades.md`            | As 5 grandes entidades conceituais (`Participante`, `Sessao`, `Artefato`, `Disputa`, etc.).          |
-| **Catálogo de Componentes atômicos**         | `docs/componentes/componentes.md`        | Os 19 componentes atômicos, matriz de associação com entidades e justificativas técnicas.            |
-| **Diagramas de Entidades e Componentes**     | `docs/diagramas/diagramas.md`            | Diagramas visuais em grid de entidades, instanciações e composição com componentes.                  |
-| **Paleta, tokens CSS, dark mode e temas**    | `src/routes/layout.css`                  | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos).         |
-| **Importação de fontes e head global**       | `src/app.html`                           | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).               |
-| **Casca da aplicação e navegação**           | `src/routes/+layout.svelte`              | Estrutura comum que envolve todas as páginas e carrega os estilos globais.                           |
-| **Lobby de entrada e criação de sala**       | `src/routes/+page.svelte`                | Tela inicial com Title Card, criação rápida de sala e entrada de apelido.                            |
-| **Arena principal do jogo (Partida)**        | `src/routes/[sala]/+page.svelte`         | Orquestração da sala, sincronização da partida e renderização das fases.                             |
-| **Componente do Tubo de Ensaio (SVG)**       | `src/lib/components/TestTube.svelte`     | Tubo procedural SVG, dupla camada de menisco contínuo e física de agitação tátil.                    |
-| **Camada de Input (Intenção & Sanitização)** | `src/lib/engine/input/`                  | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts).                |
-| **Camada de Update (Máquina de Estados)**    | `src/lib/engine/update/`                 | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).               |
-| **Camada de Render (Projeções UI)**          | `src/lib/engine/render/`                 | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts).                 |
-| **Orquestrador do Motor Canônico**           | `src/lib/engine/game-engine.ts`          | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições.                  |
-| **Backend Autoritativo em Go Nativo**        | `backend/` (`cmd/server/`, `internal/`)  | Servidor estendendo PocketBase, Entidades de Domínio, Componentes Atômicos e rotas pass-through.     |
-| **Regras e Restrições para Agentes**         | `AGENTS.md`, `docs/agents/` e `.agents/` | Proibições estritas, guias aprofundados e convenções do repositório.                                 |
+| O que você precisa alterar / inspecionar     | Onde encontrar (Arquivo / Pasta)                | Responsabilidade Principal                                                                            |
+| :------------------------------------------- | :---------------------------------------------- | :---------------------------------------------------------------------------------------------------- |
+| **Página inicial do projeto e índice**       | `README.md`                                     | Apresentação do jogo, integrantes e sumário de navegação com links diretos.                           |
+| **SGDD consolidado da versão atual**         | `docs/sgdd/sgdd.md`                             | Short Game Design Document (Motta & Trigueiro, SBGames 2013) com texto corrido e listas de produção.  |
+| **Modelagem de Entidades abrangentes**       | `docs/entidades/entidades.md`                   | As 5 grandes entidades conceituais (`Participante`, `Sessao`, `Artefato`, `Disputa`, etc.).           |
+| **Catálogo de Componentes atômicos**         | `docs/componentes/componentes.md`               | Os 19 componentes atômicos, matriz de associação com entidades e justificativas técnicas.             |
+| **Diagramas de Entidades e Componentes**     | `docs/diagramas/diagramas.md`                   | Diagramas visuais em grid de entidades, instanciações e composição com componentes.                   |
+| **Paleta, tokens CSS, dark mode e temas**    | `src/routes/layout.css`                         | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos).          |
+| **Importação de fontes e head global**       | `src/app.html`                                  | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).                |
+| **Casca da aplicação e navegação**           | `src/routes/+layout.svelte`                     | Estrutura comum que envolve todas as páginas e carrega os estilos globais.                            |
+| **Lobby de entrada e criação de sala**       | `src/routes/+page.svelte`                       | Tela inicial com Title Card, criação rápida de sala e entrada de apelido.                             |
+| **Arena principal do jogo (Partida)**        | `src/routes/[sala]/+page.svelte`                | Orquestrador reativo da sala, ciclo de rede, reconciliação e despacho.                                |
+| **Modal de Identificação (Zero Trust)**      | `src/lib/components/NicknameModal.svelte`       | Diálogo bloqueante para digitação e validação autoritativa do apelido.                                |
+| **Barra Superior da Sala**                   | `src/lib/components/RoomHeader.svelte`          | Identificação do jogador, badge de host, código da sala e cópia de link.                              |
+| **Banner de Desconexão**                     | `src/lib/components/DisconnectionBanner.svelte` | Alerta para o anfitrião sobre perda de conexão de participantes com opções.                           |
+| **Arena do Lobby (Painel Tripartite)**       | `src/lib/components/LobbyArena.svelte`          | Distribuição tripartite de equipes (Corvo, Aleatório, Águia) e início pelo anfitrião.                 |
+| **Componente do Tubo de Ensaio (SVG)**       | `src/lib/components/TestTube.svelte`            | Tubo procedural SVG, dupla camada de menisco contínuo e física de agitação tátil.                     |
+| **Camada de Input (Intenção & Sanitização)** | `src/lib/engine/input/`                         | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts).                 |
+| **Camada de Update (Máquina de Estados)**    | `src/lib/engine/update/`                        | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).                |
+| **Camada de Render (Projeções UI)**          | `src/lib/engine/render/`                        | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts).                  |
+| **Orquestrador do Motor Canônico**           | `src/lib/engine/game-engine.ts`                 | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições.                   |
+| **Hooks e Rotas do Servidor em Go**          | `backend/internal/hooks/`                       | Módulos decompostos: lifecycle.go, routes_lobby.go, routes_match.go, routes_ppt.go, cron.go, utils.go |
+| **Backend Autoritativo em Go Nativo**        | `backend/` (`cmd/server/`, `internal/`)         | Servidor estendendo PocketBase, Entidades de Domínio, Componentes Atômicos e rotas pass-through.      |
+| **Regras e Restrições para Agentes**         | `AGENTS.md`, `docs/agents/` e `.agents/`        | Proibições estritas, guias aprofundados e convenções do repositório.                                  |
 
 ---
 

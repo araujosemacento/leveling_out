@@ -75,7 +75,13 @@ Na camada de interface e cliente, o front-end adota Composição sobre Herança:
   - `SliderDragController`: captura de toques, cálculo de offset percentual e sensibilidade tátil.
   - `RoundTimer`: contagem regressiva determinística de tempo.
   - `SessionSyncController`: gerenciamento de ciclo de vida da conexão SSE e emissão de intenções para o PocketBase.
-- **Componentes Visuais Finos:** Os componentes Svelte (`TestTube.svelte`, `AnalogSlider.svelte`, `ScoreBoard.svelte`) instanciam esses controladores por composição, mantendo as tags `<script>` limpas e dedicadas unicamente à ligação reativa de markup e estilos.
+- **Componentes Visuais Finos e Decomposição de Páginas:** Para prevenir arquivos monolíticos (_God Files_), as páginas delegam suas fases e diálogos a componentes atômicos/compostos em `src/lib/components/`:
+  - `NicknameModal.svelte`: diálogo bloqueante de identificação de apelido com validação defensiva Zero Trust.
+  - `RoomHeader.svelte`: cabeçalho de status da sala, identificação do jogador e botão de cópia com feedback.
+  - `DisconnectionBanner.svelte`: banner de aviso com opções exclusivas do anfitrião para desconexões.
+  - `LobbyArena.svelte`: grade tripartite de divisão de equipes (Corvo, Aleatório, Águia) e controle de quórum.
+  - `GamePlaceholder.svelte`: transição visual para a fase de partida em andamento.
+  - `TestTube.svelte`: tubo SVG procedural reativo com menisco duplo e dinâmica de fluidos.
 
 ---
 
@@ -109,6 +115,14 @@ O backend opera como um executável nativo em Go estendendo o PocketBase como fr
     - `RegraProximidadeComponent`: Algoritmo matemático autoritativo de proximidade e atribuição de faixas de pontuação (+4, +3, +2 ou 0).
     - `SigiloMetaComponent`: Geração criptograficamente segura de `meta_oculta` (números pseudo-aleatórios com `crypto/rand` no intervalo [5, 95]) e blindagem de dados sensíveis.
     - `CleanupComponent`: Rotina periódica em segundo plano para expurgação automática de conexões e salas ociosas.
+  - **Decomposição Modular dos Hooks e Rotas (`internal/hooks/`):** Para manter cada arquivo coeso e estritamente abaixo do limite de complexidade, o pacote `hooks` foi particionado em submódulos especializados:
+    - `register.go`: Orquestrador principal enxuto que instancia os componentes atômicos e despacha o registro para os módulos filhos.
+    - `lifecycle.go`: Regras de negócio acopladas aos gatilhos de criação e atualização das coleções `salas`, `rodadas` e `jogadores`.
+    - `routes_lobby.go`: Rotas HTTP autoritativas para o handshake de ingresso (`/entrar`), heartbeats (`/ping`), seleção de equipes (`/equipe`) e dissolução (`/desfazer`).
+    - `routes_ppt.go`: Rotas de envio de lances (`/lance`) e consulta de estado da disputa de iniciativa (`/status`).
+    - `routes_match.go`: Rotas de início de partida com balanceamento estocástico de participantes indecisos (`/iniciar`) e consulta otimizada (`/snapshot`).
+    - `cron.go`: Agendamentos periódicos de tarefas em background para expurgação de inativos.
+    - `utils.go`: Utilitários compartilhados de geração de tokens criptográficos, sanitização de apelidos e consultas SQL-Generated JSON.
 - **Workflow Automatizado de Releases (`backend/.github/workflows/release.yml`):**
   - Hospedado no repositório dedicado `araujosemacento/backend_leveling_out`, mantendo o ciclo de compilação dos binários desacoplado do cliente web.
   - Matriz de compilação cruzada nativa para Linux (`amd64`, `arm64`), macOS (`amd64`, `arm64`) e Windows (`amd64`).

@@ -54,4 +54,3 @@ export function getApiHeaders(customHeaders: Record<string, string> = {}): Recor
 
 	return headers;
 }
-

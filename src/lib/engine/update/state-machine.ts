@@ -260,6 +260,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 			const membrosB = (jogadores || []).filter((j) => j.equipe === 'B');
 			const aleatorios = (jogadores || []).filter((j) => j.equipe !== 'A' && j.equipe !== 'B');
 
+			let minhaEquipe = state.minhaEquipe;
+			if (state.meuJogadorId) {
+				const me = (jogadores || []).find((j) => j.id === state.meuJogadorId);
+				if (me) {
+					minhaEquipe = me.equipe;
+				}
+			}
+
 			return {
 				...state,
 				fase,
@@ -271,6 +279,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 					B: { ...state.equipes.B, pontos: placarB, membros: membrosB }
 				},
 				jogadoresAleatorios: aleatorios,
+				minhaEquipe,
 				rodadaAtual: {
 					...state.rodadaAtual,
 					numero: Number(sala.rodada_atual) || 1

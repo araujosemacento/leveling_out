@@ -14,9 +14,7 @@ const config = {
 			strict: true
 		}),
 		paths: {
-			base: process.argv.includes('dev')
-				? ''
-				: (process.env.BASE_PATH ?? '/leveling_out')
+			base: process.argv.includes('dev') ? '' : (process.env.BASE_PATH ?? '/leveling_out')
 		}
 	}
 };
