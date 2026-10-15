@@ -49,11 +49,11 @@ Todo código, estilo ou modificação submetida neste repositório deve respeita
 O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 
 - **Camada de Input (Cliente - `src/lib/engine/input/`):** Captura eventos de interface e gestos, aplica sanitização defensiva rigorosa (`sanitize.ts`) e despacha intenções tipadas (`intent-factory.ts`) para a rede.
-- **Camada de Update (Servidor Autoritário - `backend/`):** Executa em PocketBase. No protótipo atual, opera via hooks JavaScript (`game_rules.pb.js` e `iniciativa.pb.js`), com migração planejada para Go nativo estendendo o PocketBase como framework, formalizando as entidades de domínio e componentes atômicos autoritativos (`ArbitroPptComponent`, `RegraProximidadeComponent`, `SigiloMetaComponent`).
+- **Camada de Update (Servidor Autoritário - `backend/`):** Executa em PocketBase estendido em Go nativo, formalizando entidades de domínio abrangentes (`EntidadeSessao`, `EntidadeParticipante`, `EntidadeDisputa`), componentes atômicos autoritativos (`ArbitroPptComponent`, `RegraProximidadeComponent`, `SigiloMetaComponent`, `CleanupComponent`) e rotas decompostas (`routes_lobby.go`, `routes_match.go`, `routes_ppt.go`).
 - **Camada de Sincronização (Cliente - `src/lib/engine/update/`):** Reducer determinístico puro `gameReducer` (`state-machine.ts`) que reconcilia o estado da máquina cliente via Server-Sent Events (SSE) sem decidir regras por conta própria.
 - **Camada de Render (Cliente - `src/lib/engine/render/`):** Projeções puras `UI = f(State)` (`projections.ts`) que blindam a meta oculta e entregam ViewModels reativos para os componentes Svelte.
 - **Orquestrador Central (`src/lib/engine/game-engine.ts`):** Coordena o ciclo de vida e notifica os ouvintes reativos da interface.
-- **Análise de Serialização JSON e Otimização:** No modelo atual com `pb_hooks`, o fluxo de dados atravessa um funil de três camadas (`HTTP` $\rightarrow$ `Go` $\rightarrow$ `Goja JS` $\rightarrow$ `SQLite/SSE`), incorrendo em conversão de tipos por reflexão em runtime (`reflect`) e alocações na heap da VM. Na cadência atual de turnos (ações esparsas a cada ~30s), o custo é irrelevante (~0,5 ms a 2 ms). Para tráfego contínuo em tempo real (arrasto do slider a 60 fps), a solução exige Go nativo com WebSockets duplex. Para snapshots volumosos (reconciliação `FULL_SYNC` e métricas finais), a arquitetura prevê a técnica de **SQL-Generated JSON** (`json_object` e `json_group_array` no SQLite) repassando bytes brutos diretamente ao HTTP sem overhead de serialização no Go.
+- **Análise de Serialização JSON e Otimização:** O servidor Go opera com tipagem estática e leitura otimizada via **SQL-Generated JSON** (`json_object` e `json_group_array` no SQLite) no endpoint `/snapshot`, repassando bytes brutos diretamente ao HTTP com zero-copy pass-through e eliminando reflexão em runtime.
 
 > Para detalhes de arquitetura, componentes atômicos e integração com PocketBase, consulte [docs/agents/architecture.md](docs/agents/architecture.md) e [docs/componentes/componentes.md](docs/componentes/componentes.md).
 
@@ -76,7 +76,7 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 | **Modal de Identificação (Zero Trust)**      | `src/lib/components/NicknameModal.svelte`       | Diálogo bloqueante para digitação e validação autoritativa do apelido.                                |
 | **Barra Superior da Sala**                   | `src/lib/components/RoomHeader.svelte`          | Identificação do jogador, badge de host, código da sala e cópia de link.                              |
 | **Banner de Desconexão**                     | `src/lib/components/DisconnectionBanner.svelte` | Alerta para o anfitrião sobre perda de conexão de participantes com opções.                           |
-| **Arena do Lobby (Painel Tripartite)**       | `src/lib/components/LobbyArena.svelte`          | Distribuição tripartite de equipes (Corvo, Aleatório, Águia) e início pelo anfitrião.                 |
+| **Arena do Lobby (Painel Tripartite)**       | `src/lib/components/LobbyArena.svelte`          | Distribuição tripartite de equipes (Pato, Aleatório, Ganso) e início pelo anfitrião.                  |
 | **Componente do Tubo de Ensaio (SVG)**       | `src/lib/components/TestTube.svelte`            | Tubo procedural SVG, dupla camada de menisco contínuo e física de agitação tátil.                     |
 | **Camada de Input (Intenção & Sanitização)** | `src/lib/engine/input/`                         | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts).                 |
 | **Camada de Update (Máquina de Estados)**    | `src/lib/engine/update/`                        | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).                |
@@ -130,12 +130,12 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 - [x] Criar o componente `TestTube.svelte` em SVG procedural com física de líquido, menisco senoidal contínuo e easter egg interativo de chacoalho.
 - [ ] Criar o componente `AnalogSlider.svelte` integrando a classe composível `SliderDragController`.
 - [x] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
-- [x] Implementar divisão tripartite de equipes no Lobby (Corvo, Aleatório, Águia), controle de quórum de 4 jogadores e início autoritativo pelo anfitrião.
+- [x] Implementar divisão tripartite de equipes no Lobby (Pato, Aleatório, Ganso), controle de quórum de 4 jogadores e início autoritativo pelo anfitrião.
 - [x] Fluxo de ingresso autoritativo Zero Trust: tela inicial exclusiva por código de sala, diálogo bloqueante de apelido e validação com token de sessão.
 - [x] Monitoramento de presença por heartbeats periódicos (ping a cada 5s) e protocolo de desconexão/reconexão autoritativo.
 - [x] Portabilidade autoritativa dos hooks para Go nativo com PocketBase estendido, adequando o backend à arquitetura de Entidades e Componentes atômicos.
 - [ ] Minijogo de Pedra, Papel e Tesoura refatorado em Svelte puro para decisão de turno.
-- [ ] Moderação autoritativa no Lobby: expulsão de participante pelo anfitrião (kick de jogador) com revogação de assento, liberação imediata de vaga e notificação SSE dedicada.
+- [x] Moderação autoritativa no Lobby: expulsão de participante pelo anfitrião (kick de jogador) com revogação de assento, liberação imediata de vaga e notificação SSE dedicada.
 
 ### Fase 3: Polimento e Experiência de Jogo
 

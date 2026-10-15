@@ -22,7 +22,7 @@ A arquitetura de _Leveling Out_ traduz o Game Loop clássico de motores de jogo 
 ### 1.2. Fase de Update (Servidor Autoritário / PocketBase)
 
 - **Autoritarismo de Estado:** A verdade do jogo reside exclusivamente no servidor PocketBase (hooks e framework Go nativo).
-- **Gestão Autoritativa do Lobby e Quórum:** O servidor monitora a criação e atualização de registros na coleção `jogadores`. O primeiro participante a entrar é registrado como anfitrião (`is_host: true` e `host_id` na sala). O quórum é limitado estritamente a 4 integrantes por sala, e as equipes Corvo (`A`) e Águia (`B`) possuem limite rígido de 2 integrantes cada. A opção neutra `ALEATORIO` acolhe jogadores indecisos.
+- **Gestão Autoritativa do Lobby e Quórum:** O servidor monitora a criação e atualização de registros na coleção `jogadores`. O primeiro participante a entrar é registrado como anfitrião (`is_host: true` e `host_id` na sala). O quórum é limitado estritamente a 4 integrantes por sala, e as equipes Pato (`A`) e Ganso (`B`) possuem limite rígido de 2 integrantes cada. A opção neutra `ALEATORIO` acolhe jogadores indecisos.
 - **Moderação Soberana pelo Anfitrião (`POST /api/leveling/salas/{codigo}/expulsar`):** Endpoint exclusivo pelo qual o anfitrião pode revogar autoritativamente o assento de qualquer outro participante no Lobby. O servidor valida a titularidade do host (`host_id`), impede auto-expulsão, exclui o registro do jogador no SQLite, libera imediatamente a vaga da equipe e emite evento SSE de exclusão para toda a rede.
 - **Sorteio Estocástico e Inicialização (`POST /api/leveling/salas/{codigo}/iniciar`):** Endpoint exclusivo acionado pelo anfitrião quando o quórum atinge exatamente 4 jogadores. O backend valida a identidade do requisitante (`X-Player-Id`), embaralha criptograficamente (`crypto/rand`) os participantes em `ALEATORIO`, completa as vagas remanescentes de cada equipe para totalizar 2 em cada lado e transiciona a sala para a fase `INICIATIVA`.
 - **Geração de Segredos:** Sorteio seguro de metas ocultas no tubo de ensaio ($5\%$ a $95\%$).
@@ -50,7 +50,7 @@ Para garantir desacoplamento, testabilidade e expressividade típicos de uma gam
 
 As entidades são modeladas como agregadores conceituais amplos. Quanto mais papéis uma entidade puder abranger conceitualmente, mais coesa se torna a arquitetura:
 
-- `EntidadeParticipante`: atua tanto como `JogadorIndividual` (com seus papéis voláteis de Codificador, Palpiteiro e Espectador) quanto como `EquipeColetiva` (Corvo vs Águia).
+- `EntidadeParticipante`: atua tanto como `JogadorIndividual` (com seus papéis voláteis de Codificador, Palpiteiro e Espectador) quanto como `EquipeColetiva` (Pato vs Ganso).
 - `EntidadeSessao`: atua como `SalaMatch` e como `RodadaAtiva`.
 - `EntidadeArtefato`: atua como `TuboDeEnsaio`, `MarcadorAnalogico` e `CartaEspectro`.
 - `EntidadeDisputa`: atua como `DisputaPpt` e como `JulgamentoProximidade`.
@@ -79,7 +79,7 @@ Na camada de interface e cliente, o front-end adota Composição sobre Herança:
   - `NicknameModal.svelte`: diálogo bloqueante de identificação de apelido com validação defensiva Zero Trust.
   - `RoomHeader.svelte`: cabeçalho de status da sala, identificação do jogador e botão de cópia com feedback.
   - `DisconnectionBanner.svelte`: banner de aviso com opções exclusivas do anfitrião para desconexões.
-  - `LobbyArena.svelte`: grade tripartite de divisão de equipes (Corvo, Aleatório, Águia) e controle de quórum.
+  - `LobbyArena.svelte`: grade tripartite de divisão de equipes (Pato, Aleatório, Ganso) e controle de quórum.
   - `GamePlaceholder.svelte`: transição visual para a fase de partida em andamento.
   - `TestTube.svelte`: tubo SVG procedural reativo com menisco duplo e dinâmica de fluidos.
 
@@ -108,7 +108,7 @@ O backend opera como um executável nativo em Go estendendo o PocketBase como fr
 - **Adequação do Backend à Composição por Entidades e Componentes:**
   - **Entidades de Domínio no Servidor (`internal/entities/`):**
     - `EntidadeSessao`: Gerencia o macro-estado da sala compartilhada (`SalaMatch`) e o ciclo micro-temporal da rodada (`RodadaAtiva`).
-    - `EntidadeParticipante`: Gerencia tanto os jogadores individuais conectados (`Jogador`) quanto a pontuação cumulativa das equipes (`EquipeCorvo` e `EquipeAguia`).
+    - `EntidadeParticipante`: Gerencia tanto os jogadores individuais conectados (`Jogador`) quanto a pontuação cumulativa das equipes (`EquipePato` e `EquipeGanso`).
     - `EntidadeDisputa`: Gerencia confrontos e momentos de tensão competitiva (`DisputaPpt` e `AfericaoProximidade`).
   - **Componentes Atômicos de Backend (`internal/components/`):**
     - `ArbitroPptComponent`: Arbitragem thread-safe de lances de PPT com resolução determinística de confrontos e empates protegida por primitivas nativas (`sync.RWMutex`).

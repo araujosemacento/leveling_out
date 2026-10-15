@@ -17,13 +17,13 @@ export function createInitialGameState(salaCodigo: string): GameState {
 		equipes: {
 			A: {
 				id: 'A',
-				nome: 'Equipe Corvo',
+				nome: 'Equipe Pato',
 				pontos: 0,
 				membros: []
 			},
 			B: {
 				id: 'B',
-				nome: 'Equipe Águia',
+				nome: 'Equipe Ganso',
 				pontos: 0,
 				membros: []
 			}

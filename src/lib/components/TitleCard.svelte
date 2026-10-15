@@ -11,7 +11,7 @@
 	>
 		<TestTube
 			level={65}
-			team="corvo"
+			team="pato"
 			showScale={true}
 			animated={true}
 			duration={10}

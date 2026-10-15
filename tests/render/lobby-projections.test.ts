@@ -39,9 +39,9 @@ describe('Projeções do Lobby Tripartite e Quórum (getLobbyProjection)', () =>
 		engine.setPlayer('p3', 'Carlos', 'ALEATORIO');
 
 		const lobbyP3 = engine.getLobbyProjection('p3');
-		expect(lobbyP3.membrosCorvo.length).toBe(2);
-		expect(lobbyP3.podeEscolherCorvo).toBe(false);
-		expect(lobbyP3.podeEscolherAguia).toBe(true);
+		expect(lobbyP3.membrosPato.length).toBe(2);
+		expect(lobbyP3.podeEscolherPato).toBe(false);
+		expect(lobbyP3.podeEscolherGanso).toBe(true);
 		expect(lobbyP3.podeEscolherAleatorio).toBe(true);
 	});
 

@@ -93,7 +93,7 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Comportamento:** Incrementa valores inteiros positivos quando a equipe pontua.
 - **Camada:** Backend autoritativo (`game_rules.pb.js` / Go). O cliente apenas espelha o valor recebido.
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (mapa `Scores` com pontuação oficial das equipes Corvo e Águia) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (mapa `Scores` com pontuação oficial das equipes Pato e Ganso) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
   - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`GameState.scores`) e [`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts).
 - **Justificativa da Atomicidade:** Gerencia única e exclusivamente o placar numérico da equipe, blindando-o contra adulterações do lado cliente.
 
@@ -114,7 +114,7 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 #### 6. `ProgressaoRodadaComponent`
 
 - **Atributos:** `numeroRodada: number`, `equipeAtivaId: 'A' | 'B'`.
-- **Comportamento:** Incrementa o contador de rodadas e alterna a posse de turno (_momentum_) entre as equipes Corvo e Águia.
+- **Comportamento:** Incrementa o contador de rodadas e alterna a posse de turno (_momentum_) entre as equipes Pato e Ganso.
 - **Camada:** Backend autoritativo.
 - **Arquivo(s) no Código:**
   - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (`CurrentRound`, `ActiveTeamID`, métodos de transição de rodada).

@@ -86,7 +86,9 @@ const NEW_BADGES: Array<{ file: string; text: string; colorHex: string }> = [
 		file: 'botão_para_expulsar_participante.svg',
 		text: 'botão para expulsar participante',
 		colorHex: 'FAF4EB'
-	}
+	},
+	{ file: 'equipe_pato.svg', text: 'Equipe Pato', colorHex: 'FAF4EB' },
+	{ file: 'equipe_ganso.svg', text: 'Equipe Ganso', colorHex: 'FAF4EB' }
 ];
 
 function run() {

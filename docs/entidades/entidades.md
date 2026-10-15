@@ -42,7 +42,7 @@ Representa qualquer participante ou grupo de participantes com agência social e
   - _Codificador da Rodada:_ O participante ativo encarregado de observar o nível secreto e redigir a pista.
   - _Palpiteiro da Rodada:_ O participante ativo encarregado de ler a pista e deslizar o marcador analógico.
   - _Espectador Conectado:_ Jogadores da equipe inativa ou participantes observando a resolução da rodada.
-  - _Coletivo Competitivo (Equipe):_ A congregação de membros sob os ícones Corvo (Equipe A) ou Águia (Equipe B), detentora da pontuação coletiva e do _momentum_, além do agrupamento neutro transitório (`ALEATORIO`) para sorteio de vagas.
+  - _Coletivo Competitivo (Equipe):_ A congregação de membros sob os ícones Pato (Equipe A) ou Ganso (Equipe B), detentora da pontuação coletiva e do _momentum_, além do agrupamento neutro transitório (`ALEATORIO`) para sorteio de vagas.
 - **Especialização na Instanciação:**
   - Instância `Jogador`: recebe componentes de identidade individual, presença de rede, status de anfitrião e papéis dinâmicos de turno.
   - Instância `Equipe`: recebe componentes de agrupamento, acumulação de placar e controle de posse de turno.

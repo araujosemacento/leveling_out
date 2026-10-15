@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
 @theme {
 	/* Mapeamento de Cores para utilitários Tailwind (bg-primary, text-accent, etc.) */
 	--color-background: var(--background);
@@ -31,6 +33,8 @@
 	--color-text-muted: var(--text-muted);
 	--color-text-subtle: var(--text-subtle);
 	--color-text-on-accent: var(--text-on-accent);
+	--color-text-on-primary: var(--text-on-primary);
+	--color-text-on-secondary: var(--text-on-secondary);
 
 	--color-team-a: var(--color-team-a);
 	--color-team-b: var(--color-team-b);

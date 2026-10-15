@@ -22,6 +22,13 @@
 		cleanNickname: string;
 		onSubmit: (e: SubmitEvent) => void;
 	}>();
+
+	function autofocus(node: HTMLInputElement) {
+		requestAnimationFrame(() => {
+			node.focus();
+			node.select();
+		});
+	}
 </script>
 
 {#if isOpen}
@@ -60,6 +67,7 @@
 						autocomplete="off"
 						spellcheck="false"
 						disabled={statusConexao === 'CONECTANDO'}
+						use:autofocus
 						class="w-full border-b-2 border-border-medium bg-transparent px-3 py-3 text-center font-subheading text-2xl text-text-primary placeholder:text-text-subtle/50 focus:border-accent focus:outline-none sm:text-3xl"
 					/>
 				</div>

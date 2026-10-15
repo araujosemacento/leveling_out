@@ -29,6 +29,13 @@
 		errorMessage = '';
 		goto(resolve(`/${encodeURIComponent(targetRoom)}`));
 	}
+
+	/** @param {HTMLElement} node */
+	function autofocus(node) {
+		requestAnimationFrame(() => {
+			node.focus();
+		});
+	}
 </script>
 
 <svelte:head>
@@ -66,6 +73,7 @@
 						maxlength="16"
 						autocomplete="off"
 						spellcheck="false"
+						use:autofocus
 						class="w-full border-b-2 border-border-medium bg-transparent px-3 py-3 text-center font-code text-2xl tracking-wider text-accent uppercase placeholder:font-subheading placeholder:text-base placeholder:tracking-normal placeholder:text-text-subtle/50 focus:border-accent focus:outline-none sm:text-3xl"
 					/>
 				</div>

@@ -13,6 +13,8 @@
 	import GamePlaceholder from '$lib/components/GamePlaceholder.svelte';
 
 	import IconAlertCircle from '~icons/lucide/alert-circle';
+	import IconUserX from '~icons/lucide/user-x';
+	import IconArrowRight from '~icons/lucide/arrow-right';
 
 	let { data } = $props<{ data: { roomCode: string } }>();
 	let roomCode = $derived(data.roomCode);
@@ -33,6 +35,7 @@
 	let avisoTemporario = $state('');
 	let avisoTimeout: ReturnType<typeof setTimeout> | null = null;
 	let isStartingMatch = $state(false);
+	let foiExpulso = $state(false);
 	let backendUrl = $state(getBackendUrl());
 
 	// Instância desacoplada da GameEngine
@@ -317,6 +320,18 @@
 					return;
 				}
 
+				if (statusConexao === 'CONECTADO' && localPlayerId && snap.fase === 'LOBBY') {
+					const euAindaNaSala = (snap.jogadores || []).some(
+						(j: any) => j.playerId === localPlayerId
+					);
+					if (!euAindaNaSala && !pendingReconciliation && !foiExpulso) {
+						pararCiclosDeRede();
+						limparCredenciaisLocais();
+						foiExpulso = true;
+						return;
+					}
+				}
+
 				aplicarSnapshotNaEngine(snap);
 
 				if (lobby?.isHost) {
@@ -428,6 +443,12 @@
 					const msg = JSON.parse(e.data);
 					if (msg.action === 'create' || msg.action === 'update' || msg.action === 'delete') {
 						const rec = msg.record || {};
+						if (msg.action === 'delete' && rec.player_id === localPlayerId) {
+							pararCiclosDeRede();
+							limparCredenciaisLocais();
+							foiExpulso = true;
+							return;
+						}
 						// Atualização atômica imediata no motor de estado se for evento de equipe
 						if (rec.player_id && rec.equipe && engine) {
 							engine.selectTeam(rec.player_id, rec.equipe);
@@ -465,12 +486,12 @@
 
 		if (lobby.minhaEquipe === targetEquipe) return;
 
-		if (targetEquipe === 'A' && !lobby.podeEscolherCorvo) {
-			mostrarAviso('A Equipe Corvo já atingiu a lotação máxima de 2 integrantes.');
+		if (targetEquipe === 'A' && !lobby.podeEscolherPato) {
+			mostrarAviso('A Equipe Pato já atingiu a lotação máxima de 2 integrantes.');
 			return;
 		}
-		if (targetEquipe === 'B' && !lobby.podeEscolherAguia) {
-			mostrarAviso('A Equipe Águia já atingiu a lotação máxima de 2 integrantes.');
+		if (targetEquipe === 'B' && !lobby.podeEscolherGanso) {
+			mostrarAviso('A Equipe Ganso já atingiu a lotação máxima de 2 integrantes.');
 			return;
 		}
 
@@ -602,6 +623,43 @@
 		}
 	}
 
+	async function handleExpulsarJogador(alvoPlayerId: string, alvoNome: string) {
+		if (!lobby?.isHost || statusConexao !== 'CONECTADO') return;
+
+		if (!confirm(`Tem certeza de que deseja expulsar "${alvoNome}" da sala?`)) {
+			return;
+		}
+
+		try {
+			const res = await fetch(
+				`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/expulsar`,
+				{
+					method: 'POST',
+					headers: getApiHeaders({
+						'Content-Type': 'application/json',
+						'X-Player-Id': localPlayerId,
+						'X-Session-Token': sessionToken
+					}),
+					body: JSON.stringify({
+						host_player_id: localPlayerId,
+						alvo_player_id: alvoPlayerId
+					})
+				}
+			);
+
+			if (res.ok) {
+				mostrarAviso(`"${alvoNome}" foi expulso da sala.`);
+				await reconciliarSala();
+			} else {
+				const errData = await res.json().catch(() => ({}));
+				mostrarAviso(errData.message || 'Falha ao expulsar participante.');
+			}
+		} catch (err) {
+			console.error('[HOST] Erro ao expulsar participante:', err);
+			mostrarAviso('Erro de conexão ao tentar expulsar participante.');
+		}
+	}
+
 	async function copyRoomLink() {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
@@ -614,7 +672,7 @@
 </script>
 
 <svelte:head>
-	<title>Lobby : Sala {roomCode} | Leveling Out</title>
+	<title>Lobby: Sala {roomCode} | Leveling Out</title>
 </svelte:head>
 
 <!-- Modal Bloqueante de Identificação do Apelido (Zero Trust Handshake) -->
@@ -661,10 +719,10 @@
 		<!-- Feedback de Aviso Temporário -->
 		{#if avisoTemporario}
 			<div
-				class="flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs font-semibold text-amber-700 dark:text-amber-300"
+				class="flex items-center gap-2.5 rounded-xl border border-primary/30 bg-primary-soft px-4 py-3 text-xs font-semibold text-text-primary shadow-xs"
 			>
-				<IconAlertCircle class="h-4 w-4 shrink-0" />
-				<span>{avisoTemporario}</span>
+				<IconAlertCircle class="h-4 w-4 shrink-0 text-primary" />
+				<span class="font-util-body">{avisoTemporario}</span>
 			</div>
 		{/if}
 
@@ -676,10 +734,42 @@
 				{isStartingMatch}
 				onSelectTeam={solicitarTrocaEquipe}
 				onStartMatch={handleIniciarPartida}
+				onKickPlayer={handleExpulsarJogador}
 			/>
 		{:else}
 			<!-- Fase Seguinte (Iniciativa / PPT) -->
 			<GamePlaceholder />
 		{/if}
+	</div>
+{/if}
+
+<!-- Modal Bloqueante de Jogador Expulso -->
+{#if foiExpulso}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/80 p-4 backdrop-blur-sm"
+	>
+		<div
+			class="flex w-full max-w-md flex-col items-center gap-4 rounded-2xl border border-secondary/30 bg-bg-surface p-6 text-center shadow-2xl"
+		>
+			<div
+				class="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary-soft text-secondary"
+			>
+				<IconUserX class="h-6 w-6" />
+			</div>
+			<div class="flex flex-col gap-1">
+				<h2 class="font-display text-xl text-text-primary sm:text-2xl">Expulso da Sala</h2>
+				<p class="font-subheading text-xs text-text-muted sm:text-sm">
+					Você foi removido da sala pelo anfitrião.
+				</p>
+			</div>
+			<button
+				type="button"
+				onclick={() => goto(resolve('/'))}
+				class="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-util-heading text-xs font-bold text-white shadow-md transition-all hover:bg-primary-hover active:scale-98"
+			>
+				<span>Voltar ao Início</span>
+				<IconArrowRight class="h-4 w-4" />
+			</button>
+		</div>
 	</div>
 {/if}

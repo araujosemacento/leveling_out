@@ -269,16 +269,16 @@ export function getRoundSpectrumProjection(state: GameState): SpectrumProjection
 }
 
 export interface LobbyProjection {
-	membrosCorvo: Player[];
-	membrosAguia: Player[];
+	membrosPato: Player[];
+	membrosGanso: Player[];
 	membrosAleatorio: Player[];
 	totalJogadores: number;
 	quorumCompleto: boolean;
 	isHost: boolean;
 	minhaEquipe: LobbyTeamChoice | null;
 	podeIniciarPartida: boolean;
-	podeEscolherCorvo: boolean;
-	podeEscolherAguia: boolean;
+	podeEscolherPato: boolean;
+	podeEscolherGanso: boolean;
 	podeEscolherAleatorio: boolean;
 	statusTexto: string;
 }
@@ -287,14 +287,14 @@ export interface LobbyProjection {
  * Projeta as equipes, membros, elegibilidade de quórum e autoridade de início do Lobby.
  */
 export function getLobbyProjection(state: GameState, meuJogadorId: string | null): LobbyProjection {
-	const membrosCorvo = state.equipes.A.membros;
-	const membrosAguia = state.equipes.B.membros;
+	const membrosPato = state.equipes.A.membros;
+	const membrosGanso = state.equipes.B.membros;
 	const membrosAleatorio = state.jogadoresAleatorios || [];
 
-	const totalJogadores = membrosCorvo.length + membrosAguia.length + membrosAleatorio.length;
+	const totalJogadores = membrosPato.length + membrosGanso.length + membrosAleatorio.length;
 	const quorumCompleto = totalJogadores === 4;
 
-	const todosJogadores = [...membrosCorvo, ...membrosAguia, ...membrosAleatorio];
+	const todosJogadores = [...membrosPato, ...membrosGanso, ...membrosAleatorio];
 	const meuJogador = todosJogadores.find((j) => j.id === meuJogadorId);
 	const minhaEquipe = meuJogador ? meuJogador.equipe : state.minhaEquipe;
 
@@ -306,8 +306,8 @@ export function getLobbyProjection(state: GameState, meuJogadorId: string | null
 	);
 
 	// Regras de lotação máxima: no máximo 2 integrantes por equipe (A ou B)
-	const podeEscolherCorvo = membrosCorvo.length < 2 || minhaEquipe === 'A';
-	const podeEscolherAguia = membrosAguia.length < 2 || minhaEquipe === 'B';
+	const podeEscolherPato = membrosPato.length < 2 || minhaEquipe === 'A';
+	const podeEscolherGanso = membrosGanso.length < 2 || minhaEquipe === 'B';
 	const podeEscolherAleatorio = true;
 
 	const podeIniciarPartida = isHost && quorumCompleto;
@@ -319,16 +319,16 @@ export function getLobbyProjection(state: GameState, meuJogadorId: string | null
 		: `Aguardando jogadores (${totalJogadores}/4)... Clique em uma caixa para escolher sua equipe`;
 
 	return {
-		membrosCorvo,
-		membrosAguia,
+		membrosPato,
+		membrosGanso,
 		membrosAleatorio,
 		totalJogadores,
 		quorumCompleto,
 		isHost,
 		minhaEquipe,
 		podeIniciarPartida,
-		podeEscolherCorvo,
-		podeEscolherAguia,
+		podeEscolherPato,
+		podeEscolherGanso,
 		podeEscolherAleatorio,
 		statusTexto
 	};

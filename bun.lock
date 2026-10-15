@@ -8,6 +8,8 @@
         "@eslint/js": "^10.0.1",
         "@iconify-json/game-icons": "^1.2.4",
         "@iconify-json/lucide": "^1.2.136",
+        "@iconify-json/mingcute": "^1.2.8",
+        "@iconify-json/thesvg": "^1.2.10",
         "@sveltejs/adapter-static": "^3.0.10",
         "@sveltejs/kit": "^2.63.0",
         "@sveltejs/vite-plugin-svelte": "^7.1.2",
@@ -63,6 +65,10 @@
     "@iconify-json/game-icons": ["@iconify-json/game-icons@1.2.4", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-/HDDZxowXgDJcOEwPspUCq5RuDdl25OyZKdtxqqiPJQNTrWIym7r4StLzIVs77DyNzOWWhH5wDqwYR3WHeDfkg=="],
 
     "@iconify-json/lucide": ["@iconify-json/lucide@1.2.136", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-Wk+OeDVKkw+1LELZqRR3gXWIy5jNx5XjNMvVc9KoygJYmGqclv36FYqseRuJuxBIKDggdoZWNBxNRrOkiRbtwQ=="],
+
+    "@iconify-json/mingcute": ["@iconify-json/mingcute@1.2.8", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-J8VXpRwTpx5yzOzyhx3T4IXnfXIKTWFl3rZ9okcW4c+NMMuwkLvdmM4rkjB83tnYIhg5+kkeMpmw8tvSnxd4rQ=="],
+
+    "@iconify-json/thesvg": ["@iconify-json/thesvg@1.2.10", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-kOULdW5Ely9KtXMslMtIMbJl2ul74JZTtVvqeuk8GY/VKQGH/1wOU0ueQsDpf/YMzVuNT6cV7Ff08KUE8j74wg=="],
 
     "@iconify/types": ["@iconify/types@2.0.0", "", {}, "sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg=="],
 

@@ -9,7 +9,7 @@
 
 	interface Props {
 		level?: number;
-		team?: 'corvo' | 'aguia' | 'neutral';
+		team?: 'pato' | 'ganso' | 'neutral';
 		customColor?: string;
 		customDarkColor?: string;
 		showScale?: boolean;
@@ -22,7 +22,7 @@
 
 	let {
 		level = 50,
-		team = 'corvo',
+		team = 'pato',
 		customColor,
 		customDarkColor,
 		showScale = true,
@@ -53,14 +53,14 @@
 	let liquidColor = $derived(
 		cycleHue
 			? `hsl(${currentHue.toFixed(1)}, 80%, 55%)`
-			: (customColor ?? (team === 'aguia' ? '#f59e0b' : team === 'neutral' ? '#0ea5e9' : '#4f46e5'))
+			: (customColor ?? (team === 'ganso' ? '#f59e0b' : team === 'neutral' ? '#0ea5e9' : '#4f46e5'))
 	);
 
 	let liquidDarkColor = $derived(
 		cycleHue
 			? `hsl(${currentHue.toFixed(1)}, 80%, 30%)`
 			: (customDarkColor ??
-					(team === 'aguia' ? '#78350f' : team === 'neutral' ? '#0369a1' : '#272269'))
+					(team === 'ganso' ? '#78350f' : team === 'neutral' ? '#0369a1' : '#272269'))
 	);
 
 	// Gera o contorno superior contínuo da onda senoidal de startCycle até endCycle
