@@ -2,7 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { getBackendUrl, getApiHeaders } from '$lib/config/backend';
+	import { getBackendUrl, getApiHeaders, getProxySecret } from '$lib/config/backend';
 	import { GameEngine, type LobbyTeamChoice } from '$lib/engine';
 	import { sanitizeNickname } from '$lib/engine/input/sanitize';
 
@@ -158,6 +158,10 @@
 		sessionToken = token;
 		playerName = nome;
 
+		if (engine) {
+			engine.setPlayer(id, nome, 'ALEATORIO');
+		}
+
 		window.sessionStorage.setItem('leveling_roomCode', roomCode);
 		window.sessionStorage.setItem('leveling_playerId', id);
 		window.sessionStorage.setItem('leveling_sessionToken', token);
@@ -216,6 +220,9 @@
 		statusConexao = 'CONECTADO';
 
 		engine = new GameEngine(roomCode);
+		if (localPlayerId) {
+			engine.setPlayer(localPlayerId, playerName, 'ALEATORIO');
+		}
 		gameState = engine.getState();
 
 		unsubscribeEngine = engine.subscribe((novoEstado) => {
@@ -232,13 +239,11 @@
 		iniciarHeartbeat();
 		assinarAtualizacoesTempoReal();
 
-		// Polling autoritativo condicional a cada 4s (apenas se o SSE estiver inativo)
+		// Polling periódico autoritativo contínuo a cada 3s como mecanismo de integridade e tolerância a falhas
 		if (pollingInterval) clearInterval(pollingInterval);
 		pollingInterval = setInterval(() => {
-			if (!eventSource || eventSource.readyState !== EventSource.OPEN) {
-				reconciliarSala();
-			}
-		}, 4000);
+			reconciliarSala();
+		}, 3000);
 	}
 
 	function aplicarSnapshotNaEngine(snap: any) {
@@ -392,13 +397,54 @@
 		try {
 			if (eventSource) eventSource.close();
 
-			const sseUrl = `${backendUrl}/api/realtime`;
+			const proxySec = getProxySecret();
+			const sseUrl = proxySec
+				? `${backendUrl}/api/realtime?x-proxy-secret=${encodeURIComponent(proxySec)}`
+				: `${backendUrl}/api/realtime`;
 			eventSource = new EventSource(sseUrl);
 
-			const processarAtualizacao = () => {
-				reconciliarSala();
+			// O PocketBase envia PB_CONNECT com clientId e exige subscrição explícita
+			eventSource.addEventListener('PB_CONNECT', async (e: MessageEvent) => {
+				try {
+					const dataParsed = JSON.parse(e.data);
+					const clientId = dataParsed.clientId;
+					if (clientId) {
+						await fetch(`${backendUrl}/api/realtime`, {
+							method: 'POST',
+							headers: getApiHeaders({ 'Content-Type': 'application/json' }),
+							body: JSON.stringify({
+								clientId,
+								subscriptions: ['salas/*', 'jogadores/*']
+							})
+						});
+					}
+				} catch (subErr) {
+					console.warn('[SSE] Erro ao registrar subscrição:', subErr);
+				}
+			});
+
+			const processarAtualizacao = (e: MessageEvent) => {
+				try {
+					const msg = JSON.parse(e.data);
+					if (msg.action === 'create' || msg.action === 'update' || msg.action === 'delete') {
+						const rec = msg.record || {};
+						// Atualização atômica imediata no motor de estado se for evento de equipe
+						if (rec.player_id && rec.equipe && engine) {
+							engine.selectTeam(rec.player_id, rec.equipe);
+						}
+						// Reconciliação do snapshot autoritativo para garantir integridade completa
+						if (!rec.sala_codigo && !rec.codigo) {
+							reconciliarSala();
+						} else if (rec.sala_codigo === roomCode || rec.codigo === roomCode) {
+							reconciliarSala();
+						}
+					}
+				} catch {
+					// Ignora pings ou formatos não JSON
+				}
 			};
 
+			// O PocketBase despacha SSE com o nome do tópico subscrito no cabeçalho 'event:'
 			eventSource.addEventListener('salas/*', processarAtualizacao);
 			eventSource.addEventListener('jogadores/*', processarAtualizacao);
 			eventSource.addEventListener('salas', processarAtualizacao);
@@ -407,7 +453,7 @@
 			eventSource.onmessage = processarAtualizacao;
 
 			eventSource.onerror = () => {
-				// Polling continua ativo como fallback resiliente
+				// Polling periódico continua ativo como fallback resiliente
 			};
 		} catch (err) {
 			console.warn('[LOBBY] SSE indisponível, operando via polling autoritativo:', err);
