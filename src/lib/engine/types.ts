@@ -103,8 +103,63 @@ export interface GameState {
 }
 
 /**
+ * Snapshot de estado projetado emitido pelo servidor Go via WebSocket (Tipo: SYNC)
+ */
+export interface SnapshotSalaProjetado {
+	codigo?: string;
+	fase?: GamePhase | string;
+	rodada?: number;
+	equipeAtiva?: TeamId;
+	placarA?: number;
+	placarB?: number;
+	vencedor?: TeamId | string | null;
+	hostId?: string | null;
+	motivoFim?: string | null;
+	jogadores?: Array<{
+		id?: string;
+		playerId?: string;
+		nome: string;
+		equipe: LobbyTeamChoice;
+		papel?: PlayerRole;
+		isHost?: boolean;
+		isOnline?: boolean;
+		equipeDesde?: string;
+	}>;
+	ppt?: {
+		estado?: 'ESCOLHA' | 'CONTAGEM' | 'RESULTADO' | null;
+		prazo?: string | null;
+		revelacaoEm?: string | null;
+		enviouA?: boolean | null;
+		enviouB?: boolean | null;
+		representanteA?: string | null;
+		representanteB?: string | null;
+		resultado?: 'EMPATE' | 'VITORIA_A' | 'VITORIA_B' | null;
+		lanceA?: PptMove | null;
+		lanceB?: PptMove | null;
+		meuLance?: PptMove | null;
+	};
+	rodadaAtiva?: {
+		numero?: number;
+		equipe?: TeamId;
+		codificadorId?: string | null;
+		palpiteiroId?: string | null;
+		espectroEsquerda?: string;
+		espectroDireita?: string;
+		dica?: string | null;
+		metaOculta?: number | null;
+		palpite?: number | null;
+		pontos?: number;
+		tier?: string;
+		label?: string;
+	};
+	cartasEspectroOpcoes?: SpectrumCard[];
+	// Compatibilidade defensiva com estrutura legada
+	sala?: any;
+}
+
+/**
  * Ações de Jogo estruturadas por União Discriminada.
- * Desacopla intenções locais de usuário de reconciliações de rede autoritativas do PocketBase.
+ * Desacopla intenções locais de usuário de reconciliações de rede autoritativas via WebSocket.
  */
 export type GameAction =
 	// Intenções de entrada local do usuário
@@ -121,76 +176,16 @@ export type GameAction =
 	| { type: 'UPDATE_SLIDER_PREVIEW'; payload: { palpite: number } }
 	| { type: 'SUBMIT_GUESS_INTENT'; payload: { palpite: number } }
 	| { type: 'REMATCH_INTENT' }
-	// Reconciliações autoritativas de rede (SSE / Backend PocketBase)
+	// Reconciliação autoritativa de rede via WebSocket (Servidor Go)
 	| {
 			type: 'FULL_SYNC';
-			payload: {
-				sala: {
-					codigo: string;
-					fase: GamePhase | string;
-					host_id?: string | null;
-					placar_a: number;
-					placar_b: number;
-					equipe_da_vez?: TeamId;
-					rodada_atual: number;
-					vencedor?: string | null;
-					motivo_fim?: string | null;
-					ppt_estado?: 'ESCOLHA' | 'CONTAGEM' | 'RESULTADO' | null;
-					ppt_prazo?: string | null;
-					ppt_revelacao_em?: string | null;
-					ppt_enviou_a?: boolean | null;
-					ppt_enviou_b?: boolean | null;
-					ppt_representante_a?: string | null;
-					ppt_representante_b?: string | null;
-					ppt_resultado?: 'EMPATE' | 'VITORIA_A' | 'VITORIA_B' | null;
-					ppt_lance_a?: PptMove | null;
-					ppt_lance_b?: PptMove | null;
-				};
-				jogadores?: Player[];
-				rodada?: {
-					numero: number;
-					fase: string;
-					dica?: string | null;
-					palpite?: number | null;
-					meta_oculta?: number | null;
-					carta_espectro?: SpectrumCard | null;
-					codificador_id?: string | null;
-					palpiteiro_id?: string | null;
-				};
-				pptStatus?: {
-					status: string;
-					vencedor?: TeamId | 'EMPATE';
-					lances?: Record<TeamId, PptMove>;
-					equipes_enviadas?: TeamId[];
-				};
-			};
-	  }
-	| {
-			type: 'SALA_UPDATE';
-			payload: {
-				placarA: number;
-				placarB: number;
-				rodadaAtual: number;
-				vencedor?: TeamId | null;
-				equipeAtiva?: TeamId;
-			};
+			payload: SnapshotSalaProjetado;
 	  }
 	| {
 			type: 'PPT_RESOLVIDO';
 			payload: {
 				vencedor: TeamId | 'EMPATE';
 				lances: Record<TeamId, PptMove>;
-			};
-	  }
-	| {
-			type: 'RODADA_UPDATE';
-			payload: {
-				numero: number;
-				fase: GamePhase;
-				carta?: SpectrumCard | null;
-				dica?: string | null;
-				palpite?: number | null;
-				metaOcultaSecreta?: number | null; // Visível exclusivamente para o codificador
 			};
 	  }
 	| {
@@ -202,11 +197,5 @@ export type GameAction =
 				placarA: number;
 				placarB: number;
 				vencedorPartida?: TeamId | null;
-			};
-	  }
-	| {
-			type: 'PLAYER_PRESENCE_UPDATE';
-			payload: {
-				jogadores: Player[];
 			};
 	  };

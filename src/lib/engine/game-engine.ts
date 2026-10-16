@@ -37,6 +37,7 @@ import type {
 	Player,
 	PptMove,
 	SpectrumCard,
+	SnapshotSalaProjetado,
 	TeamId
 } from './types';
 
@@ -136,15 +137,10 @@ export class GameEngine {
 	}
 
 	// =========================================================================
-	// Fase de Update: Reconciliação Autoritativa de Rede (PocketBase SSE)
+	// Fase de Update: Reconciliação Autoritativa de Rede (WebSocket Servidor Go)
 	// =========================================================================
 
-	public reconcileFullSync(payload: {
-		sala: any;
-		jogadores?: Player[];
-		rodada?: any;
-		pptStatus?: any;
-	}): void {
+	public reconcileFullSync(payload: SnapshotSalaProjetado): void {
 		this.dispatch({
 			type: 'FULL_SYNC',
 			payload
@@ -177,8 +173,17 @@ export class GameEngine {
 
 	public reconcilePresence(jogadores: Player[]): void {
 		this.dispatch({
-			type: 'PLAYER_PRESENCE_UPDATE',
-			payload: { jogadores }
+			type: 'FULL_SYNC',
+			payload: {
+				jogadores: jogadores.map((j) => ({
+					id: j.id,
+					playerId: j.id,
+					nome: j.nome,
+					equipe: j.equipe,
+					isOnline: j.isOnline,
+					isHost: j.isHost
+				}))
+			}
 		});
 	}
 

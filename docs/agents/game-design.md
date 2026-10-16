@@ -29,7 +29,7 @@ O fluxo de jogo divide-se em três etapas bem definidas:
 
 O fluxo tem início quando os participantes acessam a plataforma em seus dispositivos móveis ou computadores via URL única (`/[sala]`), reunindo-se no lobby da sala. O lobby apresenta uma divisão tripartite horizontal de equipes: à esquerda a **Equipe Pato (Equipe A)** com o ícone vetorial da ave em tema índigo; ao centro a caixa neutra de **Seleção Aleatória** em tons de cinza com ícone vetorial de dados; à direita a **Equipe Ganso (Equipe B)** com o ícone do ganso em tema âmbar. Os jogadores clicam em qualquer caixa para solicitar sua alocação, respeitando o quórum rigoroso da sala: máximo de 4 participantes no total e lotação de até 2 integrantes por equipe definida. A caixa central comporta qualquer quantidade de indecisos.
 
-O primeiro jogador a ingressar na sala é designado autoritativamente pelo servidor como **Anfitrião da Sala (`is_host`)**. Durante a permanência no lobby, o anfitrião possui a prerrogativa soberana de moderação para remover participantes da sala (kick de jogador), garantindo a expurgação de jogadores inativos, intrusos ou inadequados e liberando imediatamente as vagas ocupadas para novos participantes. Uma vez preenchidas todas as 4 vagas da sala (independentemente de estarem em Pato, Ganso ou Aleatório), o anfitrião tem acesso exclusivo ao botão verde "Iniciar Partida" com ícone posicionado à direita. Ao ser acionado, o servidor PocketBase processa estocasticamente o balanceamento dos jogadores indecisos até que ambas as equipes contem com 2 integrantes cada, transicionando a partida para o minijogo digital de **Pedra, Papel e Tesoura (PPT)**. A equipe vencedora do PPT ganha a iniciativa e escolhe a carta temática da primeira rodada (ex.: "Fácil / Difícil").
+O primeiro jogador a ingressar na sala é designado autoritativamente pelo servidor como **Anfitrião da Sala (`is_host`)**. Durante a permanência no lobby, o anfitrião possui a prerrogativa soberana de moderação para remover participantes da sala (kick de jogador), garantindo a expurgação de jogadores inativos, intrusos ou inadequados e liberando imediatamente as vagas ocupadas para novos participantes. Uma vez preenchidas todas as 4 vagas da sala (independentemente de estarem em Pato, Ganso ou Aleatório), o anfitrião tem acesso exclusivo ao botão verde "Iniciar Partida" com ícone posicionado à direita. Ao ser acionado, o servidor Go nativo processa estocasticamente o balanceamento dos jogadores indecisos até que ambas as equipes contem com 2 integrantes cada, transicionando a partida para o minijogo digital de **Pedra, Papel e Tesoura (PPT)**. A equipe vencedora do PPT ganha a iniciativa e escolhe a carta temática da primeira rodada (ex.: "Fácil / Difícil").
 
 ### Etapa 2: O Core Loop da Rodada (Dica, Palpite e Revelação)
 
@@ -43,7 +43,7 @@ A partida se desenvolve em turnos alternados entre as duas equipes em uma corrid
 
 ## 3. Sistema de Pontuação e Faixas de Proximidade
 
-A pontuação de cada rodada é computada autoritativamente pelo servidor PocketBase calculando a diferença absoluta $\Delta = |\text{meta} - \text{palpite}|$:
+A pontuação de cada rodada é computada autoritativamente pelo servidor Go nativo calculando a diferença absoluta $\Delta = |\text{meta} - \text{palpite}|$:
 
 | Faixa de Tolerância | Margem de Erro ($\Delta$) | Pontuação     | Classificação da Jogada            |
 | :------------------ | :------------------------ | :------------ | :--------------------------------- |

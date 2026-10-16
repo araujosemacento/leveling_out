@@ -158,4 +158,58 @@ describe('Motor Canônico Reativo (GameEngine & Máquina de Estados)', () => {
 		// Não deve registrar o novo evento após unsubscribe
 		expect(events).toHaveLength(2);
 	});
+
+	it('deve processar reconcileFullSync com snapshot nativo do Go via WebSocket', () => {
+		const engine = new GameEngine('SALA-WS');
+		engine.setPlayer('p_alvo', 'Jogador 1', 'ALEATORIO');
+
+		engine.reconcileFullSync({
+			codigo: 'SALA-WS',
+			fase: 'RODADA_PALPITE',
+			hostId: 'p_alvo',
+			rodada: 2,
+			equipeAtiva: 'B',
+			placarA: 4,
+			placarB: 2,
+			jogadores: [
+				{
+					id: 'j1',
+					playerId: 'p_alvo',
+					nome: 'Jogador 1',
+					equipe: 'B',
+					isHost: true,
+					isOnline: true
+				}
+			],
+			ppt: {
+				estado: 'RESULTADO',
+				resultado: 'VITORIA_B',
+				lanceA: 'pedra',
+				lanceB: 'papel'
+			},
+			rodadaAtiva: {
+				numero: 2,
+				equipe: 'B',
+				codificadorId: 'p_alvo',
+				espectroEsquerda: 'Frio',
+				espectroDireita: 'Quente',
+				dica: 'Gelo Seco',
+				metaOculta: 25,
+				palpite: 50
+			}
+		});
+
+		const state = engine.getState();
+		expect(state.fase).toBe('RODADA_PALPITE');
+		expect(state.hostId).toBe('p_alvo');
+		expect(state.minhaEquipe).toBe('B');
+		expect(state.equipes.B.pontos).toBe(2);
+		expect(state.equipes.A.pontos).toBe(4);
+		expect(state.rodadaAtual.numero).toBe(2);
+		expect(state.rodadaAtual.dica).toBe('Gelo Seco');
+		expect(state.rodadaAtual.carta?.left).toBe('Frio');
+		expect(state.rodadaAtual.carta?.right).toBe('Quente');
+		expect(state.rodadaAtual.metaOculta).toBe(25);
+		expect(state.ppt?.estado).toBe('RESULTADO');
+	});
 });

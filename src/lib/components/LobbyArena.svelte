@@ -11,15 +11,25 @@
 	import IconUser from '~icons/lucide/user';
 	import IconCrown from '~icons/lucide/crown';
 	import IconPlay from '~icons/lucide/play';
-	import IconUserX from '~icons/lucide/user-x';
+	import IconUserRoundMinus from '~icons/lucide/user-round-minus';
+	import IconUserRoundX from '~icons/lucide/user-round-x';
 
-	let { lobby, localPlayerId, isStartingMatch, onSelectTeam, onStartMatch, onKickPlayer } = $props<{
+	let {
+		lobby,
+		localPlayerId,
+		isStartingMatch,
+		onSelectTeam,
+		onStartMatch,
+		onKickPlayer,
+		onBanPlayer
+	} = $props<{
 		lobby: LobbyProjection | null;
 		localPlayerId: string;
 		isStartingMatch: boolean;
 		onSelectTeam: (team: LobbyTeamChoice) => void;
 		onStartMatch: () => void;
 		onKickPlayer?: (playerId: string, playerName: string) => void;
+		onBanPlayer?: (playerId: string, playerName: string) => void;
 	}>();
 </script>
 
@@ -79,7 +89,7 @@
 								</span>
 							{/if}
 						</div>
-						<div class="flex h-7 w-7 items-center justify-center">
+						<div class="flex items-center justify-center">
 							{#if membro.isHost}
 								<div
 									class="flex h-7 w-7 items-center justify-center text-amber-500"
@@ -88,15 +98,26 @@
 									<IconCrown class="h-4 w-4" />
 								</div>
 							{:else if lobby?.isHost && membro.id !== localPlayerId}
-								<button
-									type="button"
-									onclick={() => onKickPlayer?.(membro.id, membro.nome)}
-									title="Expulsar {membro.nome} da sala"
-									aria-label="Expulsar {membro.nome} da sala"
-									class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-secondary-soft hover:text-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
-								>
-									<IconUserX class="h-4 w-4" />
-								</button>
+								<div class="flex items-center gap-1">
+									<button
+										type="button"
+										onclick={() => onKickPlayer?.(membro.id, membro.nome)}
+										title="Expulsar {membro.nome} da sala (poderá se reconectar)"
+										aria-label="Expulsar {membro.nome} da sala"
+										class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-amber-500/10 hover:text-amber-600 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+									>
+										<IconUserRoundMinus class="h-4 w-4" />
+									</button>
+									<button
+										type="button"
+										onclick={() => onBanPlayer?.(membro.id, membro.nome)}
+										title="Banir {membro.nome} da sala (bloqueia dispositivo nesta partida)"
+										aria-label="Banir {membro.nome} da sala"
+										class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-secondary-soft hover:text-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
+									>
+										<IconUserRoundX class="h-4 w-4" />
+									</button>
+								</div>
 							{/if}
 						</div>
 					</div>
@@ -185,7 +206,7 @@
 								</span>
 							{/if}
 						</div>
-						<div class="flex h-7 w-7 items-center justify-center">
+						<div class="flex items-center justify-center">
 							{#if membro.isHost}
 								<div
 									class="flex h-7 w-7 items-center justify-center text-amber-500"
@@ -194,15 +215,26 @@
 									<IconCrown class="h-4 w-4" />
 								</div>
 							{:else if lobby?.isHost && membro.id !== localPlayerId}
-								<button
-									type="button"
-									onclick={() => onKickPlayer?.(membro.id, membro.nome)}
-									title="Expulsar {membro.nome} da sala"
-									aria-label="Expulsar {membro.nome} da sala"
-									class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-secondary-soft hover:text-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
-								>
-									<IconUserX class="h-4 w-4" />
-								</button>
+								<div class="flex items-center gap-1">
+									<button
+										type="button"
+										onclick={() => onKickPlayer?.(membro.id, membro.nome)}
+										title="Expulsar {membro.nome} da sala (poderá se reconectar)"
+										aria-label="Expulsar {membro.nome} da sala"
+										class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-amber-500/10 hover:text-amber-600 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+									>
+										<IconUserRoundMinus class="h-4 w-4" />
+									</button>
+									<button
+										type="button"
+										onclick={() => onBanPlayer?.(membro.id, membro.nome)}
+										title="Banir {membro.nome} da sala (bloqueia dispositivo nesta partida)"
+										aria-label="Banir {membro.nome} da sala"
+										class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-secondary-soft hover:text-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
+									>
+										<IconUserRoundX class="h-4 w-4" />
+									</button>
+								</div>
 							{/if}
 						</div>
 					</div>
@@ -293,7 +325,7 @@
 								</span>
 							{/if}
 						</div>
-						<div class="flex h-7 w-7 items-center justify-center">
+						<div class="flex items-center justify-center">
 							{#if membro.isHost}
 								<div
 									class="flex h-7 w-7 items-center justify-center text-amber-500"
@@ -302,15 +334,26 @@
 									<IconCrown class="h-4 w-4" />
 								</div>
 							{:else if lobby?.isHost && membro.id !== localPlayerId}
-								<button
-									type="button"
-									onclick={() => onKickPlayer?.(membro.id, membro.nome)}
-									title="Expulsar {membro.nome} da sala"
-									aria-label="Expulsar {membro.nome} da sala"
-									class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-secondary-soft hover:text-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
-								>
-									<IconUserX class="h-4 w-4" />
-								</button>
+								<div class="flex items-center gap-1">
+									<button
+										type="button"
+										onclick={() => onKickPlayer?.(membro.id, membro.nome)}
+										title="Expulsar {membro.nome} da sala (poderá se reconectar)"
+										aria-label="Expulsar {membro.nome} da sala"
+										class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-amber-500/10 hover:text-amber-600 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+									>
+										<IconUserRoundMinus class="h-4 w-4" />
+									</button>
+									<button
+										type="button"
+										onclick={() => onBanPlayer?.(membro.id, membro.nome)}
+										title="Banir {membro.nome} da sala (bloqueia dispositivo nesta partida)"
+										aria-label="Banir {membro.nome} da sala"
+										class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-secondary-soft hover:text-secondary focus:ring-1 focus:ring-secondary focus:outline-none"
+									>
+										<IconUserRoundX class="h-4 w-4" />
+									</button>
+								</div>
 							{/if}
 						</div>
 					</div>

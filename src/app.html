@@ -18,7 +18,13 @@
 		<script>
 			(function () {
 				try {
-					var saved = localStorage.getItem('theme');
+					var saved = null;
+					var match = document.cookie.match(/(?:^|; )theme=(light|dark)(?:;|$)/);
+					if (match) {
+						saved = match[1];
+					} else {
+						saved = localStorage.getItem('theme');
+					}
 					var theme =
 						saved === 'light' || saved === 'dark'
 							? saved

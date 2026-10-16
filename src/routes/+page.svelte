@@ -1,14 +1,27 @@
 <script>
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import TitleCard from '$lib/components/TitleCard.svelte';
 	import { sanitizeRoomCode } from '$lib/engine/input/sanitize';
 	import IconArrowRight from '~icons/lucide/arrow-right';
 	import IconDice from '~icons/lucide/dices';
+	import IconShieldAlert from '~icons/lucide/shield-alert';
 	import { fade } from 'svelte/transition';
 
 	let rawRoomCode = $state('');
 	let errorMessage = $state('');
+	let alertaModal = $state('');
+
+	onMount(() => {
+		if (typeof window !== 'undefined') {
+			const alerta = window.sessionStorage.getItem('leveling_alerta_global');
+			if (alerta) {
+				alertaModal = alerta;
+				window.sessionStorage.removeItem('leveling_alerta_global');
+			}
+		}
+	});
 
 	let cleanRoomCode = $derived(sanitizeRoomCode(rawRoomCode));
 
@@ -110,3 +123,38 @@
 		</div>
 	</div>
 </div>
+
+{#if alertaModal}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-bg-base/80 p-4 backdrop-blur-sm"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="modal-aviso-titulo"
+	>
+		<div
+			class="flex w-full max-w-md flex-col items-center gap-4 rounded-2xl border border-secondary/30 bg-bg-surface p-6 text-center shadow-2xl"
+		>
+			<div
+				class="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary-soft text-secondary"
+			>
+				<IconShieldAlert class="h-6 w-6" />
+			</div>
+			<div class="flex flex-col gap-1">
+				<h2 id="modal-aviso-titulo" class="font-display text-xl text-text-primary sm:text-2xl">
+					Aviso da Sala
+				</h2>
+				<p class="font-subheading text-xs text-text-muted sm:text-sm">
+					{alertaModal}
+				</p>
+			</div>
+			<button
+				type="button"
+				onclick={() => (alertaModal = '')}
+				class="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 font-util-heading text-xs font-bold text-white shadow-md transition-all hover:bg-primary-hover active:scale-98"
+			>
+				<span>Entendido</span>
+				<IconArrowRight class="h-4 w-4" />
+			</button>
+		</div>
+	</div>
+{/if}

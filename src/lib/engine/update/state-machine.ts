@@ -5,8 +5,8 @@
  */
 
 import { calculateScore } from './score-rules';
-import { clampGuess, sanitizeClue, sanitizeNickname } from '../input/sanitize';
-import type { GameAction, GamePhase, GameState, TeamId } from '../types';
+import { clampGuess, sanitizeNickname } from '../input/sanitize';
+import type { GameAction, GamePhase, GameState, Player, RoundState, TeamId } from '../types';
 
 export function createInitialGameState(salaCodigo: string): GameState {
 	return {
@@ -62,7 +62,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 			const updatedMembersB = state.equipes.B.membros.filter((m) => m.id !== id);
 			const updatedAleatorios = state.jogadoresAleatorios.filter((m) => m.id !== id);
 
-			const newPlayer = { id, nome: cleanNome, equipe, isOnline: true, isHost };
+			const newPlayer: Player = { id, nome: cleanNome, equipe, isOnline: true, isHost };
 
 			if (equipe === 'A') {
 				updatedMembersA.push(newPlayer);
@@ -167,25 +167,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				fase: 'RODADA_DICA',
 				rodadaAtual: {
 					...state.rodadaAtual,
-					carta: action.payload.carta,
-					dica: null,
-					palpite: 50,
-					resultado: null,
-					revelada: false
+					carta: action.payload.carta
 				}
 			};
 		}
 
 		case 'SUBMIT_CLUE_INTENT': {
-			const sanitized = sanitizeClue(action.payload.dica);
-			if (!sanitized) return state;
-
 			return {
 				...state,
 				fase: 'RODADA_PALPITE',
 				rodadaAtual: {
 					...state.rodadaAtual,
-					dica: sanitized
+					dica: action.payload.dica
 				}
 			};
 		}
@@ -241,67 +234,121 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 			};
 		}
 
-		case 'SALA_UPDATE': {
-			const { placarA, placarB, rodadaAtual, vencedor, equipeAtiva } = action.payload;
-
-			return {
-				...state,
-				vencedor: vencedor || state.vencedor,
-				fase: vencedor ? 'VITORIA' : state.fase,
-				equipeAtiva: equipeAtiva || state.equipeAtiva,
-				equipes: {
-					A: { ...state.equipes.A, pontos: placarA },
-					B: { ...state.equipes.B, pontos: placarB }
-				},
-				rodadaAtual: {
-					...state.rodadaAtual,
-					numero: rodadaAtual
-				}
-			};
-		}
-
 		case 'FULL_SYNC': {
-			const { sala, jogadores } = action.payload;
-			let fase = (sala.fase as GamePhase) || 'LOBBY';
-			if ((sala.fase as string) === 'INICIATIVA') {
-				fase = 'PPT_DISPUTA';
-			}
-			const placarA = Number(sala.placar_a) || 0;
-			const placarB = Number(sala.placar_b) || 0;
-			const vencedor = (sala.vencedor as TeamId) || null;
+			const payload = action.payload;
 
-			const membrosA = (jogadores || []).filter((j) => j.equipe === 'A');
-			const membrosB = (jogadores || []).filter((j) => j.equipe === 'B');
-			const aleatorios = (jogadores || []).filter((j) => j.equipe !== 'A' && j.equipe !== 'B');
+			// 1. Fase da partida
+			let faseRaw = (payload.fase ?? payload.sala?.fase ?? 'LOBBY') as GamePhase | string;
+			if (faseRaw === 'INICIATIVA') {
+				faseRaw = 'PPT_DISPUTA';
+			}
+			const fase = faseRaw as GamePhase;
+
+			// 2. Pontuações e Vencedor
+			const placarA = Number(payload.placarA ?? payload.sala?.placar_a ?? state.equipes.A.pontos);
+			const placarB = Number(payload.placarB ?? payload.sala?.placar_b ?? state.equipes.B.pontos);
+			const vencedor = (payload.vencedor ?? payload.sala?.vencedor ?? null) as TeamId | null;
+			const hostId = payload.hostId ?? payload.sala?.host_id ?? state.hostId;
+			const equipeAtiva = (payload.equipeAtiva ??
+				payload.sala?.equipe_da_vez ??
+				state.equipeAtiva) as TeamId;
+
+			// 3. Distribuição de Jogadores
+			const jogadoresRaw = payload.jogadores ?? [];
+			const jogadoresFormatados: Player[] = jogadoresRaw.map((j: any) => ({
+				id: j.playerId || j.id,
+				nome: j.nome,
+				equipe: j.equipe || 'ALEATORIO',
+				isOnline: j.isOnline ?? true,
+				isHost: j.isHost ?? false,
+				lastSeen: j.equipeDesde || j.lastSeen
+			}));
+
+			const membrosA = jogadoresFormatados.filter((j) => j.equipe === 'A');
+			const membrosB = jogadoresFormatados.filter((j) => j.equipe === 'B');
+			const aleatorios = jogadoresFormatados.filter((j) => j.equipe !== 'A' && j.equipe !== 'B');
 
 			let minhaEquipe = state.minhaEquipe;
 			if (state.meuJogadorId) {
-				const me = (jogadores || []).find((j) => j.id === state.meuJogadorId);
+				const me = jogadoresFormatados.find((j) => j.id === state.meuJogadorId);
 				if (me) {
 					minhaEquipe = me.equipe;
 				}
 			}
 
+			// 4. Estado de PPT (Iniciativa)
+			const pptRaw = payload.ppt ?? payload.sala;
 			const ppt = {
-				estado: sala.ppt_estado ?? state.ppt?.estado,
-				prazo: sala.ppt_prazo ?? state.ppt?.prazo,
-				revelacaoEm: sala.ppt_revelacao_em ?? state.ppt?.revelacaoEm,
-				enviouA: Boolean(sala.ppt_enviou_a),
-				enviouB: Boolean(sala.ppt_enviou_b),
-				representanteA: sala.ppt_representante_a ?? state.ppt?.representanteA,
-				representanteB: sala.ppt_representante_b ?? state.ppt?.representanteB,
-				resultado: sala.ppt_resultado ?? state.ppt?.resultado,
-				lanceA: sala.ppt_lance_a ?? state.ppt?.lanceA,
-				lanceB: sala.ppt_lance_b ?? state.ppt?.lanceB,
-				meuLance: state.ppt?.meuLance
+				estado: pptRaw?.estado ?? pptRaw?.ppt_estado ?? state.ppt?.estado,
+				prazo: pptRaw?.prazo ?? pptRaw?.ppt_prazo ?? state.ppt?.prazo,
+				revelacaoEm: pptRaw?.revelacaoEm ?? pptRaw?.ppt_revelacao_em ?? state.ppt?.revelacaoEm,
+				enviouA: Boolean(pptRaw?.enviouA ?? pptRaw?.ppt_enviou_a),
+				enviouB: Boolean(pptRaw?.enviouB ?? pptRaw?.ppt_enviou_b),
+				representanteA:
+					pptRaw?.representanteA ?? pptRaw?.ppt_representante_a ?? state.ppt?.representanteA,
+				representanteB:
+					pptRaw?.representanteB ?? pptRaw?.ppt_representante_b ?? state.ppt?.representanteB,
+				resultado: pptRaw?.resultado ?? pptRaw?.ppt_resultado ?? state.ppt?.resultado,
+				lanceA: pptRaw?.lanceA ?? pptRaw?.ppt_lance_a ?? state.ppt?.lanceA,
+				lanceB: pptRaw?.lanceB ?? pptRaw?.ppt_lance_b ?? state.ppt?.lanceB,
+				meuLance: pptRaw?.meuLance ?? state.ppt?.meuLance
+			};
+
+			// 5. Estado da Rodada Ativa
+			const rodadaObj =
+				payload.rodadaAtiva ??
+				(typeof payload.rodada === 'object' && payload.rodada !== null
+					? payload.rodada
+					: undefined);
+			const numeroRodada =
+				Number(
+					(typeof payload.rodada === 'number' ? payload.rodada : undefined) ??
+						payload.sala?.rodada_atual ??
+						rodadaObj?.numero ??
+						state.rodadaAtual.numero
+				) || 1;
+
+			let cartaAtual = state.rodadaAtual.carta;
+			if (rodadaObj?.espectroEsquerda && rodadaObj?.espectroDireita) {
+				cartaAtual = {
+					id: 'carta_' + numeroRodada,
+					left: rodadaObj.espectroEsquerda,
+					right: rodadaObj.espectroDireita
+				};
+			} else if (rodadaObj && 'carta_espectro' in rodadaObj && (rodadaObj as any).carta_espectro) {
+				cartaAtual = (rodadaObj as any).carta_espectro;
+			}
+
+			const rodadaAtual: RoundState = {
+				...state.rodadaAtual,
+				numero: numeroRodada,
+				equipeAtiva,
+				codificadorId:
+					rodadaObj?.codificadorId ??
+					(rodadaObj as any)?.codificador_id ??
+					state.rodadaAtual.codificadorId,
+				palpiteiroId:
+					rodadaObj?.palpiteiroId ??
+					(rodadaObj as any)?.palpiteiro_id ??
+					state.rodadaAtual.palpiteiroId,
+				carta: cartaAtual,
+				metaOculta:
+					rodadaObj?.metaOculta ?? (rodadaObj as any)?.meta_oculta ?? state.rodadaAtual.metaOculta,
+				dica: rodadaObj?.dica ?? state.rodadaAtual.dica,
+				palpite: rodadaObj?.palpite ?? state.rodadaAtual.palpite,
+				revelada: Boolean(
+					rodadaObj?.metaOculta !== undefined &&
+					rodadaObj?.metaOculta !== null &&
+					(fase === 'RODADA_REVELACAO' || fase === 'VITORIA')
+				)
 			};
 
 			return {
 				...state,
 				fase,
-				hostId: sala.host_id ?? state.hostId,
+				hostId,
 				vencedor,
-				equipeAtiva: sala.equipe_da_vez || state.equipeAtiva,
+				equipeAtiva,
 				equipes: {
 					A: { ...state.equipes.A, pontos: placarA, membros: membrosA },
 					B: { ...state.equipes.B, pontos: placarB, membros: membrosB }
@@ -309,26 +356,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				jogadoresAleatorios: aleatorios,
 				minhaEquipe,
 				ppt,
-				rodadaAtual: {
-					...state.rodadaAtual,
-					numero: Number(sala.rodada_atual) || 1
-				}
-			};
-		}
-
-		case 'PLAYER_PRESENCE_UPDATE': {
-			const { jogadores } = action.payload;
-			const membrosA = jogadores.filter((j) => j.equipe === 'A');
-			const membrosB = jogadores.filter((j) => j.equipe === 'B');
-			const aleatorios = jogadores.filter((j) => j.equipe !== 'A' && j.equipe !== 'B');
-
-			return {
-				...state,
-				equipes: {
-					A: { ...state.equipes.A, membros: membrosA },
-					B: { ...state.equipes.B, membros: membrosB }
-				},
-				jogadoresAleatorios: aleatorios
+				rodadaAtual
 			};
 		}
 

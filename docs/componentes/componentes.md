@@ -14,16 +14,16 @@ Em consonância com as diretrizes do projeto:
 
 No modelo cliente-servidor de Leveling Out:
 
-1. **Componentes de Input (Cliente):** Capturam eventos brutos do usuário, realizam sanitização defensiva local e emitem intenções tipadas.
-2. **Componentes de Update (Servidor Autoritário - PocketBase):** Processam a lógica de negócio verdadeira, sorteiam segredos, resolvem confrontos e calculam pontuações oficiais. Implementados nativamente em Go estendendo o PocketBase como framework (`backend/cmd/server/` e `backend/internal/components/`), garantindo concorrência thread-safe com primitivas nativas (`sync.RWMutex`), tipagem estática e máxima eficiência de execução.
-3. **Componentes de Sincronização (Cliente):** Reconciliam a máquina de estados local via Server-Sent Events (SSE), sem jamais decidir o estado por conta própria.
+1. **Componentes de Input (Cliente):** Capturam eventos brutos do usuário, realizam sanitização defensiva local e emitem comandos tipados via WebSocket.
+2. **Componentes de Update (Servidor Autoritário Go em Memória):** Processam a lógica de negócio verdadeira, sorteiam segredos, resolvem confrontos e calculam pontuações oficiais. Implementados nativamente em Go puro sob o padrão de Ator (`backend/cmd/server/`, `backend/internal/actor/` e `backend/internal/components/`), garantindo concorrência segura por isolamento de goroutine e canal de mensagens (`inbox chan`), tipagem estática e ausência de overhead de banco relacional em disco.
+3. **Componentes de Sincronização (Cliente):** Reconciliam a máquina de estados local via WebSockets full-duplex (`GameSocket`), sem jamais decidir o estado por conta própria.
 4. **Componentes de Render (Cliente):** Projeções puras de interface ($UI = f(State)$), computando ViewModels, animações de fluidos e blindagem visual da meta oculta.
 
 ---
 
 ## 2. Visão Geral da Composição
 
-A agregação de componentes nas entidades atende à separação estrita de responsabilidades entre cliente e servidor (Input defensivo no cliente, Update autoritário no PocketBase, Sincronização reativa no cliente e Renderização pura da interface).
+A agregação de componentes nas entidades atende à separação estrita de responsabilidades entre cliente e servidor (Input defensivo no cliente, Update autoritário no Servidor Go em memória, Sincronização reativa via WebSocket e Renderização pura da interface).
 
 > Para a visualização gráfica destas entidades, suas instanciações e seu acoplamento com componentes, consulte [Diagramas de Arquitetura, Entidades e Componentes](../diagramas/diagramas.md).
 
@@ -33,19 +33,19 @@ A agregação de componentes nas entidades atende à separação estrita de resp
 
 A tabela a seguir consolida quais componentes atômicos equipam cada instância das entidades do jogo, indicando suas respectivas camadas e arquivos de implementação no código:
 
-| Entidade Conceitual        | Instância Específica       | Componentes Atômicos Associados                                                    | Camada Principal                | Arquivos no Código (Backend / Frontend)                                                                                                                                                                                                                                                                                                                                                                                        |
-| :------------------------- | :------------------------- | :--------------------------------------------------------------------------------- | :------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`EntidadeParticipante`** | **Jogador Individual**     | `IdentidadeComponent`<br>`PresencaRedeComponent`<br>`PapelTurnoComponent`          | Frontend / Backend              | [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go)<br>[`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts)<br>[`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts)                                                                                                                                                           |
-| **`EntidadeParticipante`** | **Equipe Coletiva**        | `IdentidadeComponent`<br>`AcumuladorPontosComponent`                               | Backend autoritário             | [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go)<br>[`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/types.ts`](../../src/lib/engine/types.ts)                                                                                                                                                                             |
-| **`EntidadeSessao`**       | **SalaMatch (Lobby/Jogo)** | `CicloFasesComponent`<br>`ReconciliacaoRedeComponent`<br>`ModeracaoLobbyComponent` | Backend autoritário / Frontend  | [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`backend/internal/hooks/routes_lobby.go`](../../backend/internal/hooks/routes_lobby.go)<br>[`src/lib/engine/game-engine.ts`](../../src/lib/engine/game-engine.ts)<br>[`src/lib/components/LobbyArena.svelte`](../../src/lib/components/LobbyArena.svelte)<br>[`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte) |
-| **`EntidadeSessao`**       | **RodadaAtiva**            | `ProgressaoRodadaComponent`<br>`CicloFasesComponent`                               | Backend autoritário             | [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts)                                                                                                                                                                                                                                               |
-| **`EntidadeArtefato`**     | **Tubo de Ensaio**         | `NivelLiquidoComponent`<br>`SigiloMetaComponent`                                   | Render (Front) / Segredo (Back) | [`backend/internal/components/secret_target.go`](../../backend/internal/components/secret_target.go)<br>[`src/lib/components/TestTube.svelte`](../../src/lib/components/TestTube.svelte)<br>[`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts)                                                                                                                                               |
-| **`EntidadeArtefato`**     | **Marcador Analógico**     | `ArrastoAnalogicoComponent`                                                        | Input (Front)                   | [`src/lib/engine/input/slider-controller.ts`](../../src/lib/engine/input/slider-controller.ts)<br>[`src/lib/components/AnalogSlider.svelte`](../../src/lib/components/AnalogSlider.svelte)                                                                                                                                                                                                                                     |
-| **`EntidadeArtefato`**     | **Carta de Espectro**      | `PolosSemanticosComponent`<br>`DicaTextualComponent`                               | Catálogo / Sanitização          | [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts)<br>[`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts)<br>[`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts)                                                                                                                                                                                         |
-| **`EntidadeDisputa`**      | **Disputa PPT**            | `LancePptComponent`<br>`ArbitroPptComponent`                                       | Input (Front) / Árbitro (Back)  | [`backend/internal/entities/contest.go`](../../backend/internal/entities/contest.go)<br>[`backend/internal/components/ppt_arbiter.go`](../../backend/internal/components/ppt_arbiter.go)<br>[`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts)                                                                                                                                           |
-| **`EntidadeDisputa`**      | **Aferição Proximidade**   | `RegraProximidadeComponent`                                                        | Update autoritário (Back)       | [`backend/internal/components/proximity.go`](../../backend/internal/components/proximity.go)<br>[`src/lib/engine/update/score-rules.ts`](../../src/lib/engine/update/score-rules.ts)                                                                                                                                                                                                                                           |
-| **`EntidadePlacar`**       | **Corrida de Pontos**      | `BarraProgressoComponent`<br>`ModuladorTensaoComponent`                            | Render (Front)                  | [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts)                                                                                                                                                                                                                                                   |
-| **`EntidadePlacar`**       | **Painel de Celebração**   | `DisparadorRevancheComponent`                                                      | Input / Update                  | [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts)                                                                                                                                                                                                                                               |
+| Entidade Conceitual        | Instância Específica       | Componentes Atômicos Associados                                                    | Camada Principal                | Arquivos no Código (Backend / Frontend)                                                                                                                                                                                                                                                                                                                                                                                |
+| :------------------------- | :------------------------- | :--------------------------------------------------------------------------------- | :------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`EntidadeParticipante`** | **Jogador Individual**     | `IdentidadeComponent`<br>`PresencaRedeComponent`<br>`PapelTurnoComponent`          | Frontend / Backend              | [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go)<br>[`backend/internal/actor/client_conn.go`](../../backend/internal/actor/client_conn.go)<br>[`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts)<br>[`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts)                                                         |
+| **`EntidadeParticipante`** | **Equipe Coletiva**        | `IdentidadeComponent`<br>`AcumuladorPontosComponent`                               | Backend autoritário             | [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go)<br>[`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/types.ts`](../../src/lib/engine/types.ts)                                                                                                                                                                     |
+| **`EntidadeSessao`**       | **SalaMatch (Lobby/Jogo)** | `CicloFasesComponent`<br>`ReconciliacaoRedeComponent`<br>`ModeracaoLobbyComponent` | Backend autoritário / Frontend  | [`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go)<br>[`backend/internal/hub/lobby_hub.go`](../../backend/internal/hub/lobby_hub.go)<br>[`src/lib/network/game-socket.ts`](../../src/lib/network/game-socket.ts)<br>[`src/lib/components/LobbyArena.svelte`](../../src/lib/components/LobbyArena.svelte)<br>[`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte) |
+| **`EntidadeSessao`**       | **RodadaAtiva**            | `ProgressaoRodadaComponent`<br>`CicloFasesComponent`                               | Backend autoritário             | [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts)                                                                                                                                                                                                                                       |
+| **`EntidadeArtefato`**     | **Tubo de Ensaio**         | `NivelLiquidoComponent`<br>`SigiloMetaComponent`                                   | Render (Front) / Segredo (Back) | [`backend/internal/components/secret_target.go`](../../backend/internal/components/secret_target.go)<br>[`src/lib/components/TestTube.svelte`](../../src/lib/components/TestTube.svelte)<br>[`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts)                                                                                                                                       |
+| **`EntidadeArtefato`**     | **Marcador Analógico**     | `ArrastoAnalogicoComponent`                                                        | Input (Front)                   | [`src/lib/engine/input/slider-controller.ts`](../../src/lib/engine/input/slider-controller.ts)<br>[`src/lib/components/AnalogSlider.svelte`](../../src/lib/components/AnalogSlider.svelte)                                                                                                                                                                                                                             |
+| **`EntidadeArtefato`**     | **Carta de Espectro**      | `PolosSemanticosComponent`<br>`DicaTextualComponent`                               | Catálogo / Sanitização          | [`backend/internal/components/spectrums.go`](../../backend/internal/components/spectrums.go)<br>[`src/lib/engine/types.ts`](../../src/lib/engine/types.ts)<br>[`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts)                                                                                                                                                                             |
+| **`EntidadeDisputa`**      | **Disputa PPT**            | `LancePptComponent`<br>`ArbitroPptComponent`                                       | Input (Front) / Árbitro (Back)  | [`backend/internal/entities/contest.go`](../../backend/internal/entities/contest.go)<br>[`backend/internal/components/ppt_arbiter.go`](../../backend/internal/components/ppt_arbiter.go)<br>[`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go)<br>[`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts)                                           |
+| **`EntidadeDisputa`**      | **Aferição Proximidade**   | `RegraProximidadeComponent`                                                        | Update autoritário (Back)       | [`backend/internal/components/proximity.go`](../../backend/internal/components/proximity.go)<br>[`src/lib/engine/update/score-rules.ts`](../../src/lib/engine/update/score-rules.ts)                                                                                                                                                                                                                                   |
+| **`EntidadePlacar`**       | **Corrida de Pontos**      | `BarraProgressoComponent`<br>`ModuladorTensaoComponent`                            | Render (Front)                  | [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go)<br>[`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts)                                                                                                                                                                                                                                           |
+| **`EntidadePlacar`**       | **Painel de Celebração**   | `DisparadorRevancheComponent`                                                      | Input / Update                  | [`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go)<br>[`backend/internal/protocol/messages.go`](../../backend/internal/protocol/messages.go)<br>[`src/lib/network/game-socket.ts`](../../src/lib/network/game-socket.ts)                                                                                                                                                             |
 
 ---
 
@@ -70,11 +70,11 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 #### 2. `PresencaRedeComponent`
 
 - **Atributos:** `isOnline: boolean`, `ultimoPing: number`.
-- **Comportamento:** Emite heartbeats e detecta desconexões. O backend engatilha a purga por inatividade após 15 minutos sem ping.
-- **Camada:** Sistema Distribuído (Input periódico no front; verificação de integridade no PocketBase).
+- **Comportamento:** Monitora a vitalidade da conexão do jogador diretamente pela sessão ativa de WebSocket. Se a conexão TCP/WS cair, o servidor marca `isOnline: false` imediatamente e notifica a sala via `SYNC`. Na reconexão, o jogador revalida seu `sessionToken` e retoma seu assento.
+- **Camada:** Sistema Distribuído (Liveness no socket; reconciliação de estado no cliente).
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/internal/components/cleanup.go`](../../backend/internal/components/cleanup.go) (`SessionCleaner`, rotina de limpeza de inatividade) e [`backend/pb_hooks/cleanup.pb.js`](../../backend/pb_hooks/cleanup.pb.js).
-  - _Frontend (TypeScript/Svelte):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`Player.isOnline`) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte) (heartbeats e inscrições SSE).
+  - _Backend (Go):_ [`backend/internal/actor/client_conn.go`](../../backend/internal/actor/client_conn.go) (`ClientConn`), [`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go) e [`backend/internal/entities/participant.go`](../../backend/internal/entities/participant.go).
+  - _Frontend (TypeScript/Svelte):_ [`src/lib/network/game-socket.ts`](../../src/lib/network/game-socket.ts) (`GameSocket`), [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`Player.isOnline`) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte).
 - **Justificativa da Atomicidade:** Focado estritamente no estado de conectividade do jogador, sem poluir dados conceituais de gameplay.
 
 #### 3. `PapelTurnoComponent`
@@ -91,9 +91,9 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 
 - **Atributos:** `pontos: number`.
 - **Comportamento:** Incrementa valores inteiros positivos quando a equipe pontua.
-- **Camada:** Backend autoritativo (`game_rules.pb.js` / Go). O cliente apenas espelha o valor recebido.
+- **Camada:** Backend autoritativo (Go nativo). O cliente apenas espelha o valor recebido.
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (mapa `Scores` com pontuação oficial das equipes Pato e Ganso) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (mapa `Scores` com pontuação oficial das equipes Pato e Ganso).
   - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`GameState.scores`) e [`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts).
 - **Justificativa da Atomicidade:** Gerencia única e exclusivamente o placar numérico da equipe, blindando-o contra adulterações do lado cliente.
 
@@ -107,7 +107,7 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Comportamento:** Valida a máquina de estados, impedindo transições ilegais (ex.: avançar para palpite sem antes haver uma dica).
 - **Camada:** Backend autoritativo com espelhamento determinístico no Reducer cliente.
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (constantes `PhaseLobby`, `PhaseRoundClue`, etc., e validação de transição) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (constantes `PhaseLobby`, `PhaseRoundClue`, etc., e validação de transição).
   - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`GamePhase`) e [`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts) (`gameReducer`).
 - **Justificativa da Atomicidade:** Isola as regras de transição de fase da aplicação das mecânicas individuais de cada fase.
 
@@ -123,12 +123,12 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 
 #### 7. `ReconciliacaoRedeComponent`
 
-- **Atributos:** `inscricaoSseAtiva: boolean`, `versaoEstadoServidor: number`.
-- **Comportamento:** Escuta eventos SSE disparados pelo PocketBase e injeta ações tipadas (`FULL_SYNC`, `RODADA_REVELADA`) no `GameEngine` cliente.
+- **Atributos:** `socketConectado: boolean`, `statusConexao: SocketStatus`.
+- **Comportamento:** Mantém a conexão persistente via WebSocket com o servidor (`GameSocket`), despacha comandos tipados e consome envelopes `SYNC`, reconciliando deterministamente a máquina de estados local do `GameEngine`.
 - **Camada:** Frontend (Controlador de rede cliente).
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ Servidor de eventos SSE em PocketBase e [`backend/cmd/server/main.go`](../../backend/cmd/server/main.go).
-  - _Frontend (TypeScript):_ [`src/lib/engine/game-engine.ts`](../../src/lib/engine/game-engine.ts) (`GameEngine.subscribe` e reconciliação determinística) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte).
+  - _Backend (Go):_ [`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go), [`backend/internal/actor/client_conn.go`](../../backend/internal/actor/client_conn.go) e [`backend/internal/protocol/messages.go`](../../backend/internal/protocol/messages.go).
+  - _Frontend (TypeScript):_ [`src/lib/network/game-socket.ts`](../../src/lib/network/game-socket.ts) (`GameSocket`), [`src/lib/engine/game-engine.ts`](../../src/lib/engine/game-engine.ts) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte).
 - **Justificativa da Atomicidade:** Desacopla o protocolo de transporte de rede da lógica matemática interna das regras do jogo.
 
 ---
@@ -150,7 +150,7 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Comportamento:** No backend, sorteia o valor secreto aleatório. No frontend, impede categoricamente a transmissão da meta para participantes que não sejam o Codificador da vez até a fase oficial de revelação (Princípio Zero Trust).
 - **Camada:** Backend autoritativo (Armazenamento) / Frontend (Blindagem de sigilo).
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/internal/components/secret_target.go`](../../backend/internal/components/secret_target.go) (`SecretTargetComponent.GenerateSecretTarget` com sorteio seguro) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Backend (Go):_ [`backend/internal/components/secret_target.go`](../../backend/internal/components/secret_target.go) (`SecretTargetComponent.GenerateSecretTarget` com sorteio seguro).
   - _Frontend (TypeScript):_ [`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts) (`getSecretTargetProjection` aplicando a máscara Zero Trust).
 - **Justificativa da Atomicidade:** A segurança da meta oculta é um dos pilares inegociáveis do jogo. Centralizar o sigilo em um componente atômico garante que nenhuma inspeção de DOM ou console revele o segredo precocemente.
 
@@ -167,9 +167,9 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 
 - **Atributos:** `poloEsquerdo: string`, `poloDireito: string`.
 - **Comportamento:** Fornece os descritores conceituais opostos da carta de espectro sorteada (ex.: "Famoso" e "Anônimo").
-- **Camada:** Compartilhada (Catálogo estático de tópicos no banco e espelhamento cliente).
+- **Camada:** Compartilhada (Catálogo estático de tópicos no componente Go e espelhamento no cliente).
 - **Arquivo(s) no Código:**
-  - _Backend (PocketBase):_ Migrações declarativas da coleção `cartas_espectro` em [`backend/pb_migrations/`](../../backend/pb_migrations/).
+  - _Backend (Go):_ [`backend/internal/components/spectrums.go`](../../backend/internal/components/spectrums.go) (`SpectrumsComponent`, catálogo de 15 cartas e sorteio estocástico de pares).
   - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`SpectrumCard`).
 - **Justificativa da Atomicidade:** Fornece apenas o substrato textual da escala semântica.
 
@@ -177,10 +177,10 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 
 - **Atributos:** `conteudoDica: string`.
 - **Comportamento:** Captura a entrada de texto do Codificador, higieniza contra injeção de tags HTML ou quebras de linha e limita o comprimento estritamente a 60 caracteres.
-- **Camada:** Frontend (Sanitização defensiva de Input) e Backend (Armazenamento).
+- **Camada:** Frontend (Sanitização defensiva de Input) e Backend (Armazenamento em memória no `RoomActor`).
 - **Arquivo(s) no Código:**
-  - _Backend (PocketBase):_ Regras de integridade de campo na coleção `rodadas` e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
-  - _Frontend (TypeScript):_ [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeClue`) e [`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts) (`createSubmitClueIntent`).
+  - _Backend (Go):_ [`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go) e [`backend/internal/protocol/messages.go`](../../backend/internal/protocol/messages.go) (`MsgSubmeterDica`).
+  - _Frontend (TypeScript):_ [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeClue`) e [`src/lib/network/game-socket.ts`](../../src/lib/network/game-socket.ts) (`submeterDica`).
 - **Justificativa da Atomicidade:** Trata unicamente da validação, integridade e sanitização da pista enviada.
 
 ---
@@ -193,17 +193,17 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Comportamento:** Captura a escolha do representante da equipe na disputa de primeiro turno e despacha a intenção tipada para o backend.
 - **Camada:** Frontend (Camada de Input).
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/internal/entities/contest.go`](../../backend/internal/entities/contest.go) (`PptMove`, `PptContest`) e [`backend/pb_hooks/iniciativa.pb.js`](../../backend/pb_hooks/iniciativa.pb.js).
+  - _Backend (Go):_ [`backend/internal/entities/contest.go`](../../backend/internal/entities/contest.go) (`PptMove`, `PptContest`).
   - _Frontend (TypeScript):_ [`src/lib/engine/types.ts`](../../src/lib/engine/types.ts) (`PptMove`) e [`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts) (`createPptMoveIntent`).
 - **Justificativa da Atomicidade:** Encapsula unicamente a seleção de jogada de um participante.
 
 #### 14. `ArbitroPptComponent`
 
 - **Atributos:** `lancesRecebidos: Record<string, string>`, `resultadoDisputa: 'A' | 'B' | 'EMPATE'`.
-- **Comportamento:** Armazena lances em memória atômica thread-safe no PocketBase (`$app.store()`), avalia o confronto das regras clássicas e declara a equipe vencedora para selecionar a primeira carta.
-- **Camada:** Backend autoritativo (`iniciativa.pb.js` / Go).
+- **Comportamento:** Armazena lances em memória atômica thread-safe no Go nativo (`PptArbiterComponent`), avalia o confronto das regras clássicas, preenche lances faltantes por timeout (10s) e declara a equipe vencedora para selecionar a primeira carta.
+- **Camada:** Backend autoritativo (Go nativo).
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/internal/components/ppt_arbiter.go`](../../backend/internal/components/ppt_arbiter.go) (`PptArbiterComponent.ResolveMoves`) e [`backend/pb_hooks/iniciativa.pb.js`](../../backend/pb_hooks/iniciativa.pb.js).
+  - _Backend (Go):_ [`backend/internal/components/ppt_arbiter.go`](../../backend/internal/components/ppt_arbiter.go) (`PptArbiterComponent.ResolveMoves`) e [`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go).
   - _Frontend (TypeScript):_ [`src/lib/engine/update/state-machine.ts`](../../src/lib/engine/update/state-machine.ts) (`gameReducer` espelhamento de resultado).
 - **Justificativa da Atomicidade:** Responsabilidade exclusiva de arbitrar o minijogo de iniciativa.
 
@@ -213,7 +213,7 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Comportamento:** Computa a diferença absoluta $\Delta = |\text{meta} - \text{palpite}|$ e retorna os pontos devidos (+4 para $\le 2\%$, +3 para $\le 6\%$, +2 para $\le 12\%$, 0 para erros maiores).
 - **Camada:** Backend autoritativo (Cálculo oficial) e Frontend (Pré-visualização e feedback sonoro/visual).
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/internal/components/proximity.go`](../../backend/internal/components/proximity.go) (`ProximityComponent.Calculate`) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
+  - _Backend (Go):_ [`backend/internal/components/proximity.go`](../../backend/internal/components/proximity.go) (`ProximityComponent.Calculate`) e [`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go).
   - _Frontend (TypeScript):_ [`src/lib/engine/update/score-rules.ts`](../../src/lib/engine/update/score-rules.ts) (`calculateRoundScore`, `PROXIMITY_TIERS`).
 - **Justificativa da Atomicidade:** Encapsula exclusivamente a fórmula matemática de tolerância de erro que define o pilar de _Acerto Aproximado_.
 
@@ -243,19 +243,19 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 #### 18. `DisparadorRevancheComponent`
 
 - **Atributos:** `solicitacoesRevanche: Set<string>`.
-- **Comportamento:** Registra o consentimento mútuo das equipes para reiniciar a partida mantendo os mesmos participantes na sala, resetando placares e voltando à fase de PPT.
-- **Camada:** Sistema Distribuído (Intenção no cliente; reinício de registros no PocketBase).
+- **Comportamento:** Registra a intenção de revanche dos participantes no ator da sala, resetando placares em memória e retornando à fase de PPT mantendo os mesmos participantes.
+- **Camada:** Sistema Distribuído (Comando `REVANCHE` via WebSocket; reinício no `RoomActor`).
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) (`ResetForRematch`) e [`backend/pb_hooks/game_rules.pb.js`](../../backend/pb_hooks/game_rules.pb.js).
-  - _Frontend (TypeScript/Svelte):_ [`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts) (`createRequestRematchIntent`) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte).
+  - _Backend (Go):_ [`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go), [`backend/internal/entities/session.go`](../../backend/internal/entities/session.go) e [`backend/internal/protocol/messages.go`](../../backend/internal/protocol/messages.go).
+  - _Frontend (TypeScript/Svelte):_ [`src/lib/network/game-socket.ts`](../../src/lib/network/game-socket.ts) (`revanche`) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte).
 - **Justificativa da Atomicidade:** Isola o gatilho de reinício do restante da máquina de estados do jogo ativo.
 
 #### 19. `ModeracaoLobbyComponent`
 
-- **Atributos:** `isHost: boolean`, `alvoPlayerId: string | null`.
-- **Comportamento:** Media a autoridade de governança da sala concedida ao anfitrião. No cliente, projeta botões de expulsão de participantes exclusivos para o anfitrião ao lado dos integrantes das equipes e despacha a intenção tipada de remoção; no servidor PocketBase/Go, processa a rota autoritativa `POST /api/leveling/salas/{codigo}/expulsar`, valida soberanamente a titularidade do anfitrião (`host_id`), exclui o registro do jogador no SQLite, libera a vaga na equipe e emite broadcast SSE de exclusão para toda a rede.
-- **Camada:** Sistema Distribuído (Input defensivo e Render no cliente; validação soberana e Update autoritativo no PocketBase).
+- **Atributos:** `isHost: boolean`, `alvoPlayerId: string | null`, `tipoAcao: 'EXPULSAR' | 'BANIR'`.
+- **Comportamento:** Media a autoridade de governança da sala concedida ao anfitrião. No cliente, projeta botões dedicados de expulsão (`user-round-minus`) e banimento permanente (`user-round-x`) exclusivos para o anfitrião ao lado dos integrantes das equipes, despachando os comandos WebSocket `EXPULSAR_JOGADOR` ou `BANIR_JOGADOR`. No servidor Go in-memory, o `RoomActor` valida a titularidade do anfitrião (`host_id`), impede auto-moderação, desconecta o cliente alvo com envelope `KICKADO` ou `BANIDO` (este último gravando o `player_id` e `device_id` na lista de banimento da sala), libera a vaga na equipe e emite broadcast `SYNC` atualizado para toda a sala.
+- **Camada:** Sistema Distribuído (Input defensivo e Render no cliente; validação soberana e Update autoritativo no `RoomActor`).
 - **Arquivo(s) no Código:**
-  - _Backend (Go):_ [`backend/CONTRACT.md`](../../backend/CONTRACT.md) (endpoint `POST /api/leveling/salas/{codigo}/expulsar`) e [`backend/internal/hooks/register.go`](../../backend/internal/hooks/register.go).
-  - _Frontend (TypeScript/Svelte):_ [`src/lib/engine/input/intent-factory.ts`](../../src/lib/engine/input/intent-factory.ts), [`src/lib/engine/render/projections.ts`](../../src/lib/engine/render/projections.ts) (`getLobbyProjection`) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte).
-- **Justificativa da Atomicidade:** Isola as regras de governança e expurgação ativa de participantes da mecânica de presença ordinária (heartbeat) e da identidade fixa do jogador.
+  - _Backend (Go):_ [`backend/internal/actor/room_actor_lobby.go`](../../backend/internal/actor/room_actor_lobby.go) e [`backend/internal/protocol/messages.go`](../../backend/internal/protocol/messages.go).
+  - _Frontend (TypeScript/Svelte):_ [`src/lib/network/game-socket.ts`](../../src/lib/network/game-socket.ts) (`expulsarJogador`, `banirJogador`), [`src/lib/config/device.ts`](../../src/lib/config/device.ts), [`src/lib/components/LobbyArena.svelte`](../../src/lib/components/LobbyArena.svelte) e [`src/routes/[sala]/+page.svelte`](../../src/routes/[sala]/+page.svelte).
+- **Justificativa da Atomicidade:** Isola as regras de governança e expurgação ativa de participantes da mecânica de presença ordinária e da identidade fixa do jogador.

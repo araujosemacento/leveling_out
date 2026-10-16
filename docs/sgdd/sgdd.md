@@ -88,37 +88,37 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 
 ### ![Programação](../assets/badges/programação.svg) Programação
 
-- [x] Inicialização do cliente SvelteKit e verificação de saúde do backend PocketBase
-- [x] Handshake autoritativo Zero Trust e validação de sala no PocketBase
+- [x] Inicialização do cliente SvelteKit e verificação de saúde do backend Go nativo
+- [x] Handshake autoritativo Zero Trust e validação de sala no backend Go nativo via WebSockets
 - [x] Diálogo bloqueante de identificação de apelido em acessos diretos por link
 - [x] Sanitização defensiva de apelidos de jogador contra injeção de tags HTML (máximo 20 caracteres)
-- [x] Geração dinâmica de slug de sala na URL (`/[sala]`) e inserção no banco de dados SQLite
+- [x] Geração dinâmica de slug de sala na URL (`/[sala]`) e gerenciamento de salas em memória RAM (Hub de Salas)
 - [x] Cópia para a área de transferência (`navigator.clipboard.writeText`) com feedback visual temporário
-- [x] Sincronização de presença de jogadores em tempo real via Server-Sent Events (SSE)
+- [x] Sincronização de presença de jogadores em tempo real via WebSockets full-duplex
 - [x] Controle autoritativo de quórum (máx 4 jogadores por sala e máx 2 por equipe), sorteio estocástico de aleatórios e início pelo host
-- [x] Rota autoritativa POST `/api/leveling/salas/{codigo}/expulsar` com validação soberana de host_id e liberação imediata de vaga
-- [x] Tratamento no cliente para interceptação de expulsão, encerramento de sessão e redirecionamento à tela inicial
-- [x] Monitoramento de presença por heartbeats periódicos e detecção de desconexão
+- [x] Moderação autoritativa com validação soberana de host_id e liberação imediata de vaga (expulsão e banimento)
+- [x] Tratamento no cliente para interceptação de expulsão/banimento, encerramento de sessão e redirecionamento à tela inicial
+- [x] Monitoramento de presença via protocolo WebSocket nativo e detecção de desconexão
 - [x] Notificação autoritativa de desconexão em tempo real ao anfitrião
-- [x] Ação de desfazer sala com encerramento de conexões SSE e limpeza de registros
-- [x] Protocolo de reassunção de assento com verificação de threshold de inatividade e aprovação do anfitrião
+- [x] Ação de desfazer sala com encerramento de conexões WebSocket e liberação de memória
+- [x] Protocolo de reconexão e restauração de assento via device_id
 - [ ] Resolução automática de rodada por WO em caso de ausência continuada do jogador ativo
-- [x] Envio de intenções tipadas (`GameAction`) via REST para o backend
-- [x] Rota autoritativa POST `/api/ppt/lance` e arbitragem em memória thread-safe (`$app.store()`)
+- [x] Envio de intenções e comandos tipados (`GameAction`) via WebSocket full-duplex para o backend
+- [x] Arbitragem autoritativa concorrente de PPT em memória no `RoomActor`
 - [x] Resolução de confronto de PPT com desempate e reemissão automática
 - [x] Sorteio estocástico de cartas bipolares a partir do catálogo temático
 - [x] Criação autoritativa de rodadas e sorteio da meta percentual secreta no intervalo [5%, 95%]
 - [x] Blindagem de sigilo Zero Trust da meta oculta (ocultação inviolável antes da revelação oficial)
 - [x] Sanitização defensiva de pistas textuais (remoção de HTML e truncamento em 60 caracteres)
-- [x] Transição autoritativa de fase de Dica para Palpite no backend (`game_rules.pb.js`)
+- [x] Transição autoritativa de fase de Dica para Palpite no backend Go (`RoomActor`)
 - [x] Controlador de física e arrasto analógico (`SliderDragController`) com clamp matemático em [0, 100]
 - [x] Acionamento de feedback háptico por vibração móvel (`navigator.vibrate`) a cada dezena percorrida
-- [x] Submissão do palpite e transmissão via SSE da fase de revelação para todos os clientes
+- [x] Submissão do palpite e transmissão via WebSocket da fase de revelação para todos os clientes
 - [x] Integração temporal contínua da fase do menisco (requestAnimationFrame) e física aditiva de agitação no lobby
 - [ ] Dinamização da velocidade da onda do menisco em função do placar da equipe (5.0s a 0.25s)
 - [ ] Animação vetorial SVG do menisco subindo até o valor real do líquido
 - [x] Algoritmo autoritativo de acerto aproximado por faixas de tolerância (|meta - palpite|: <=2%, <=6%, <=12%, >12%)
-- [x] Atualização autoritativa em cascata dos placares na coleção `salas`
+- [x] Atualização autoritativa em memória dos placares no `RoomActor`
 - [ ] Interpolação numérica suave do placar via Svelte Runes / tweened
 - [x] Alternância de posse de turno (_momentum_) e avanço do número da rodada
 - [x] Verificação de condição de vitória ao atingir a meta de 10 pontos

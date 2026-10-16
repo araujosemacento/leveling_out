@@ -157,25 +157,25 @@ flowchart TB
 
 ## 4. Diagrama de Sequência do Game Loop Distribuído
 
-O diagrama a seguir detalha a cadência temporal do Game Loop de _Leveling Out_ em um sistema distribuído autoritativo em tempo real, demonstrando a interação cronológica entre o Jogador, o motor cliente (`GameEngine`) e o servidor PocketBase:
+O diagrama a seguir detalha a cadência temporal do Game Loop de _Leveling Out_ em um sistema distribuído autoritativo em tempo real, demonstrando a interação cronológica entre o Jogador, o motor cliente (`GameEngine`) e o servidor Go nativo:
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Player as Jogador (Cliente)
     participant ClientEngine as Client Engine (Input / Reconciliação / Render)
-    participant ServerEngine as PocketBase Server (Update Autoritativo)
+    participant ServerEngine as Servidor Go Nativo (Update Autoritativo / RoomActor)
 
     Note over Player,ClientEngine: Fase 1: Input (Cliente)
     Player->>ClientEngine: Interação (Arrasto Slider / Digitação Dica / Lance PPT)
     ClientEngine->>ClientEngine: Sanitização Defensiva Local
-    ClientEngine->>ServerEngine: Envio de Intenção Tipada (HTTP / REST)
+    ClientEngine->>ServerEngine: Envio de Comando Tipado (WebSocket Full-Duplex)
 
     Note over ServerEngine: Fase 2: Update Autoritativo (Servidor)
-    ServerEngine->>ServerEngine: Validação de Regras de Integridade (pb_hooks)
+    ServerEngine->>ServerEngine: Validação de Regras de Integridade no RoomActor
     ServerEngine->>ServerEngine: Sorteio de Segredos / Resolução de Confrontos / Cálculo de Proximidade
-    ServerEngine->>ServerEngine: Persistência no SQLite
-    ServerEngine-->>ClientEngine: Broadcast de Mudança de Estado (SSE / Realtime)
+    ServerEngine->>ServerEngine: Atualização do Estado das Entidades em Memória
+    ServerEngine-->>ClientEngine: Broadcast de Snapshot Projetado Zero Trust (WebSocket)
 
     Note over ClientEngine,Player: Fase 3: Sincronização & Render (Cliente)
     ClientEngine->>ClientEngine: Reconciliação da Máquina de Estados Local (gameReducer)
@@ -200,24 +200,24 @@ flowchart LR
         I1 --> I2 --> I3
     end
 
-    subgraph Servidor_Update ["Back-end PocketBase: Update"]
+    subgraph Servidor_Update ["Back-end Go Nativo: Update (Actor Pattern)"]
         direction TB
-        U1["Recebe Ação via HTTP REST"]
-        U2["Hooks Autoritários (game_rules.pb.js)"]
+        U1["Recebe Comando via WebSocket"]
+        U2["Processamento no Inbox do RoomActor"]
         U3["Cálculo de Margem & Sorteio Seguro"]
-        U4["Gravação no Banco SQLite"]
+        U4["Atualização de Entidades em Memória"]
         U1 --> U2 --> U3 --> U4
     end
 
     subgraph Cliente_SyncRender ["Front-end: Sync & Render"]
         direction TB
-        S1["Assinatura SSE (PocketBase SDK)"]
+        S1["Conexão WebSocket (GameSocket)"]
         S2["Reducer Determinístico (state-machine.ts)"]
         S3["Projeções Puras (projections.ts)"]
         S4["Componentes Svelte 5 (UI reativa)"]
         S1 --> S2 --> S3 --> S4
     end
 
-    I3 -->|Despacho HTTP POST| U1
-    U4 -->|Difusão em Tempo Real via SSE| S1
+    I3 -->|Despacho WebSocket Full-Duplex| U1
+    U4 -->|Streaming e Snapshots via WebSocket| S1
 ```

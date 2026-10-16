@@ -9,36 +9,39 @@ Este documento detalha os princípios de engenharia, o Game Loop distribuído, o
 A arquitetura de _Leveling Out_ traduz o Game Loop clássico de motores de jogo para um **sistema distribuído autoritativo em tempo real**, onde a responsabilidade pelo ciclo de vida é estritamente dividida:
 
 - O **Front-end (Cliente)** é responsável exclusivamente pelas fases de **Input** e **Render** (além de reconciliação reativa de estado).
-- O **Back-end (Servidor PocketBase)** detém a soberania autoritativa exclusiva sobre a fase de **Update** (regras de integridade, cálculo oficial de pontuação e sigilo da meta oculta).
+- O **Back-end (Servidor Go Nativo em Memória)** detém a soberania autoritativa exclusiva sobre a fase de **Update** (regras de integridade, cálculo oficial de pontuação e sigilo da meta oculta).
 
 > Para a visualização cronológica completa passo a passo deste ciclo e a topologia de rede entre cliente e servidor, consulte o [Diagrama de Sequência e Topologia do Game Loop Distribuído](../diagramas/diagramas.md#4-diagrama-de-sequência-do-game-loop-distribuído).
 
 ### 1.1. Fase de Input (Cliente / Front-end)
 
-- **Captura de Intenção:** Captura eventos brutos de toque, pointer e teclado na interface, além de lances no minijogo de iniciativa.
+- **Captura de Intenção:** Captura eventos brutos de toque, pointer e teclado na interface, além de lances no minijogo de iniciativa e arrastos contínuos no slider.
 - **Sanitização Defensiva (Defense in Depth):** Higienização imediata antes do envio (`src/lib/engine/input/sanitize.ts`). Textos são desprovidos de tags HTML, apelidos são limitados a 20 caracteres e valores do slider sofrem _clamping_ matemático para o intervalo $[0, 100]$.
-- **Emissão Tipada:** O cliente despacha unicamente objetos de intenção tipados (`GameAction` gerados por `src/lib/engine/input/intent-factory.ts`, como seleção de equipe, disparos de moderação do anfitrião ou lances de PPT), jamais mutando o estado definitivo de pontuação ou rodadas.
+- **Emissão Tipada:** O cliente despacha unicamente comandos JSON tipados através de conexão persistente WebSocket (`GameSocket`), jamais mutando o estado definitivo de pontuação ou rodadas.
 
-### 1.2. Fase de Update (Servidor Autoritário / PocketBase)
+### 1.2. Fase de Update (Servidor Autoritário Go / Actor Pattern)
 
-- **Autoritarismo de Estado:** A verdade do jogo reside exclusivamente no servidor PocketBase (hooks e framework Go nativo).
-- **Gestão Autoritativa do Lobby e Quórum:** O servidor monitora a criação e atualização de registros na coleção `jogadores`. O primeiro participante a entrar é registrado como anfitrião (`is_host: true` e `host_id` na sala). O quórum é limitado estritamente a 4 integrantes por sala, e as equipes Pato (`A`) e Ganso (`B`) possuem limite rígido de 2 integrantes cada. A opção neutra `ALEATORIO` acolhe jogadores indecisos.
-- **Moderação Soberana pelo Anfitrião (`POST /api/leveling/salas/{codigo}/expulsar`):** Endpoint exclusivo pelo qual o anfitrião pode revogar autoritativamente o assento de qualquer outro participante no Lobby. O servidor valida a titularidade do host (`host_id`), impede auto-expulsão, exclui o registro do jogador no SQLite, libera imediatamente a vaga da equipe e emite evento SSE de exclusão para toda a rede.
-- **Sorteio Estocástico e Inicialização (`POST /api/leveling/salas/{codigo}/iniciar`):** Endpoint exclusivo acionado pelo anfitrião quando o quórum atinge exatamente 4 jogadores. O backend valida a identidade do requisitante (`X-Player-Id`), embaralha criptograficamente (`crypto/rand`) os participantes em `ALEATORIO`, completa as vagas remanescentes de cada equipe para totalizar 2 em cada lado e transiciona a sala para a fase `INICIATIVA`.
-- **Geração de Segredos:** Sorteio seguro de metas ocultas no tubo de ensaio ($5\%$ a $95\%$).
-- **Cálculo Oficial:** Comparação matemática $|\text{meta} - \text{palpite}|$ e distribuição de pontos (+4, +3, +2, 0) na coleção de rodadas e salas.
-- **Resolução de Conflitos:** Arbitragem em memória thread-safe (`$app.store()`) de lances simultâneos de Pedra, Papel e Tesoura.
+- **Autoritarismo de Estado em Memória:** A verdade do jogo reside exclusivamente no servidor Go autônomo em memória RAM. Cada sala opera como um `RoomActor` executando em goroutine exclusiva com canal de mensagens (`inbox chan`), eliminando condições de corrida sem travas de banco ou overhead de disco.
+- **Gestão Autoritativa do Lobby e Quórum:** O ator monitora as conexões ativas na sala. O primeiro participante a ingressar é registrado como anfitrião (`is_host: true` e `host_id`). O quórum é limitado estritamente a 4 integrantes por sala, e as equipes Pato (`A`) e Ganso (`B`) possuem limite rígido de 2 integrantes cada. A opção neutra `ALEATORIO` acolhe jogadores indecisos.
+- **Moderação Soberana pelo Anfitrião (`EXPULSAR_JOGADOR` e `BANIR_JOGADOR`):** Comandos exclusivos pelos quais o anfitrião pode revogar autoritativamente o assento de qualquer outro participante no Lobby:
+  - _Expulsão (`EXPULSAR_JOGADOR` / `KICKADO`):_ Desconecta o participante e libera a vaga da equipe na hora, permitindo que o participante tente se reconectar se for convidado ou se houver vaga.
+  - _Banimento (`BANIR_JOGADOR` / `BANIDO`):_ Registra o `player_id` e o `device_id` na lista de banimento em memória da sala e encerra o WebSocket com status `1008` (Policy Violation). Qualquer tentativa de reingresso do mesmo dispositivo é rejeitada sumariamente pelo servidor enquanto a sala estiver aberta.
+- **Sorteio Estocástico e Inicialização (`INICIAR_PARTIDA`):** Comando exclusivo acionado pelo anfitrião quando o quórum atinge exatamente 4 jogadores. O ator valida a identidade do solicitante, embaralha criptograficamente (`crypto/rand`) os participantes em `ALEATORIO`, completa as vagas remanescentes das equipes para totalizar 2 em cada lado e transiciona a sala para a disputa de `INICIATIVA` (Pedra, Papel e Tesoura).
+- **Geração de Segredos:** Sorteio seguro de metas ocultas no tubo de ensaio ($5\%$ a $95\%$) via `crypto/rand` pelo `SecretTargetComponent`.
+- **Cálculo Oficial:** Comparação matemática $|\text{meta} - \text{palpite}|$ e distribuição de pontos (+4, +3, +2, 0) pelo `ProximityComponent`.
+- **Resolução de Conflitos e Timers Determinísticos:** Arbitragem de lances de PPT pelo `PptArbiterComponent` e loop interno de 100ms para timeouts (10s de escolha de PPT, 3s de contagem regressiva e avanço automático após revelação).
 
 ### 1.3. Fase de Sincronização e Reconciliação (Cliente)
 
 - **Papel da Máquina de Estados Cliente:** A máquina de estados local em `src/lib/engine/update/state-machine.ts` **não toma decisões autônomas de jogo**. Seu papel no cliente é unicamente **sincronizar as mudanças ocorridas no servidor entre todos os jogadores**.
-- **Reconciliação Determinística:** Ao receber um evento de rede (SSE), o motor cliente despacha a reconciliação (`FULL_SYNC`, `RODADA_REVELADA`), garantindo que todas as telas conectadas convirjam exatamente para o mesmo estado autoritativo. Caso o participante local identifique que seu assento foi revogado pelo anfitrião (evento de exclusão em `jogadores`), o motor transiciona imediatamente para o estado de sessão revogada, abortando o heartbeat e exibindo aviso informativo de retorno à tela inicial.
+- **Reconciliação Determinística via WebSocket:** Ao receber um frame `SYNC`, o motor cliente despacha a reconciliação determinística (`FULL_SYNC`, `RODADA_REVELADA`), garantindo que todas as telas convirjam exatamente para o mesmo estado autoritativo. Caso o participante receba o envelope `KICKADO` ou `BANIDO`, o motor interrompe os ciclos de rede, limpa credenciais locais e exibe o modal correspondente (com registro de banimento por dispositivo em `localStorage` para a sala).
+- **Streaming em Tempo Real (30-60 Hz):** Durante a fase de palpite, as mensagens `SLIDER_MOVER` enviadas pelo palpiteiro são retransmitidas instantaneamente pelo ator via envelope `SLIDER_STREAM` para os demais membros da sala, permitindo visualização fluida do movimento sem overhead de banco.
 
 ### 1.4. Fase de Render (Cliente / Projeção Visual)
 
 - **Função Pura:** A interface é uma função declarativa pura do estado sincronizado ($UI = f(State)$ via `src/lib/engine/render/projections.ts`).
 - **Svelte 5 Runes:** Reatividade através de `$state`, `$derived` e `$props`.
-- **Blindagem Zero Trust:** A projeção garante que a `meta_oculta` nunca seja exposta no DOM ou nas propriedades reativas para jogadores não autorizados antes da fase de revelação oficial.
+- **Blindagem Zero Trust:** A projeção garante que a `meta_oculta` nunca seja exposta no DOM ou nas propriedades reativas para jogadores não autorizados antes da fase de revelação oficial. O servidor Go também aplica essa blindagem sob medida no momento de despachar o frame `SYNC` para cada conexão.
 
 ---
 
@@ -73,15 +76,15 @@ Na camada de interface e cliente, o front-end adota Composição sobre Herança:
 
 - **Controladores Especializados:** Classes dedicadas em TypeScript isolam rotinas complexas da interface:
   - `SliderDragController`: captura de toques, cálculo de offset percentual e sensibilidade tátil.
-  - `RoundTimer`: contagem regressiva determinística de tempo.
-  - `SessionSyncController`: gerenciamento de ciclo de vida da conexão SSE e emissão de intenções para o PocketBase.
+  - `GameSocket`: cliente WebSocket full-duplex com reconexão exponencial resiliente e streaming contínuo.
 - **Componentes Visuais Finos e Decomposição de Páginas:** Para prevenir arquivos monolíticos (_God Files_), as páginas delegam suas fases e diálogos a componentes atômicos/compostos em `src/lib/components/`:
   - `NicknameModal.svelte`: diálogo bloqueante de identificação de apelido com validação defensiva Zero Trust.
   - `RoomHeader.svelte`: cabeçalho de status da sala, identificação do jogador e botão de cópia com feedback.
-  - `DisconnectionBanner.svelte`: banner de aviso com opções exclusivas do anfitrião para desconexões.
   - `LobbyArena.svelte`: grade tripartite de divisão de equipes (Pato, Aleatório, Ganso) e controle de quórum.
-  - `GamePlaceholder.svelte`: transição visual para a fase de partida em andamento.
+  - `PptArena.svelte`: arena sincronizada de disputa de iniciativa via Pedra, Papel e Tesoura.
+  - `AnalogSlider.svelte`: marcador analógico procedural com suporte a arraste e teclas direcionais.
   - `TestTube.svelte`: tubo SVG procedural reativo com menisco duplo e dinâmica de fluidos.
+  - `GamePlaceholder.svelte`: transição visual para a fase de partida em andamento.
 
 ---
 
@@ -95,83 +98,55 @@ Com a eliminação total de runners antigos em p5.js, a camada visual apoia-se e
 
 ---
 
-## 5. Backend em Tempo Real: PocketBase e Evolução para Go Nativo
+## 5. Backend em Tempo Real: Servidor Go Nativo em Memória (Actor Pattern) e WebSockets
 
-O backend atua como autoridade soberana e exclusiva da fase de Update do sistema distribuído.
+O backend atua como autoridade soberana e exclusiva da fase de Update do sistema distribuído. Para atender às exigências de latência imperceptível e streaming analógico contínuo, a arquitetura opera inteiramente em memória RAM nativa via Go, dispensando bancos de dados relacionais e sistemas de arquivos intermediários.
 
-### 5.1. Arquitetura do Backend: Go Nativo com PocketBase Estendido
+### 5.1. Arquitetura do Servidor: Actor Pattern com Goroutine por Sala
 
-O backend opera como um executável nativo em Go estendendo o PocketBase como framework (`github.com/pocketbase/pocketbase`), estruturado rigorosamente de acordo com a arquitetura de **Entidades e Componentes Atômicos**:
+O servidor opera como um executável nativo em Go (`CGO_ENABLED=0`), estruturado rigorosamente sob o paradigma de **Entidades e Componentes Atômicos**:
 
-- **Arquitetura do Servidor:** Binário autossuficiente compilado estaticamente em Go (`CGO_ENABLED=0`) com SQLite embutido via `modernc.org/sqlite`, sem dependência de interpretadores externos ou runtime Node/Goja.
-- **Transmissão em Tempo Real:** Server-Sent Events (SSE) nativos sobre HTTP através de inscrições por coleção e sala (`pb.collection('salas').subscribe(roomCode, ...)`).
-- **Adequação do Backend à Composição por Entidades e Componentes:**
-  - **Entidades de Domínio no Servidor (`internal/entities/`):**
-    - `EntidadeSessao`: Gerencia o macro-estado da sala compartilhada (`SalaMatch`) e o ciclo micro-temporal da rodada (`RodadaAtiva`).
-    - `EntidadeParticipante`: Gerencia tanto os jogadores individuais conectados (`Jogador`) quanto a pontuação cumulativa das equipes (`EquipePato` e `EquipeGanso`).
-    - `EntidadeDisputa`: Gerencia confrontos e momentos de tensão competitiva (`DisputaPpt` e `AfericaoProximidade`).
-  - **Componentes Atômicos de Backend (`internal/components/`):**
-    - `ArbitroPptComponent`: Arbitragem thread-safe de lances de PPT com resolução determinística de confrontos e empates protegida por primitivas nativas (`sync.RWMutex`).
-    - `RegraProximidadeComponent`: Algoritmo matemático autoritativo de proximidade e atribuição de faixas de pontuação (+4, +3, +2 ou 0).
-    - `SigiloMetaComponent`: Geração criptograficamente segura de `meta_oculta` (números pseudo-aleatórios com `crypto/rand` no intervalo [5, 95]) e blindagem de dados sensíveis.
-    - `CleanupComponent`: Rotina periódica em segundo plano para expurgação automática de conexões e salas ociosas.
-  - **Decomposição Modular dos Hooks e Rotas (`internal/hooks/`):** Para manter cada arquivo coeso e estritamente abaixo do limite de complexidade, o pacote `hooks` foi particionado em submódulos especializados:
-    - `register.go`: Orquestrador principal enxuto que instancia os componentes atômicos e despacha o registro para os módulos filhos.
-    - `lifecycle.go`: Regras de negócio acopladas aos gatilhos de criação e atualização das coleções `salas`, `rodadas` e `jogadores`.
-    - `routes_lobby.go`: Rotas HTTP autoritativas para o handshake de ingresso (`/entrar`), heartbeats (`/ping`), seleção de equipes (`/equipe`) e dissolução (`/desfazer`).
-    - `routes_ppt.go`: Rotas de envio de lances (`/lance`) e consulta de estado da disputa de iniciativa (`/status`).
-    - `routes_match.go`: Rotas de início de partida com balanceamento estocástico de participantes indecisos (`/iniciar`) e consulta otimizada (`/snapshot`).
-    - `cron.go`: Agendamentos periódicos de tarefas em background para expurgação de inativos.
-    - `utils.go`: Utilitários compartilhados de geração de tokens criptográficos, sanitização de apelidos e consultas SQL-Generated JSON.
-- **Workflow Automatizado de Releases (`backend/.github/workflows/release.yml`):**
-  - Hospedado no repositório dedicado `araujosemacento/backend_leveling_out`, mantendo o ciclo de compilação dos binários desacoplado do cliente web.
-  - Matriz de compilação cruzada nativa para Linux (`amd64`, `arm64`), macOS (`amd64`, `arm64`) e Windows (`amd64`).
-  - Extração procedural das notas de versão a partir do `CHANGELOG.md` do backend com fallback automático pelo histórico do Git.
-  - Geração automática de somas de verificação SHA256 (`SHA256SUMS.txt`) e publicação automática de assets nas Releases do GitHub ao criar tags de versão.
+- **Isolamento de Concorrência via Actor Pattern (`RoomActor`):**
+  - Cada sala é uma goroutine independente gerenciada por `RoomActor` (`internal/actor/room_actor.go`).
+  - Todas as mutações e requisições transitam por um canal serializador de mensagens (`inbox chan RoomMessage`), garantindo zero condições de corrida sem necessidade de mutexes complexos em nível de jogo ou transações de banco.
+  - O hub central (`LobbyHub` em `internal/hub/lobby_hub.go`) mantém as salas ativas protegidas por `sync.RWMutex` apenas para orquestrar instanciações e conexões de novos sockets.
+- **Transmissão Bidirecional Full-Duplex (WebSockets):**
+  - Endpoint unificado `GET /ws/salas/{codigo}` implementado com a biblioteca de alto desempenho `github.com/coder/websocket`.
+  - A autenticação ocorre no handshake HTTP de upgrade via query parameters (`playerId`, `sessionToken`, `nome` e `secret` opcional de proxy reverso).
+  - Cada cliente conectado possui um buffer dedicado e seguro com loop assíncrono de escrita (`ClientConn` em `internal/actor/client_conn.go`), prevenindo que clientes lentos travem a goroutine do ator da sala.
+- **Ciclo Temporal Determinístico (Ticker de 100ms):**
+  - O ator roda um loop com `time.NewTicker(100 * time.Millisecond)`, responsável por contagens regressivas e transições autônomas:
+    - Prazo de 10 segundos para lances na disputa de iniciativa (PPT).
+    - Contagem regressiva dramática de 3 segundos antes da revelação dos lances de PPT.
+    - Avanço automático de 3 segundos após empate no PPT para nova disputa.
+    - Avanço automático de 5 segundos após a revelação da pontuação da rodada para iniciar o próximo turno.
 
-### 5.2. Histórico de Evolução: Transição de Hooks JS para Go Puro
+### 5.2. Adequação do Backend à Composição por Entidades e Componentes
 
-1. **Adequação do Backend à Composição por Entidades e Componentes:**
-   - **Entidades de Domínio no Servidor:** Agregadores conceituais amplos instanciados como structs Go em memória ou registros de banco:
-     - `EntidadeSessao`: Gerencia o macro-estado da sala compartilhada (`SalaMatch`) e o ciclo micro-temporal da rodada (`RodadaAtiva`).
-     - `EntidadeParticipante`: Gerencia tanto os jogadores individuais conectados (`Jogador`) quanto a pontuação cumulativa das equipes (`Equipe`).
-     - `EntidadeDisputa`: Gerencia confrontos e momentos de tensão competitiva (`DisputaPpt` e `AfericaoProximidade`).
-   - **Componentes Atômicos de Backend:** Cada componente encapsula estritamente uma regra de integridade ou processamento autoritativo:
-     - `ArbitroPptComponent`: Arbitragem thread-safe de lances de PPT com resolução determinística de confrontos e empates.
-     - `RegraProximidadeComponent`: Algoritmo matemático autoritativo de proximidade e atribuição de faixas de pontuação (+4, +3, +2 ou 0).
-     - `SigiloMetaComponent`: Geração criptograficamente segura de `meta_oculta` e mascaramento estrito de dados sensíveis antes do despacho para o cliente.
-     - `CicloFasesComponent`: Máquina de transição autoritativa entre fases de jogo (Lobby $\rightarrow$ PPT $\rightarrow$ Rodada $\rightarrow$ Vitória).
-     - `ReconciliacaoRedeComponent`: Emissão de eventos SSE ou WebSockets com deltas de estado reconciliados para todos os clientes.
+- **Entidades de Domínio no Servidor (`internal/entities/`):**
+  - `EntidadeSessao` (`session.go`): Gerencia o estado completo da sala (`SalaEstado`), o ciclo micro-temporal da rodada (`RodadaAtiva`), histórico de sintonia (`RodadaResumo`) e placares oficiais.
+  - `EntidadeParticipante` (`participant.go`): Gerencia os jogadores individuais (`Jogador`), estado de conectividade (`IsOnline`, `LastSeen`), papéis dinâmicos de turno (`PapelTurno`) e métodos de projeção.
+  - `EntidadeDisputa` (`contest.go`): Gerencia o estado da disputa de iniciativa (`PptContestState`), confrontos e resoluções.
+- **Componentes Atômicos de Backend (`internal/components/`):**
+  - `ArbitroPptComponent` (`ppt_arbiter.go`): Arbitragem determinística de lances de Pedra, Papel e Tesoura, resolução de empates e preenchimento por timeout.
+  - `RegraProximidadeComponent` (`proximity.go`): Algoritmo matemático autoritativo de proximidade e atribuição de faixas de pontuação (+4, +3, +2 ou 0).
+  - `SecretTargetComponent` (`secret_target.go`): Sorteio criptograficamente seguro de metas ocultas no intervalo [5, 95] via `crypto/rand`.
+  - `SpectrumsComponent` (`spectrums.go`): Catálogo com 15 pares conceituais de espectro e sorteio estocástico de opções para o início de turno.
 
-2. **Ganhos Críticos de Segurança e Eficiência em Go Puro:**
-   - **Tipagem Estática em Compilação:** Eliminação de erros de digitação em nomes de colunas ou coerção de tipos em tempo de execução; contratos validados pelo compilador `go build`.
-   - **Concorrência Segura (Zero Race Conditions):** Arbitragem de lances de PPT e palpites simultâneos protegidos por primitivas nativas de sincronização (`sync.RWMutex`, `sync.Map` e `channels`), substituindo o mapa genérico `$app.store()`.
-   - **Eficiência Extrema:** Execução direta em código de máquina sem o custo de conversão de tipos Go/JavaScript, com consumo de memória inferior e escalabilidade nativa de _goroutines_.
-   - **Suporte Futuro a WebSockets Duplex:** Capacidade de acoplar rotas nativas de WebSockets para transmissão bidirecional em tempo real de baixa latência.
+### 5.3. Blindagem de Sigilo Zero Trust e Projeções Sob Medida
 
-### 5.3. Eficiência de Serialização e Desserialização JSON
+Diferente de sistemas tradicionais que expõem coleções inteiras e dependem de filtros frágeis no cliente:
 
-Na implementação atual com hooks em JavaScript (`pb_hooks`), o fluxo de dados JSON não é direto:
+1. **Blindagem no Despacho (Servidor):**
+   - Ao emitir o frame de sincronização `SYNC`, o `RoomActor` invoca a projeção de cada participante (`CloneProjetado`), omitindo a `meta_oculta` para qualquer jogador que não seja o Codificador ativo na fase de Dica.
+   - O segredo só é incluído no payload broadcast para todos quando a fase transita oficialmente para `RODADA_REVELACAO` ou `VITORIA`.
+2. **Streaming em Tempo Real do Slider Analógico (30-60 Hz):**
+   - Durante a fase de Palpite, o Palpiteiro move o slider e emite mensagens `SLIDER_MOVER`.
+   - O `RoomActor` recebe o valor, atualiza a posição corrente em memória e faz o repasse imediato via envelope `SLIDER_STREAM` para os demais integrantes da sala.
+   - O cliente utiliza `requestAnimationFrame` para limitar o envio a 30-60 Hz, garantindo suavidade visual sem saturar a rede.
 
-1. **O Funil de Tradução de Três Camadas:**
-   - **HTTP $\rightarrow$ Go:** O payload JSON recebido via HTTP POST é decodificado via `encoding/json` do Go em structs ou mapas genéricos.
-   - **Go $\rightarrow$ Goja VM:** Para alimentar o hook em JavaScript (`game_rules.pb.js`), o runtime Goja utiliza reflexão dinâmica (`reflect`) para mapear tipos Go em objetos da heap JavaScript (`goja.Value`).
-   - **Goja VM $\rightarrow$ Go $\rightarrow$ SQLite:** Ao salvar alterações (`$app.save()`), os objetos JS são reconvertidos para a representação interna de Go e então gravados como texto UTF-8 no SQLite.
-   - **Go $\rightarrow$ SSE:** Para despachar eventos em tempo real aos clientes inscritos, o PocketBase serializa os registros atualizados novamente em strings JSON transmitidas sobre o canal de Server-Sent Events.
+### 5.4. Eliminação de Gargalos e Eficiência de Recursos
 
-2. **Avaliação Prática de Gargalo:**
-   - **No Core Loop Atual (Cadência por Turnos):** Como as ações dos jogadores ocorrem em intervalos humanos espaçados (~30 a 60 segundos por rodada), a latência do ciclo JSON permanece na casa de 0,5 ms a 2 ms, tornando a sobrecarga do Goja imperceptível para o gameplay.
-   - **Cenário Crítico (Streaming Analógico Contínuo):** Caso o arrasto do slider venha a ser espelhado em tempo real para os parceiros de equipe (60 atualizações por segundo por jogador), a sobrecarga de reflexão e alocações repetidas de heap no Goja gerará gargalos severos de CPU e latência. A arquitetura mitiga essa hipótese através da migração para Go nativo, onde deltas voláteis de arrasto podem trafegar via WebSockets binários ou buffers pré-alocados sem passar pelo banco ou pela VM JS.
-
-### 5.4. Otimização de Leitura: SQL-Generated JSON (Zero-Copy Pass-Through)
-
-Para mitigar a sobrecarga de serialização em consultas agregadas ou volumosas, a arquitetura contempla o uso de **SQL-Generated JSON**:
-
-1. **Mecânica Direta no SQLite:**
-   - O SQLite provê funções nativas em C (`json_object` e `json_group_array`), permitindo estruturar e formatar árvores relacionais complexas (salas, jogadores e histórico de rodadas) em um único comando SQL.
-   - O servidor em Go lê o payload resultante diretamente como fatia de bytes bruta (`[]byte`) e o envia ao socket HTTP sem instanciar structs intermediárias na heap nem invocar `encoding/json` por reflexão.
-
-2. **Equilíbrio e Matriz de Aplicação no Jogo:**
-   - **Core Loop Volátil (Dicas, Palpites e PPT):** Mantém o pipeline tradicional em Go tipado, onde a legibilidade, validações defensivas e contratos estáticos são prioritários e o volume de dados por requisição é diminuto.
-   - **Snapshots Grandes e Métricas Finais:** Recomendado para o carregamento inicial de reconciliação de sala (`FULL_SYNC`) e para a tela de vitória, agregando todo o histórico de rodadas e dados de sintonia em um único roundtrip atômico no SQLite.
-   - **Cuidados Arquiteturais:** Exige aplicar filtros de permissão e sigilo diretamente nas cláusulas `WHERE` da query (já que bypassa o resolvedor automático de regras de coleção do PocketBase) e acopla a projeção do payload ao comando SQL.
+- **Zero I/O de Disco:** O estado é 100% volátil em memória RAM. Ao encerrar a sala ou expirar por inatividade, o coletor de lixo (GC) do Go libera os recursos sem fragmentação de banco de dados.
+- **Consumo Mínimo de Heap:** O servidor completo em Go puro consome entre 12 MB e 25 MB de RAM, mesmo com dezenas de salas simultâneas ativas.
+- **Zero Reflexão no Gameplay:** As estruturas e comandos são fortemente tipados em Go nativo (`internal/protocol/messages.go`), eliminando VMs intermediárias de JavaScript (Goja) e proporcionando processamento de mensagens com latência sub-milisegundo.

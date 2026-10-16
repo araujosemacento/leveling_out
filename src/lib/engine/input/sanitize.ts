@@ -1,7 +1,7 @@
 /**
  * Sanitização e Validação Defensiva (Camada de Input)
  * Princípio Zero Trust: O front-end higieniza todos os dados antes de normalizar
- * em GameActions ou emitir intenções para o PocketBase.
+ * em GameActions ou emitir intenções para o servidor Go via WebSocket.
  */
 
 /**
