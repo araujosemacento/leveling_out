@@ -6,6 +6,7 @@
       "name": "portfolio-programacao-jogos",
       "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@iconify-json/emojione-monotone": "^1.2.1",
         "@iconify-json/game-icons": "^1.2.4",
         "@iconify-json/lucide": "^1.2.136",
         "@iconify-json/mingcute": "^1.2.8",
@@ -61,6 +62,8 @@
     "@humanwhocodes/module-importer": ["@humanwhocodes/module-importer@1.0.1", "", {}, "sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA=="],
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
+
+    "@iconify-json/emojione-monotone": ["@iconify-json/emojione-monotone@1.2.1", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-cZSNcPsuiAD6HCzCh/2dYKGh3pNI0jJlxBxQWfC33cQsPtqYZqulGBvlkThXYNvDl8VxgVHT9u+izyX/yeEIkA=="],
 
     "@iconify-json/game-icons": ["@iconify-json/game-icons@1.2.4", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-/HDDZxowXgDJcOEwPspUCq5RuDdl25OyZKdtxqqiPJQNTrWIym7r4StLzIVs77DyNzOWWhH5wDqwYR3WHeDfkg=="],
 

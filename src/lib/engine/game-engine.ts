@@ -18,11 +18,13 @@ import {
 import {
 	getLobbyProjection,
 	getPlayerRoleProjection,
+	getPptProjection,
 	getRoundSpectrumProjection,
 	getScoreBoardProjection,
 	getTubeProjection,
 	type LobbyProjection,
 	type PlayerRoleProjection,
+	type PptProjection,
 	type ScoreBoardProjection,
 	type SpectrumProjection,
 	type TubeProjection
@@ -107,6 +109,10 @@ export class GameEngine {
 
 	public submitPptMove(move: PptMove): void {
 		this.dispatch(createSubmitPptAction(move));
+	}
+
+	public setMeuLancePpt(move: PptMove): void {
+		this.dispatch({ type: 'SET_MEU_LANCE_PPT', payload: { move } });
 	}
 
 	public selectSpectrumCard(carta: SpectrumCard): void {
@@ -200,5 +206,9 @@ export class GameEngine {
 
 	public getLobbyProjection(playerId: string | null = this.state.meuJogadorId): LobbyProjection {
 		return getLobbyProjection(this.state, playerId);
+	}
+
+	public getPptProjection(playerId: string | null = this.state.meuJogadorId): PptProjection {
+		return getPptProjection(this.state, playerId);
 	}
 }

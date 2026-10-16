@@ -1,9 +1,15 @@
 <script>
 	import './layout.css';
+	import { onMount } from 'svelte';
 	import favicon from '$lib/assets/favicon.svg';
 	import Header from '$lib/components/Header.svelte';
+	import { theme } from '$lib/stores/theme';
 
 	let { children } = $props();
+
+	onMount(() => {
+		theme.init();
+	});
 </script>
 
 <svelte:head>

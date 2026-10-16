@@ -128,7 +128,21 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 		case 'SUBMIT_PPT_INTENT': {
 			return {
 				...state,
-				fase: 'PPT_DISPUTA'
+				fase: 'PPT_DISPUTA',
+				ppt: {
+					...state.ppt,
+					meuLance: action.payload.move
+				}
+			};
+		}
+
+		case 'SET_MEU_LANCE_PPT': {
+			return {
+				...state,
+				ppt: {
+					...state.ppt,
+					meuLance: action.payload.move
+				}
 			};
 		}
 
@@ -268,6 +282,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				}
 			}
 
+			const ppt = {
+				estado: sala.ppt_estado ?? state.ppt?.estado,
+				prazo: sala.ppt_prazo ?? state.ppt?.prazo,
+				revelacaoEm: sala.ppt_revelacao_em ?? state.ppt?.revelacaoEm,
+				enviouA: Boolean(sala.ppt_enviou_a),
+				enviouB: Boolean(sala.ppt_enviou_b),
+				representanteA: sala.ppt_representante_a ?? state.ppt?.representanteA,
+				representanteB: sala.ppt_representante_b ?? state.ppt?.representanteB,
+				resultado: sala.ppt_resultado ?? state.ppt?.resultado,
+				lanceA: sala.ppt_lance_a ?? state.ppt?.lanceA,
+				lanceB: sala.ppt_lance_b ?? state.ppt?.lanceB,
+				meuLance: state.ppt?.meuLance
+			};
+
 			return {
 				...state,
 				fase,
@@ -280,6 +308,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				},
 				jogadoresAleatorios: aleatorios,
 				minhaEquipe,
+				ppt,
 				rodadaAtual: {
 					...state.rodadaAtual,
 					numero: Number(sala.rodada_atual) || 1

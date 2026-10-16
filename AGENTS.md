@@ -126,15 +126,15 @@ O motor do jogo adota o desacoplamento de um sistema distribuído em tempo real:
 
 ### Fase 2: Componentes Compostos e Core Loop (Em Andamento)
 
-- [ ] Implementar alternância dinâmica e manual entre os temas Light e Dark com transição suave de cores.
+- [x] Implementar alternância dinâmica e manual entre os temas Light e Dark com transição suave de cores.
 - [x] Criar o componente `TestTube.svelte` em SVG procedural com física de líquido, menisco senoidal contínuo e easter egg interativo de chacoalho.
-- [ ] Criar o componente `AnalogSlider.svelte` integrando a classe composível `SliderDragController`.
+- [x] Criar o componente `AnalogSlider.svelte` integrando a classe composível `SliderDragController`.
 - [x] Implementar a máquina de estados desacoplada com as fases de Dica, Palpite e Revelação.
 - [x] Implementar divisão tripartite de equipes no Lobby (Pato, Aleatório, Ganso), controle de quórum de 4 jogadores e início autoritativo pelo anfitrião.
 - [x] Fluxo de ingresso autoritativo Zero Trust: tela inicial exclusiva por código de sala, diálogo bloqueante de apelido e validação com token de sessão.
 - [x] Monitoramento de presença por heartbeats periódicos (ping a cada 5s) e protocolo de desconexão/reconexão autoritativo.
 - [x] Portabilidade autoritativa dos hooks para Go nativo com PocketBase estendido, adequando o backend à arquitetura de Entidades e Componentes atômicos.
-- [ ] Minijogo de Pedra, Papel e Tesoura refatorado em Svelte puro para decisão de turno.
+- [x] Minijogo de Pedra, Papel e Tesoura refatorado em Svelte puro para decisão de turno.
 - [x] Moderação autoritativa no Lobby: expulsão de participante pelo anfitrião (kick de jogador) com revogação de assento, liberação imediata de vaga e notificação SSE dedicada.
 
 ### Fase 3: Polimento e Experiência de Jogo

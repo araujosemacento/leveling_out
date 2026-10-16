@@ -7,7 +7,7 @@
  * meta secreta para o palpiteiro durante a fase de adivinhação).
  */
 
-import type { GameState, LobbyTeamChoice, Player, PlayerRole, TeamId } from '../types';
+import type { GameState, LobbyTeamChoice, Player, PlayerRole, PptMove, TeamId } from '../types';
 
 export interface TubeProjection {
 	nivelLiquido: number;
@@ -331,5 +331,168 @@ export function getLobbyProjection(state: GameState, meuJogadorId: string | null
 		podeEscolherGanso,
 		podeEscolherAleatorio,
 		statusTexto
+	};
+}
+
+export interface PptProjection {
+	papelPpt: 'REPRESENTANTE' | 'ESPECTADOR';
+	souRepresentante: boolean;
+	minhaEquipe: TeamId | null;
+	equipeAdversaria: TeamId | null;
+	minhaEquipeNome: string;
+	equipeAdversariaNome: string;
+	rotuloLocal: string;
+	rotuloAdversario: string;
+	nomeRepresentanteLocal: string;
+	nomeRepresentanteAdversario: string;
+	subfase: 'ESCOLHA' | 'CONTAGEM' | 'RESULTADO';
+	prazoIso: string | null;
+	revelacaoEmIso: string | null;
+	minhaEquipeEnviou: boolean;
+	adversarioEnviou: boolean;
+	meuLance: PptMove | null;
+	podeEscolherLance: boolean;
+	lanceLocalRevelado: PptMove | null;
+	lanceAdversarioRevelado: PptMove | null;
+	resultado: 'EMPATE' | 'VITORIA_A' | 'VITORIA_B' | null;
+	vitoriaLocal: boolean | null;
+	mensagemStatus: string;
+}
+
+/**
+ * Projeta o estado da arena de Pedra, Papel e Tesoura (Iniciativa).
+ */
+export function getPptProjection(state: GameState, meuJogadorId: string | null): PptProjection {
+	const ppt = state.ppt;
+	const todosJogadores = [
+		...state.equipes.A.membros,
+		...state.equipes.B.membros,
+		...state.jogadoresAleatorios
+	];
+	const meuJogador = todosJogadores.find((j) => j.id === meuJogadorId);
+	let minhaEquipe: TeamId | null = null;
+	if (meuJogador?.equipe === 'A' || meuJogador?.equipe === 'B') {
+		minhaEquipe = meuJogador.equipe;
+	} else if (state.minhaEquipe === 'A' || state.minhaEquipe === 'B') {
+		minhaEquipe = state.minhaEquipe;
+	}
+
+	const equipeAdversaria: TeamId | null =
+		minhaEquipe === 'A' ? 'B' : minhaEquipe === 'B' ? 'A' : null;
+	const minhaEquipeNome = minhaEquipe
+		? state.equipes[minhaEquipe]?.nome || `Equipe ${minhaEquipe}`
+		: 'Sua Equipe';
+	const equipeAdversariaNome = equipeAdversaria
+		? state.equipes[equipeAdversaria]?.nome || `Equipe ${equipeAdversaria}`
+		: 'Equipe Adversária';
+
+	const repAId = ppt?.representanteA || null;
+	const repBId = ppt?.representanteB || null;
+
+	const repLocalId = minhaEquipe === 'A' ? repAId : minhaEquipe === 'B' ? repBId : null;
+	const repAdversarioId = minhaEquipe === 'A' ? repBId : minhaEquipe === 'B' ? repAId : null;
+
+	const repLocal = todosJogadores.find((j) => j.id === repLocalId);
+	const repAdversario = todosJogadores.find((j) => j.id === repAdversarioId);
+
+	const souRepresentante = Boolean(meuJogadorId && repLocalId && meuJogadorId === repLocalId);
+	const papelPpt: 'REPRESENTANTE' | 'ESPECTADOR' = souRepresentante
+		? 'REPRESENTANTE'
+		: 'ESPECTADOR';
+
+	const rotuloLocal = souRepresentante ? 'Você' : 'Sua equipe';
+	const rotuloAdversario = souRepresentante ? 'Oponente' : 'Equipe adversária';
+	const nomeRepresentanteLocal = repLocal?.nome || rotuloLocal;
+	const nomeRepresentanteAdversario = repAdversario?.nome || rotuloAdversario;
+
+	const subfase: 'ESCOLHA' | 'CONTAGEM' | 'RESULTADO' = ppt?.estado || 'ESCOLHA';
+
+	const minhaEquipeEnviou =
+		minhaEquipe === 'A'
+			? Boolean(ppt?.enviouA)
+			: minhaEquipe === 'B'
+				? Boolean(ppt?.enviouB)
+				: false;
+	const adversarioEnviou =
+		minhaEquipe === 'A'
+			? Boolean(ppt?.enviouB)
+			: minhaEquipe === 'B'
+				? Boolean(ppt?.enviouA)
+				: false;
+
+	const lanceLocalRevelado =
+		minhaEquipe === 'A' ? ppt?.lanceA || null : minhaEquipe === 'B' ? ppt?.lanceB || null : null;
+	const lanceAdversarioRevelado =
+		minhaEquipe === 'A' ? ppt?.lanceB || null : minhaEquipe === 'B' ? ppt?.lanceA || null : null;
+
+	let meuLance: PptMove | null = ppt?.meuLance || null;
+	if (subfase === 'RESULTADO' && lanceLocalRevelado) {
+		meuLance = meuLance || lanceLocalRevelado;
+	}
+
+	const podeEscolherLance = souRepresentante && subfase === 'ESCOLHA' && !minhaEquipeEnviou;
+	const resultado = ppt?.resultado || null;
+
+	let vitoriaLocal: boolean | null = null;
+	if (resultado === 'VITORIA_A') {
+		vitoriaLocal = minhaEquipe === 'A';
+	} else if (resultado === 'VITORIA_B') {
+		vitoriaLocal = minhaEquipe === 'B';
+	}
+
+	let mensagemStatus = '';
+	if (subfase === 'ESCOLHA') {
+		if (souRepresentante) {
+			if (!minhaEquipeEnviou) {
+				mensagemStatus = 'Faça sua escolha para disputar a iniciativa';
+			} else if (adversarioEnviou) {
+				mensagemStatus = 'O oponente realizou um lance...';
+			} else {
+				mensagemStatus = 'Aguardando lance do oponente...';
+			}
+		} else {
+			if (!minhaEquipeEnviou) {
+				mensagemStatus = 'Aguardando jogada do representante da sua equipe...';
+			} else {
+				mensagemStatus = `Sua equipe escolheu ${meuLance || 'uma opção'}`;
+			}
+		}
+	} else if (subfase === 'CONTAGEM') {
+		mensagemStatus = 'Atenção...';
+	} else if (subfase === 'RESULTADO') {
+		if (resultado === 'EMPATE') {
+			mensagemStatus = 'Empate! Nova disputa...';
+		} else if (vitoriaLocal === true) {
+			mensagemStatus = 'Sua equipe começa!';
+		} else if (vitoriaLocal === false) {
+			mensagemStatus = `${equipeAdversariaNome} começa a primeira rodada.`;
+		} else {
+			mensagemStatus = 'Disputa concluída.';
+		}
+	}
+
+	return {
+		papelPpt,
+		souRepresentante,
+		minhaEquipe,
+		equipeAdversaria,
+		minhaEquipeNome,
+		equipeAdversariaNome,
+		rotuloLocal,
+		rotuloAdversario,
+		nomeRepresentanteLocal,
+		nomeRepresentanteAdversario,
+		subfase,
+		prazoIso: ppt?.prazo || null,
+		revelacaoEmIso: ppt?.revelacaoEm || null,
+		minhaEquipeEnviou,
+		adversarioEnviou,
+		meuLance,
+		podeEscolherLance,
+		lanceLocalRevelado,
+		lanceAdversarioRevelado,
+		resultado,
+		vitoriaLocal,
+		mensagemStatus
 	};
 }

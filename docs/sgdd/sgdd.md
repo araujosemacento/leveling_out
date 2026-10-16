@@ -67,8 +67,8 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 - [x] Painel de Aviso de Desconexão para o Anfitrião (opções de Aguardar Reconexão ou Desfazer Sala)
 - [ ] Diálogo Modal de Aprovação de Reassunção de Assento pelo Anfitrião
 - [ ] Selo visual de consagração de Vitória por WO
-- [ ] Arena de Minijogo de Iniciativa (PPT)
-- [ ] Três botões com ícones vetoriais de Pedra, Papel e Tesoura
+- [x] Arena de Minijogo de Iniciativa (PPT)
+- [x] Três botões com ícones vetoriais de Pedra, Papel e Tesoura
 - [ ] Tela de Escolha de Espectro
 - [x] Tubo de Ensaio Procedural em SVG com graduação de 10% em 10% (TestTube.svelte)
 - [x] Renderização de Líquido Procedural em SVG com dupla camada de menisco senoidal contínuo
@@ -77,7 +77,7 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 - [ ] Mensagem de Status de Ocultamento de Visão da Meta
 - [ ] Campo de Entrada de Dica Contextualizada com contador de caracteres
 - [ ] Balão de Fala de Exibição da Pista Enviada
-- [ ] Marcador Analógico (Slider contínuo com trilha, escala e ponteiro deslizante)
+- [x] Marcador Analógico (Slider contínuo com trilha, escala e ponteiro deslizante)
 - [ ] Linha visual de sobreposição de Palpite no tubo com cota percentual
 - [ ] Emblemas visuais de pontuação: "Na Mosca!", "Muito Perto!", "Perto" e "Fora da Margem!"
 - [ ] Placar de Corrida Vertical das Equipes com ícones de avanço
@@ -111,8 +111,8 @@ Quando uma equipe ![alcança 10 pontos](../assets/badges/alcança_10_pontos.svg)
 - [x] Blindagem de sigilo Zero Trust da meta oculta (ocultação inviolável antes da revelação oficial)
 - [x] Sanitização defensiva de pistas textuais (remoção de HTML e truncamento em 60 caracteres)
 - [x] Transição autoritativa de fase de Dica para Palpite no backend (`game_rules.pb.js`)
-- [ ] Controlador de física e arrasto analógico (`SliderDragController`) com clamp matemático em [0, 100]
-- [ ] Acionamento de feedback háptico por vibração móvel (`navigator.vibrate`) a cada dezena percorrida
+- [x] Controlador de física e arrasto analógico (`SliderDragController`) com clamp matemático em [0, 100]
+- [x] Acionamento de feedback háptico por vibração móvel (`navigator.vibrate`) a cada dezena percorrida
 - [x] Submissão do palpite e transmissão via SSE da fase de revelação para todos os clientes
 - [x] Integração temporal contínua da fase do menisco (requestAnimationFrame) e física aditiva de agitação no lobby
 - [ ] Dinamização da velocidade da onda do menisco em função do placar da equipe (5.0s a 0.25s)

@@ -3,13 +3,14 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { getBackendUrl, getApiHeaders, getProxySecret } from '$lib/config/backend';
-	import { GameEngine, type LobbyTeamChoice } from '$lib/engine';
+	import { GameEngine, type LobbyTeamChoice, type PptMove } from '$lib/engine';
 	import { sanitizeNickname } from '$lib/engine/input/sanitize';
 
 	import NicknameModal from '$lib/components/NicknameModal.svelte';
 	import RoomHeader from '$lib/components/RoomHeader.svelte';
 	import DisconnectionBanner from '$lib/components/DisconnectionBanner.svelte';
 	import LobbyArena from '$lib/components/LobbyArena.svelte';
+	import PptArena from '$lib/components/PptArena.svelte';
 	import GamePlaceholder from '$lib/components/GamePlaceholder.svelte';
 
 	import IconAlertCircle from '~icons/lucide/alert-circle';
@@ -42,8 +43,9 @@
 	let engine = $state<GameEngine | null>(null);
 	let gameState = $state<any>(null);
 
-	// Projeção reativa do Lobby via GameEngine
+	// Projeções reativas do Lobby e PPT via GameEngine
 	let lobby = $derived(engine && gameState ? engine.getLobbyProjection(localPlayerId) : null);
+	let pptProjection = $derived(engine && gameState ? engine.getPptProjection(localPlayerId) : null);
 
 	// Aviso para o anfitrião sobre jogadores desconectados
 	let jogadorDesconectadoNome = $state<string | null>(null);
@@ -265,7 +267,18 @@
 				equipe_da_vez: snap.equipeAtiva || 'A',
 				placar_a: snap.placarA || 0,
 				placar_b: snap.placarB || 0,
-				vencedor: snap.vencedor || null
+				vencedor: snap.vencedor || null,
+				motivo_fim: snap.motivoFim || null,
+				ppt_estado: snap.pptEstado || null,
+				ppt_prazo: snap.pptPrazo || null,
+				ppt_revelacao_em: snap.pptRevelacaoEm || null,
+				ppt_enviou_a: snap.pptEnviouA ?? null,
+				ppt_enviou_b: snap.pptEnviouB ?? null,
+				ppt_representante_a: snap.pptRepresentanteA || null,
+				ppt_representante_b: snap.pptRepresentanteB || null,
+				ppt_resultado: snap.pptResultado || null,
+				ppt_lance_a: snap.pptLanceA || null,
+				ppt_lance_b: snap.pptLanceB || null
 			},
 			jogadores: (snap.jogadores || []).map((j: any) => {
 				const isMe = j.playerId === localPlayerId;
@@ -279,6 +292,70 @@
 				};
 			})
 		});
+
+		verificarMeuLancePpt(snap);
+	}
+
+	async function verificarMeuLancePpt(snap: any) {
+		if (!engine || !localPlayerId || !sessionToken) return;
+		const st = engine.getState();
+		if (snap.fase !== 'INICIATIVA' && st.fase !== 'PPT_DISPUTA' && st.fase !== 'PPT_RESULTADO')
+			return;
+		if (st.ppt?.meuLance) return;
+
+		const me = (snap.jogadores || []).find((j: any) => j.playerId === localPlayerId);
+		const minhaEquipe = me?.equipe || st.minhaEquipe;
+		const enviou =
+			minhaEquipe === 'A' ? snap.pptEnviouA : minhaEquipe === 'B' ? snap.pptEnviouB : false;
+		if (!enviou) return;
+
+		try {
+			const res = await fetch(
+				`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/ppt/meu-lance`,
+				{
+					headers: getApiHeaders({
+						'X-Player-Id': localPlayerId,
+						'X-Session-Token': sessionToken
+					})
+				}
+			);
+			if (res.ok) {
+				const data = await res.json();
+				if (data.lance && engine) {
+					engine.setMeuLancePpt(data.lance);
+				}
+			}
+		} catch (err) {
+			console.warn('[PPT] Falha ao consultar meu-lance:', err);
+		}
+	}
+
+	async function handleLancePpt(move: PptMove) {
+		if (!engine) return;
+		engine.submitPptMove(move);
+		try {
+			const res = await fetch(
+				`${backendUrl}/api/leveling/salas/${encodeURIComponent(roomCode)}/ppt/lance`,
+				{
+					method: 'POST',
+					headers: getApiHeaders({
+						'Content-Type': 'application/json',
+						'X-Player-Id': localPlayerId,
+						'X-Session-Token': sessionToken
+					}),
+					body: JSON.stringify({ lance: move })
+				}
+			);
+			if (!res.ok) {
+				const errData = await res.json();
+				mostrarAviso(errData.message || 'Falha ao registrar lance.');
+			} else {
+				reconciliarSala();
+			}
+		} catch (err) {
+			console.error('[PPT ERROR]', err);
+			mostrarAviso('Erro de conexão ao enviar lance.');
+		}
 	}
 
 	/**
@@ -736,8 +813,11 @@
 				onStartMatch={handleIniciarPartida}
 				onKickPlayer={handleExpulsarJogador}
 			/>
+		{:else if (gameState?.fase === 'PPT_DISPUTA' || gameState?.fase === 'PPT_RESULTADO' || gameState?.fase === 'INICIATIVA') && pptProjection}
+			<!-- Arena de Disputa de Iniciativa (Pedra, Papel e Tesoura) -->
+			<PptArena ppt={pptProjection} onSelectMove={handleLancePpt} />
 		{:else}
-			<!-- Fase Seguinte (Iniciativa / PPT) -->
+			<!-- Demais Fases da Partida -->
 			<GamePlaceholder />
 		{/if}
 	</div>

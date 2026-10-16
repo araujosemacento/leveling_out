@@ -4,6 +4,8 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+
 	let isRoomPage = $derived(!!page.params.sala);
 </script>
 
@@ -23,8 +25,10 @@
 			</a>
 		</div>
 
-		{#if isRoomPage}
-			<div class="flex items-center gap-3">
+		<div class="flex items-center gap-3">
+			<ThemeToggle />
+
+			{#if isRoomPage}
 				<a
 					href={resolve('/')}
 					class="btn-soft-elevated group flex items-center gap-2 rounded-full px-4 py-2 font-util-heading text-xs font-semibold tracking-wide"
@@ -35,7 +39,7 @@
 						class="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5"
 					/>
 				</a>
-			</div>
-		{/if}
+			{/if}
+		</div>
 	</div>
 </header>

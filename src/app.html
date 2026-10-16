@@ -15,6 +15,20 @@
 			rel="stylesheet"
 			href="https://cdn.jsdelivr.net/npm/@fontsource/sn-pro@latest/index.min.css"
 		/>
+		<script>
+			(function () {
+				try {
+					var saved = localStorage.getItem('theme');
+					var theme =
+						saved === 'light' || saved === 'dark'
+							? saved
+							: window.matchMedia('(prefers-color-scheme: dark)').matches
+								? 'dark'
+								: 'light';
+					document.documentElement.setAttribute('data-theme', theme);
+				} catch (e) {}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover" class="antialiased">

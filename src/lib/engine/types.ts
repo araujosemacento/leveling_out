@@ -72,6 +72,20 @@ export interface RoundState {
 	revelada: boolean;
 }
 
+export interface PptState {
+	estado?: 'ESCOLHA' | 'CONTAGEM' | 'RESULTADO';
+	prazo?: string | null;
+	revelacaoEm?: string | null;
+	enviouA?: boolean;
+	enviouB?: boolean;
+	representanteA?: string | null;
+	representanteB?: string | null;
+	resultado?: 'EMPATE' | 'VITORIA_A' | 'VITORIA_B' | null;
+	lanceA?: PptMove | null;
+	lanceB?: PptMove | null;
+	meuLance?: PptMove | null;
+}
+
 export interface GameState {
 	salaCodigo: string;
 	fase: GamePhase;
@@ -85,6 +99,7 @@ export interface GameState {
 	vencedor: TeamId | null;
 	meuJogadorId: string | null;
 	minhaEquipe: LobbyTeamChoice | null;
+	ppt?: PptState;
 }
 
 /**
@@ -100,6 +115,7 @@ export type GameAction =
 	| { type: 'SELECT_TEAM'; payload: { playerId: string; equipe: LobbyTeamChoice } }
 	| { type: 'START_MATCH_INTENT' }
 	| { type: 'SUBMIT_PPT_INTENT'; payload: { move: PptMove } }
+	| { type: 'SET_MEU_LANCE_PPT'; payload: { move: PptMove } }
 	| { type: 'SELECT_SPECTRUM_INTENT'; payload: { carta: SpectrumCard } }
 	| { type: 'SUBMIT_CLUE_INTENT'; payload: { dica: string } }
 	| { type: 'UPDATE_SLIDER_PREVIEW'; payload: { palpite: number } }
@@ -118,6 +134,17 @@ export type GameAction =
 					equipe_da_vez?: TeamId;
 					rodada_atual: number;
 					vencedor?: string | null;
+					motivo_fim?: string | null;
+					ppt_estado?: 'ESCOLHA' | 'CONTAGEM' | 'RESULTADO' | null;
+					ppt_prazo?: string | null;
+					ppt_revelacao_em?: string | null;
+					ppt_enviou_a?: boolean | null;
+					ppt_enviou_b?: boolean | null;
+					ppt_representante_a?: string | null;
+					ppt_representante_b?: string | null;
+					ppt_resultado?: 'EMPATE' | 'VITORIA_A' | 'VITORIA_B' | null;
+					ppt_lance_a?: PptMove | null;
+					ppt_lance_b?: PptMove | null;
 				};
 				jogadores?: Player[];
 				rodada?: {

@@ -17,6 +17,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
+		"@iconify-json/emojione-monotone": "^1.2.1",
 		"@iconify-json/game-icons": "^1.2.4",
 		"@iconify-json/lucide": "^1.2.136",
 		"@iconify-json/mingcute": "^1.2.8",
