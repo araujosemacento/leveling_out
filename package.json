@@ -13,7 +13,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
-		"badges": "bun run scripts/generate-badges.ts"
+		"badges": "bun run scripts/generate-badges.ts",
+		"check:context": "bun run scripts/check-context-budget.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

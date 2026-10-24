@@ -1,10 +1,7 @@
 ---
 name: update-agents-docs
 description: >-
-  Orienta a sincronização e atualização sistemática do arquivo AGENTS.md e da documentação
-  modular em docs/agents/ após refatorações estruturais, alterações de arquitetura, adição
-  de novos módulos ou conclusão de tarefas do roadmap. Use sempre após grandes alterações no código
-  para manter o contexto dos agentes 100% alinhado com o estado real do repositório.
+  Orienta a sincronização e atualização sistemática do arquivo AGENTS.md e da documentação modular em docs/agents/ após refatorações estruturais, alterações de arquitetura, adição de novos módulos ou conclusão de tarefas do roadmap. Use sempre após grandes alterações no código para manter o contexto dos agentes 100% alinhado com o estado real do repositório.
 ---
 
 # Diretriz de Atualização Sistemática da Documentação dos Agentes
@@ -98,14 +95,15 @@ Se a alteração impactar diretamente as regras operacionais locais do agente, s
 
 ---
 
-### Passo 5: Verificação de Conformidade com as Regras de Redação
+### Passo 5: Verificação de Conformidade e Orçamento de Contexto
 
 Antes de salvar qualquer arquivo de documentação, certifique-se de cumprir todas as restrições:
 
 1. **Zero Emojis:** Nenhum caractere emoji pode constar no documento.
 2. **Zero Travessões como Separadores:** Não utilize travessões (`–`, `—`) nem hífens com espaços para separar títulos ou explicações. Use dois-pontos (`:`), barras (`/`), parênteses ou reformulação fluida da frase.
 3. **Zero Bullets Circulares Decorativos:** Não utilize caracteres especiais como `●`, `○`, `•`, `▪`, `✓`. Para listas, use o hífen padrão do markdown `-` ou numeração `1.`, `2.`.
-4. **Links Válidos:** Em `AGENTS.md`, utilize caminhos relativos para arquivos internos (ex.: `docs/agents/architecture.md`). Em referências no chat, utilize o esquema `file:///`.
+4. **Links Válidos:** Em `AGENTS.md`, utilize caminhos relativos para arquivos internos (ex.: `docs/agents/architecture.md`). Em referências no chat, utilize o esquema `file://`.
+5. **Auditoria Automatizada de Orçamento de Contexto:** Execute `bun run check:context` para garantir que `AGENTS.md` não exceda 9.500 caracteres e que nenhum link esteja quebrado.
 
 ---
 
@@ -113,13 +111,14 @@ Antes de salvar qualquer arquivo de documentação, certifique-se de cumprir tod
 
 Antes de encerrar a atualização da documentação:
 
-- [ ] O arquivo `AGENTS.md` permanece conciso e sem redundâncias prolixas?
+- [ ] A validação `bun run check:context` foi executada e passou com sucesso ($\le$ 9.500 caracteres e 0 links quebrados)?
+- [ ] O arquivo `AGENTS.md` permanece conciso e sem redundâncias prolixas (Hub enxuto $\le$ 2.5k tokens)?
 - [ ] O arquivo `README.md` reflete a estrutura atualizada de componentes e módulos?
 - [ ] Os documentos do backend (`backend/AGENTS.md`, `backend/CONTRACT.md`, `backend/README.md`) estão sincronizados se houve mudanças no servidor?
 - [ ] Todos os links relativos de `AGENTS.md` para `docs/agents/` estão corretos e apontam para arquivos existentes?
-- [ ] A tabela de localização rápida na Seção 4 reflete fielmente a árvore de diretórios atual?
+- [ ] A tabela sintética de navegação na Seção 4 reflete fielmente os domínios atuais, apontando para `docs/agents/architecture.md` para catálogo exaustivo?
 - [ ] As especificações aprofundadas em `docs/agents/` foram atualizadas com os novos detalhes técnicos?
-- [ ] O roadmap reflete exatamente as tarefas concluídas e pendentes?
+- [ ] O roadmap detalhado em `docs/agents/roadmap.md` reflete exatamente as tarefas concluídas e pendentes?
 - [ ] O documento não possui emojis, travessões como separador ou marcadores decorativos proibidos?
 - [ ] Os comandos `bun run check` e `bun run lint` foram executados com sucesso?
 - [ ] Os testes Go (`go test -v -race ./...`) e compilação (`go build`) foram validados no backend?

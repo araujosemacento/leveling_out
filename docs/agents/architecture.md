@@ -150,3 +150,42 @@ Diferente de sistemas tradicionais que expõem coleções inteiras e dependem de
 - **Zero I/O de Disco:** O estado é 100% volátil em memória RAM. Ao encerrar a sala ou expirar por inatividade, o coletor de lixo (GC) do Go libera os recursos sem fragmentação de banco de dados.
 - **Consumo Mínimo de Heap:** O servidor completo em Go puro consome entre 12 MB e 25 MB de RAM, mesmo com dezenas de salas simultâneas ativas.
 - **Zero Reflexão no Gameplay:** As estruturas e comandos são fortemente tipados em Go nativo (`internal/protocol/messages.go`), eliminando VMs intermediárias de JavaScript (Goja) e proporcionando processamento de mensagens com latência sub-milisegundo.
+
+---
+
+## 6. Catálogo Exaustivo de Localização do Código e Recursos
+
+A tabela abaixo mapeia cada subsistema, arquivo e sua respectiva responsabilidade principal no projeto:
+
+| O que você precisa alterar / inspecionar | Onde encontrar (Arquivo / Pasta) | Responsabilidade Principal |
+| :--- | :--- | :--- |
+| **Página inicial do projeto e índice** | `README.md` | Apresentação do jogo, integrantes e sumário de navegação com links diretos. |
+| **SGDD consolidado da versão atual** | `docs/sgdd/sgdd.md` | Short Game Design Document (Motta & Trigueiro, SBGames 2013) com texto corrido e listas de produção. |
+| **Modelagem de Entidades abrangentes** | `docs/entidades/entidades.md` | As 5 grandes entidades conceituais (`Participante`, `Sessao`, `Artefato`, `Disputa`, etc.). |
+| **Catálogo de Componentes atômicos** | `docs/componentes/componentes.md` | Os 19 componentes atômicos, matriz de associação com entidades e justificativas técnicas. |
+| **Diagramas de Entidades e Componentes** | `docs/diagramas/diagramas.md` | Diagramas visuais em grid de entidades, instanciações e composição com componentes. |
+| **Histórico e Roadmap do Projeto** | `docs/agents/roadmap.md` | Histórico consolidado das Fases 1, 2 e backlog ativo da Fase 3. |
+| **Paleta, tokens CSS, dark mode e temas** | `src/routes/layout.css` | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos). |
+| **Importação de fontes e head global** | `src/app.html` | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code). |
+| **Casca da aplicação e navegação** | `src/routes/+layout.svelte` | Estrutura comum que envolve todas as páginas e carrega os estilos globais. |
+| **Lobby de entrada e criação de sala** | `src/routes/+page.svelte` | Tela inicial com Title Card, criação rápida de sala e entrada de apelido. |
+| **Arena principal do jogo (Partida)** | `src/routes/[sala]/+page.svelte` | Orquestrador reativo da sala, ciclo de rede, reconciliação e despacho. |
+| **Modal de Identificação (Zero Trust)** | `src/lib/components/NicknameModal.svelte` | Diálogo bloqueante para digitação e validação autoritativa do apelido. |
+| **Barra Superior da Sala** | `src/lib/components/RoomHeader.svelte` | Identificação do jogador, badge de host, código da sala e cópia de link. |
+| **Identidade Resiliente do Dispositivo** | `src/lib/config/device.ts` | Tripla persistência resiliente com auto-cura de device_id para moderação Zero Trust. |
+| **Arena do Lobby (Painel Tripartite)** | `src/lib/components/LobbyArena.svelte` | Distribuição tripartite de equipes (Pato, Aleatório, Ganso) e início pelo anfitrião. |
+| **Componente do Tubo de Ensaio (SVG)** | `src/lib/components/TestTube.svelte` | Tubo procedural SVG, dupla camada de menisco contínuo e física de agitação tátil. |
+| **Camada de Input (Intenção & Sanitização)** | `src/lib/engine/input/` | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts). |
+| **Camada de Update (Máquina de Estados)** | `src/lib/engine/update/` | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts). |
+| **Camada de Render (Projeções UI)** | `src/lib/engine/render/` | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts). |
+| **Orquestrador do Motor Canônico** | `src/lib/engine/game-engine.ts` | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições. |
+| **Conexão e Rede Cliente (WebSocket)** | `src/lib/network/game-socket.ts` | Gerenciador da conexão WebSocket full-duplex, reconexão com teto de 5s e streaming do slider. |
+| **Servidor Autoritário Go (Ponto de Entrada)** | `backend/cmd/server/main.go` | Inicialização do servidor nativo HTTP/WebSocket, CORS e encerramento gracioso. |
+| **Ator de Sala em Memória (Actor Pattern)** | `backend/internal/actor/room_actor.go` | Goroutine isolada por sala, canal inbox, timers (100ms) e projeção Zero Trust sob medida. |
+| **Conexão de Cliente no Servidor** | `backend/internal/actor/client_conn.go` | Wrapper thread-safe de escrita/leitura sobre WebSocket para cada participante. |
+| **Hub Central de Salas em Memória** | `backend/internal/hub/lobby_hub.go` | Gerenciador thread-safe de salas ativas na memória RAM. |
+| **Protocolo de Mensagens WebSocket** | `backend/internal/protocol/messages.go` | Definição e deserialização tipada de comandos do cliente e envelopes de saída. |
+| **Entidades de Domínio no Servidor** | `backend/internal/entities/` | Modelagem em memória: session.go (sala e rodada), participant.go (jogador) e contest.go (disputa). |
+| **Componentes Atômicos no Servidor** | `backend/internal/components/` | proximity.go (pontuação), secret_target.go (segredo), ppt_arbiter.go (PPT), spectrums.go (espectros). |
+| **Regras e Restrições para Agentes** | `AGENTS.md`, `docs/agents/` e `.agents/` | Proibições estritas, guias aprofundados e convenções do repositório. |
+| **Harness e Diretrizes Ponytail (Lean Dev)** | `.agents/rules/ponytail.md` e `.agents/skills/ponytail*` | Escada da menor mudança completa, revisão com `/ponytail-review`, auditoria `/ponytail-audit` e gestão de débito. |
