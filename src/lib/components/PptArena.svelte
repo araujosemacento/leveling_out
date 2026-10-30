@@ -5,9 +5,7 @@
 	import type { PptMove } from '$lib/engine/types';
 	import type { PptProjection } from '$lib/engine/render/projections';
 
-	import IconFist from '~icons/emojione-monotone/raised-fist';
-	import IconHand from '~icons/emojione-monotone/raised-hand';
-	import IconVictory from '~icons/emojione-monotone/victory-hand';
+	import PptIcon from '$lib/components/PptIcon.svelte';
 	import IconTimer from '~icons/lucide/timer';
 
 	interface Props {
@@ -43,6 +41,12 @@
 		subfaseAnterior = ppt.subfase;
 	});
 
+	// Cores semânticas das equipes
+	let corEquipeLocal = $derived(ppt.minhaEquipe === 'B' ? 'text-secondary' : 'text-accent');
+	let corEquipeAdversaria = $derived(
+		ppt.equipeAdversaria === 'B' ? 'text-secondary' : 'text-accent'
+	);
+
 	// Tempo restante da escolha (padrão 20 segundos)
 	let segundosEscolha = $derived.by(() => {
 		if (!ppt.prazoIso) return 20;
@@ -74,35 +78,43 @@
 
 	let desfechoConsolidado = $derived(ppt.subfase === 'RESULTADO' && !exibindoJa);
 
+	// Estilo e cor reativa do punho local (permanece preto/neutro até a escolha ser realizada)
+	let estiloPunhoLocal = $derived.by(() => {
+		if (desfechoConsolidado) {
+			if (ppt.vitoriaLocal === true) {
+				return `scale-112 ${corEquipeLocal} drop-shadow-md`;
+			}
+			if (ppt.vitoriaLocal === false) {
+				return 'scale-90 text-text-muted opacity-45';
+			}
+			return corEquipeLocal;
+		}
+		return ppt.minhaEquipeEnviou ? corEquipeLocal : 'text-text-primary';
+	});
+
+	// Estilo e cor reativa do punho adversário (permanece preto/neutro até o adversário escolher)
+	let estiloPunhoAdversario = $derived.by(() => {
+		if (desfechoConsolidado) {
+			if (ppt.vitoriaLocal === false && ppt.resultado !== 'EMPATE') {
+				return `scale-112 ${corEquipeAdversaria} drop-shadow-md`;
+			}
+			if (ppt.vitoriaLocal === true) {
+				return 'scale-90 text-text-muted opacity-45';
+			}
+			return corEquipeAdversaria;
+		}
+		return ppt.adversarioEnviou ? corEquipeAdversaria : 'text-text-primary';
+	});
+
 	function handleEscolha(lance: PptMove) {
 		if (!ppt.podeEscolherLance || disabled) return;
 		onSelectMove?.(lance);
 	}
 
-	function getIconeMao(lance: PptMove | null) {
-		switch (lance) {
-			case 'papel':
-				return IconHand;
-			case 'tesoura':
-				return IconVictory;
-			case 'pedra':
-			default:
-				return IconFist;
-		}
-	}
-
-	let IconeLocal = $derived(
-		ppt.subfase === 'RESULTADO' ? getIconeMao(ppt.lanceLocalRevelado) : IconFist
-	);
-
-	let IconeAdversario = $derived(
-		ppt.subfase === 'RESULTADO' ? getIconeMao(ppt.lanceAdversarioRevelado) : IconFist
-	);
-
-	const opcoesBotoeira: { id: PptMove; label: string; Icon: typeof IconFist }[] = [
-		{ id: 'pedra', label: 'Pedra', Icon: IconFist },
-		{ id: 'tesoura', label: 'Tesoura', Icon: IconVictory },
-		{ id: 'papel', label: 'Papel', Icon: IconHand }
+	const opcoesBotoeira: { id: PptMove; label: string }[] = [
+		{ id: 'pedra', label: 'Pedra' },
+		{ id: 'tesoura', label: 'Tesoura' },
+		{ id: 'papel', label: 'Papel' }
 	];
 </script>
 
@@ -157,8 +169,8 @@
 					class="font-display text-2xl sm:text-3xl {ppt.resultado === 'EMPATE'
 						? 'text-secondary'
 						: ppt.vitoriaLocal
-							? 'text-accent'
-							: 'text-primary'}"
+							? corEquipeLocal
+							: corEquipeAdversaria}"
 				>
 					{#if ppt.resultado === 'EMPATE'}
 						Empate!
@@ -180,7 +192,7 @@
 				<span
 					class="font-subheading text-base font-bold transition-colors duration-200 sm:text-lg {desfechoConsolidado &&
 					ppt.vitoriaLocal === true
-						? 'text-accent'
+						? corEquipeLocal
 						: 'text-text-primary'}"
 				>
 					{ppt.rotuloLocal}
@@ -194,25 +206,17 @@
 
 			{#key ppt.subfase === 'CONTAGEM' ? `beat-L-${contagemPasso}` : `state-L-${ppt.subfase}`}
 				<div
-					class="relative flex h-28 w-28 items-center justify-center sm:h-36 sm:w-36 {ppt.subfase ===
-					'CONTAGEM'
+					class="relative flex h-28 items-center justify-center sm:h-36 {ppt.subfase === 'CONTAGEM'
 						? 'animate-ppt-beat-left'
 						: ppt.subfase === 'RESULTADO'
 							? 'animate-ppt-reveal-left'
 							: ''}"
 				>
-					<div
-						class="transition-all duration-300 {desfechoConsolidado
-							? ppt.vitoriaLocal === true
-								? 'scale-112 text-accent drop-shadow-md'
-								: ppt.vitoriaLocal === false
-									? 'scale-90 text-text-muted opacity-45'
-									: 'text-secondary'
-							: !ppt.souRepresentante && ppt.minhaEquipeEnviou
-								? 'text-accent'
-								: 'text-text-primary'}"
-					>
-						<IconeLocal class="h-22 w-22 rotate-90 sm:h-28 sm:w-28" />
+					<div class="transition-all duration-300 {estiloPunhoLocal}">
+						<PptIcon
+							move={ppt.subfase === 'RESULTADO' ? ppt.lanceLocalRevelado : 'pedra'}
+							class="h-24 w-auto sm:h-32"
+						/>
 					</div>
 				</div>
 			{/key}
@@ -223,29 +227,22 @@
 			<span class="font-display text-2xl text-border-medium select-none sm:text-3xl">x</span>
 		</div>
 
-		<!-- Bloco Adversário (Direita, Espelhado Horizontalmente) -->
+		<!-- Bloco Adversário (Direita, Espelhado Horizontalmente no Eixo X) -->
 		<div class="flex flex-1 flex-col items-center justify-start gap-3 sm:flex-row sm:gap-5">
 			{#key ppt.subfase === 'CONTAGEM' ? `beat-R-${contagemPasso}` : `state-R-${ppt.subfase}`}
 				<div
-					class="relative flex h-28 w-28 items-center justify-center sm:h-36 sm:w-36 {ppt.subfase ===
-					'CONTAGEM'
+					class="relative flex h-28 items-center justify-center sm:h-36 {ppt.subfase === 'CONTAGEM'
 						? 'animate-ppt-beat-right'
 						: ppt.subfase === 'RESULTADO'
 							? 'animate-ppt-reveal-right'
 							: ''}"
 				>
-					<div
-						class="transition-all duration-300 {desfechoConsolidado
-							? ppt.vitoriaLocal === false && ppt.resultado !== 'EMPATE'
-								? 'scale-112 text-primary drop-shadow-md'
-								: ppt.vitoriaLocal === true
-									? 'scale-90 text-text-muted opacity-45'
-									: 'text-secondary'
-							: ppt.adversarioEnviou
-								? 'text-primary'
-								: 'text-text-primary'}"
-					>
-						<IconeAdversario class="h-22 w-22 -scale-x-100 rotate-90 sm:h-28 sm:w-28" />
+					<div class="transition-all duration-300 {estiloPunhoAdversario}">
+						<PptIcon
+							move={ppt.subfase === 'RESULTADO' ? ppt.lanceAdversarioRevelado : 'pedra'}
+							mirrored={true}
+							class="h-24 w-auto sm:h-32"
+						/>
 					</div>
 				</div>
 			{/key}
@@ -254,9 +251,9 @@
 				<span
 					class="font-subheading text-base font-bold transition-colors duration-200 sm:text-lg {ppt.adversarioEnviou &&
 					ppt.subfase === 'ESCOLHA'
-						? 'text-primary'
+						? corEquipeAdversaria
 						: desfechoConsolidado && ppt.vitoriaLocal === false && ppt.resultado !== 'EMPATE'
-							? 'text-primary'
+							? corEquipeAdversaria
 							: 'text-text-primary'}"
 				>
 					{ppt.rotuloAdversario}
@@ -332,8 +329,9 @@
 								? 'scale-108 cursor-default border-accent bg-accent/10 text-accent shadow-xs'
 								: 'scale-92 cursor-not-allowed border-border-subtle/50 bg-bg-surface text-text-subtle opacity-25'}"
 					>
-						<opcao.Icon
-							class="h-10 w-10 rotate-90 transition-transform duration-200 sm:h-11 sm:w-11 {selecionado
+						<PptIcon
+							move={opcao.id}
+							class="h-9 w-auto transition-transform duration-200 sm:h-10 {selecionado
 								? 'scale-110'
 								: 'group-hover:scale-110'}"
 						/>
