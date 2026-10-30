@@ -444,7 +444,9 @@ export function getPptProjection(state: GameState, meuJogadorId: string | null):
 	if (subfase === 'ESCOLHA') {
 		if (souRepresentante) {
 			if (!minhaEquipeEnviou) {
-				mensagemStatus = 'Faça sua escolha para disputar a iniciativa';
+				mensagemStatus = adversarioEnviou
+					? 'O oponente realizou um lance...'
+					: 'Faça sua escolha para disputar a iniciativa';
 			} else if (adversarioEnviou) {
 				mensagemStatus = 'O oponente realizou um lance...';
 			} else {

@@ -29,7 +29,7 @@ A arquitetura de _Leveling Out_ traduz o Game Loop clássico de motores de jogo 
 - **Sorteio Estocástico e Inicialização (`INICIAR_PARTIDA`):** Comando exclusivo acionado pelo anfitrião quando o quórum atinge exatamente 4 jogadores. O ator valida a identidade do solicitante, embaralha criptograficamente (`crypto/rand`) os participantes em `ALEATORIO`, completa as vagas remanescentes das equipes para totalizar 2 em cada lado e transiciona a sala para a disputa de `INICIATIVA` (Pedra, Papel e Tesoura).
 - **Geração de Segredos:** Sorteio seguro de metas ocultas no tubo de ensaio ($5\%$ a $95\%$) via `crypto/rand` pelo `SecretTargetComponent`.
 - **Cálculo Oficial:** Comparação matemática $|\text{meta} - \text{palpite}|$ e distribuição de pontos (+4, +3, +2, 0) pelo `ProximityComponent`.
-- **Resolução de Conflitos e Timers Determinísticos:** Arbitragem de lances de PPT pelo `PptArbiterComponent` e loop interno de 100ms para timeouts (10s de escolha de PPT, 3s de contagem regressiva e avanço automático após revelação).
+- **Resolução de Conflitos e Timers Determinísticos:** Arbitragem de lances de PPT pelo `PptArbiterComponent` e loop interno de 100ms para timeouts (20s de escolha de PPT, 3s de contagem regressiva e avanço automático após revelação).
 
 ### 1.3. Fase de Sincronização e Reconciliação (Cliente)
 
@@ -116,9 +116,9 @@ O servidor opera como um executável nativo em Go (`CGO_ENABLED=0`), estruturado
   - Cada cliente conectado possui um buffer dedicado e seguro com loop assíncrono de escrita (`ClientConn` em `internal/actor/client_conn.go`), prevenindo que clientes lentos travem a goroutine do ator da sala.
 - **Ciclo Temporal Determinístico (Ticker de 100ms):**
   - O ator roda um loop com `time.NewTicker(100 * time.Millisecond)`, responsável por contagens regressivas e transições autônomas:
-    - Prazo de 10 segundos para lances na disputa de iniciativa (PPT).
+    - Prazo de 20 segundos para lances na disputa de iniciativa (PPT).
     - Contagem regressiva dramática de 3 segundos antes da revelação dos lances de PPT.
-    - Avanço automático de 3 segundos após empate no PPT para nova disputa.
+    - Avanço automático de 3.5 segundos após empate no PPT para nova disputa.
     - Avanço automático de 5 segundos após a revelação da pontuação da rodada para iniciar o próximo turno.
 
 ### 5.2. Adequação do Backend à Composição por Entidades e Componentes
@@ -157,35 +157,35 @@ Diferente de sistemas tradicionais que expõem coleções inteiras e dependem de
 
 A tabela abaixo mapeia cada subsistema, arquivo e sua respectiva responsabilidade principal no projeto:
 
-| O que você precisa alterar / inspecionar | Onde encontrar (Arquivo / Pasta) | Responsabilidade Principal |
-| :--- | :--- | :--- |
-| **Página inicial do projeto e índice** | `README.md` | Apresentação do jogo, integrantes e sumário de navegação com links diretos. |
-| **SGDD consolidado da versão atual** | `docs/sgdd/sgdd.md` | Short Game Design Document (Motta & Trigueiro, SBGames 2013) com texto corrido e listas de produção. |
-| **Modelagem de Entidades abrangentes** | `docs/entidades/entidades.md` | As 5 grandes entidades conceituais (`Participante`, `Sessao`, `Artefato`, `Disputa`, etc.). |
-| **Catálogo de Componentes atômicos** | `docs/componentes/componentes.md` | Os 19 componentes atômicos, matriz de associação com entidades e justificativas técnicas. |
-| **Diagramas de Entidades e Componentes** | `docs/diagramas/diagramas.md` | Diagramas visuais em grid de entidades, instanciações e composição com componentes. |
-| **Histórico e Roadmap do Projeto** | `docs/agents/roadmap.md` | Histórico consolidado das Fases 1, 2 e backlog ativo da Fase 3. |
-| **Paleta, tokens CSS, dark mode e temas** | `src/routes/layout.css` | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos). |
-| **Importação de fontes e head global** | `src/app.html` | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code). |
-| **Casca da aplicação e navegação** | `src/routes/+layout.svelte` | Estrutura comum que envolve todas as páginas e carrega os estilos globais. |
-| **Lobby de entrada e criação de sala** | `src/routes/+page.svelte` | Tela inicial com Title Card, criação rápida de sala e entrada de apelido. |
-| **Arena principal do jogo (Partida)** | `src/routes/[sala]/+page.svelte` | Orquestrador reativo da sala, ciclo de rede, reconciliação e despacho. |
-| **Modal de Identificação (Zero Trust)** | `src/lib/components/NicknameModal.svelte` | Diálogo bloqueante para digitação e validação autoritativa do apelido. |
-| **Barra Superior da Sala** | `src/lib/components/RoomHeader.svelte` | Identificação do jogador, badge de host, código da sala e cópia de link. |
-| **Identidade Resiliente do Dispositivo** | `src/lib/config/device.ts` | Tripla persistência resiliente com auto-cura de device_id para moderação Zero Trust. |
-| **Arena do Lobby (Painel Tripartite)** | `src/lib/components/LobbyArena.svelte` | Distribuição tripartite de equipes (Pato, Aleatório, Ganso) e início pelo anfitrião. |
-| **Componente do Tubo de Ensaio (SVG)** | `src/lib/components/TestTube.svelte` | Tubo procedural SVG, dupla camada de menisco contínuo e física de agitação tátil. |
-| **Camada de Input (Intenção & Sanitização)** | `src/lib/engine/input/` | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts). |
-| **Camada de Update (Máquina de Estados)** | `src/lib/engine/update/` | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts). |
-| **Camada de Render (Projeções UI)** | `src/lib/engine/render/` | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts). |
-| **Orquestrador do Motor Canônico** | `src/lib/engine/game-engine.ts` | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições. |
-| **Conexão e Rede Cliente (WebSocket)** | `src/lib/network/game-socket.ts` | Gerenciador da conexão WebSocket full-duplex, reconexão com teto de 5s e streaming do slider. |
-| **Servidor Autoritário Go (Ponto de Entrada)** | `backend/cmd/server/main.go` | Inicialização do servidor nativo HTTP/WebSocket, CORS e encerramento gracioso. |
-| **Ator de Sala em Memória (Actor Pattern)** | `backend/internal/actor/room_actor.go` | Goroutine isolada por sala, canal inbox, timers (100ms) e projeção Zero Trust sob medida. |
-| **Conexão de Cliente no Servidor** | `backend/internal/actor/client_conn.go` | Wrapper thread-safe de escrita/leitura sobre WebSocket para cada participante. |
-| **Hub Central de Salas em Memória** | `backend/internal/hub/lobby_hub.go` | Gerenciador thread-safe de salas ativas na memória RAM. |
-| **Protocolo de Mensagens WebSocket** | `backend/internal/protocol/messages.go` | Definição e deserialização tipada de comandos do cliente e envelopes de saída. |
-| **Entidades de Domínio no Servidor** | `backend/internal/entities/` | Modelagem em memória: session.go (sala e rodada), participant.go (jogador) e contest.go (disputa). |
-| **Componentes Atômicos no Servidor** | `backend/internal/components/` | proximity.go (pontuação), secret_target.go (segredo), ppt_arbiter.go (PPT), spectrums.go (espectros). |
-| **Regras e Restrições para Agentes** | `AGENTS.md`, `docs/agents/` e `.agents/` | Proibições estritas, guias aprofundados e convenções do repositório. |
-| **Harness e Diretrizes Ponytail (Lean Dev)** | `.agents/rules/ponytail.md` e `.agents/skills/ponytail*` | Escada da menor mudança completa, revisão com `/ponytail-review`, auditoria `/ponytail-audit` e gestão de débito. |
+| O que você precisa alterar / inspecionar       | Onde encontrar (Arquivo / Pasta)                         | Responsabilidade Principal                                                                                        |
+| :--------------------------------------------- | :------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------- |
+| **Página inicial do projeto e índice**         | `README.md`                                              | Apresentação do jogo, integrantes e sumário de navegação com links diretos.                                       |
+| **SGDD consolidado da versão atual**           | `docs/sgdd/sgdd.md`                                      | Short Game Design Document (Motta & Trigueiro, SBGames 2013) com texto corrido e listas de produção.              |
+| **Modelagem de Entidades abrangentes**         | `docs/entidades/entidades.md`                            | As 5 grandes entidades conceituais (`Participante`, `Sessao`, `Artefato`, `Disputa`, etc.).                       |
+| **Catálogo de Componentes atômicos**           | `docs/componentes/componentes.md`                        | Os 19 componentes atômicos, matriz de associação com entidades e justificativas técnicas.                         |
+| **Diagramas de Entidades e Componentes**       | `docs/diagramas/diagramas.md`                            | Diagramas visuais em grid de entidades, instanciações e composição com componentes.                               |
+| **Histórico e Roadmap do Projeto**             | `docs/agents/roadmap.md`                                 | Histórico consolidado das Fases 1, 2 e backlog ativo da Fase 3.                                                   |
+| **Paleta, tokens CSS, dark mode e temas**      | `src/routes/layout.css`                                  | Variáveis `:root` e `[data-theme='dark']` (superfícies, textos, cores de equipes e acentos).                      |
+| **Importação de fontes e head global**         | `src/app.html`                                           | Links para Google Fonts e CDN (Bagel Fat One, Capriola, SN Pro, Mona Sans, Fira Code).                            |
+| **Casca da aplicação e navegação**             | `src/routes/+layout.svelte`                              | Estrutura comum que envolve todas as páginas e carrega os estilos globais.                                        |
+| **Lobby de entrada e criação de sala**         | `src/routes/+page.svelte`                                | Tela inicial com Title Card, criação rápida de sala e entrada de apelido.                                         |
+| **Arena principal do jogo (Partida)**          | `src/routes/[sala]/+page.svelte`                         | Orquestrador reativo da sala, ciclo de rede, reconciliação e despacho.                                            |
+| **Modal de Identificação (Zero Trust)**        | `src/lib/components/NicknameModal.svelte`                | Diálogo bloqueante para digitação e validação autoritativa do apelido.                                            |
+| **Barra Superior da Sala**                     | `src/lib/components/RoomHeader.svelte`                   | Identificação do jogador, badge de host, código da sala e cópia de link.                                          |
+| **Identidade Resiliente do Dispositivo**       | `src/lib/config/device.ts`                               | Tripla persistência resiliente com auto-cura de device_id para moderação Zero Trust.                              |
+| **Arena do Lobby (Painel Tripartite)**         | `src/lib/components/LobbyArena.svelte`                   | Distribuição tripartite de equipes (Pato, Aleatório, Ganso) e início pelo anfitrião.                              |
+| **Componente do Tubo de Ensaio (SVG)**         | `src/lib/components/TestTube.svelte`                     | Tubo procedural SVG, dupla camada de menisco contínuo e física de agitação tátil.                                 |
+| **Camada de Input (Intenção & Sanitização)**   | `src/lib/engine/input/`                                  | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts).                             |
+| **Camada de Update (Máquina de Estados)**      | `src/lib/engine/update/`                                 | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).                            |
+| **Camada de Render (Projeções UI)**            | `src/lib/engine/render/`                                 | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts).                              |
+| **Orquestrador do Motor Canônico**             | `src/lib/engine/game-engine.ts`                          | Orquestrador reativo coordenando a cadência Input -> Update -> Render e inscrições.                               |
+| **Conexão e Rede Cliente (WebSocket)**         | `src/lib/network/game-socket.ts`                         | Gerenciador da conexão WebSocket full-duplex, reconexão com teto de 5s e streaming do slider.                     |
+| **Servidor Autoritário Go (Ponto de Entrada)** | `backend/cmd/server/main.go`                             | Inicialização do servidor nativo HTTP/WebSocket, CORS e encerramento gracioso.                                    |
+| **Ator de Sala em Memória (Actor Pattern)**    | `backend/internal/actor/room_actor.go`                   | Goroutine isolada por sala, canal inbox, timers (100ms) e projeção Zero Trust sob medida.                         |
+| **Conexão de Cliente no Servidor**             | `backend/internal/actor/client_conn.go`                  | Wrapper thread-safe de escrita/leitura sobre WebSocket para cada participante.                                    |
+| **Hub Central de Salas em Memória**            | `backend/internal/hub/lobby_hub.go`                      | Gerenciador thread-safe de salas ativas na memória RAM.                                                           |
+| **Protocolo de Mensagens WebSocket**           | `backend/internal/protocol/messages.go`                  | Definição e deserialização tipada de comandos do cliente e envelopes de saída.                                    |
+| **Entidades de Domínio no Servidor**           | `backend/internal/entities/`                             | Modelagem em memória: session.go (sala e rodada), participant.go (jogador) e contest.go (disputa).                |
+| **Componentes Atômicos no Servidor**           | `backend/internal/components/`                           | proximity.go (pontuação), secret_target.go (segredo), ppt_arbiter.go (PPT), spectrums.go (espectros).             |
+| **Regras e Restrições para Agentes**           | `AGENTS.md`, `docs/agents/` e `.agents/`                 | Proibições estritas, guias aprofundados e convenções do repositório.                                              |
+| **Harness e Diretrizes Ponytail (Lean Dev)**   | `.agents/rules/ponytail.md` e `.agents/skills/ponytail*` | Escada da menor mudança completa, revisão com `/ponytail-review`, auditoria `/ponytail-audit` e gestão de débito. |

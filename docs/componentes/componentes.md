@@ -200,7 +200,7 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 #### 14. `ArbitroPptComponent`
 
 - **Atributos:** `lancesRecebidos: Record<string, string>`, `resultadoDisputa: 'A' | 'B' | 'EMPATE'`.
-- **Comportamento:** Armazena lances em memória atômica thread-safe no Go nativo (`PptArbiterComponent`), avalia o confronto das regras clássicas, preenche lances faltantes por timeout (10s) e declara a equipe vencedora para selecionar a primeira carta.
+- **Comportamento:** Armazena lances em memória atômica thread-safe no Go nativo (`PptArbiterComponent`), avalia o confronto das regras clássicas, preenche lances faltantes por timeout (20s) e declara a equipe vencedora para selecionar a primeira carta.
 - **Camada:** Backend autoritativo (Go nativo).
 - **Arquivo(s) no Código:**
   - _Backend (Go):_ [`backend/internal/components/ppt_arbiter.go`](../../backend/internal/components/ppt_arbiter.go) (`PptArbiterComponent.ResolveMoves`) e [`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go).

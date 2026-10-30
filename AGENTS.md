@@ -55,15 +55,15 @@ O motor adota o desacoplamento de um sistema distribuído em tempo real:
 
 Para a catalogação exaustiva com todos os 29 arquivos e classes, consulte [docs/agents/architecture.md](docs/agents/architecture.md#6-catálogo-exaustivo-de-localização-do-código-e-recursos).
 
-| Domínio de Engenharia | Onde encontrar (Arquivo / Pasta) | Papel Principal |
-| :--- | :--- | :--- |
-| **Motor e Estado Front-end** | `src/lib/engine/` (`input/`, `update/`, `render/`) | Captura de intenções, reducer determinístico, projeções de interface e orquestrador. |
-| **Componentes Visuais** | `src/lib/components/` e `src/routes/` | Tubo de ensaio SVG procedural, slider analógico, lobby tripartite e casca da sala. |
-| **Servidor Autoritário Go** | `backend/internal/` (`actor/`, `entities/`, `components/`) | Goroutines por sala (Actor Pattern), Zero Trust, árbitro PPT e segredo em memória. |
-| **Rede e Protocolo** | `backend/internal/protocol/` e `src/lib/network/` | Protocolo WebSocket unificado full-duplex (`GameSocket`), reconexão e streaming. |
-| **Identidade de Dispositivo** | `src/lib/config/device.ts` | Tripla persistência resiliente com auto-cura de `device_id` para moderação. |
-| **Especificações e SGDD** | `docs/` (`sgdd/`, `entidades/`, `componentes/`, `diagramas/`) | SGDD acadêmico, modelagem das 5 entidades e catálogo dos 19 componentes. |
-| **Diretrizes e Regras** | `docs/agents/` e `.agents/rules/` | Guias de arquitetura, game design, estilo visual e filosofia Ponytail. |
+| Domínio de Engenharia         | Onde encontrar (Arquivo / Pasta)                              | Papel Principal                                                                      |
+| :---------------------------- | :------------------------------------------------------------ | :----------------------------------------------------------------------------------- |
+| **Motor e Estado Front-end**  | `src/lib/engine/` (`input/`, `update/`, `render/`)            | Captura de intenções, reducer determinístico, projeções de interface e orquestrador. |
+| **Componentes Visuais**       | `src/lib/components/` e `src/routes/`                         | Tubo de ensaio SVG procedural, slider analógico, lobby tripartite e casca da sala.   |
+| **Servidor Autoritário Go**   | `backend/internal/` (`actor/`, `entities/`, `components/`)    | Goroutines por sala (Actor Pattern), Zero Trust, árbitro PPT e segredo em memória.   |
+| **Rede e Protocolo**          | `backend/internal/protocol/` e `src/lib/network/`             | Protocolo WebSocket unificado full-duplex (`GameSocket`), reconexão e streaming.     |
+| **Identidade de Dispositivo** | `src/lib/config/device.ts`                                    | Tripla persistência resiliente com auto-cura de `device_id` para moderação.          |
+| **Especificações e SGDD**     | `docs/` (`sgdd/`, `entidades/`, `componentes/`, `diagramas/`) | SGDD acadêmico, modelagem das 5 entidades e catálogo dos 19 componentes.             |
+| **Diretrizes e Regras**       | `docs/agents/` e `.agents/rules/`                             | Guias de arquitetura, game design, estilo visual e filosofia Ponytail.               |
 
 ---
 

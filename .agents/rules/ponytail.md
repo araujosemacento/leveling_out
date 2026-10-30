@@ -20,6 +20,7 @@ Antes de escrever qualquer linha nova de código ou introduzir abstrações, par
 ## 2. Inviolabilidade: O que NUNCA Deve ser Cortado
 
 Ser minimalista não significa ser negligente. Nunca remova ou simplifique:
+
 - **Zero Trust:** Validações rigorosas em bordas de confiança (higienização defensiva no front-end em `input/sanitize.ts` e autoritarismo absoluto no servidor Go em `backend/`);
 - **Tratamento de Erros:** Blocos que previnam perda de estado, panes silenciosas ou crashes do servidor;
 - **Acessibilidade e Usabilidade:** Rótulos semânticos, atributos ARIA e suporte a teclado no front-end;
@@ -36,6 +37,7 @@ Quando um atalho pragmático for deliberadamente adotado para evitar over-engine
 ```
 
 Exemplo:
+
 ```typescript
 // shortcut: memória local suficiente para até 100 salas simultâneas, adicionar sharding se passar de 1.000
 ```
@@ -54,6 +56,7 @@ Esses apontamentos são consolidados periodicamente através da skill `/ponytail
 ## 5. Harnesses e Comandos Ponytail Disponíveis
 
 O repositório possui as seguintes skills disponíveis para consulta e automação:
+
 - `/ponytail [lite | full | ultra]`: Define a intensidade da postura pragmática nas respostas e propostas de código.
 - `/ponytail-review`: Revisa o diff atual com mentalidade de sênior de plantão (foco em bugs reais, segurança, escala, testes faltantes e cortes lean).
 - `/ponytail-audit`: Audita o repositório inteiro ranqueando o que deve ser corrigido ou removido primeiro.

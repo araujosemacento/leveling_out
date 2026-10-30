@@ -80,6 +80,20 @@ describe('Projeções de Pedra, Papel e Tesoura (getPptProjection)', () => {
 		expect(proj.mensagemStatus).toBe('O oponente realizou um lance...');
 	});
 
+	it('deve informar ao representante indeciso quando o oponente ja realizou o lance', () => {
+		const state = criarEstadoBase();
+		state.ppt = {
+			...state.ppt,
+			enviouA: false,
+			enviouB: true
+		};
+
+		const proj = getPptProjection(state, 'p1');
+		expect(proj.podeEscolherLance).toBe(true);
+		expect(proj.adversarioEnviou).toBe(true);
+		expect(proj.mensagemStatus).toBe('O oponente realizou um lance...');
+	});
+
 	it('deve projetar mensagem e lances da vitória na fase de resultado', () => {
 		const state = criarEstadoBase();
 		state.ppt = {
