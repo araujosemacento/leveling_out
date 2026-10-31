@@ -131,7 +131,7 @@ O servidor opera como um executável nativo em Go (`CGO_ENABLED=0`), estruturado
   - `ArbitroPptComponent` (`ppt_arbiter.go`): Arbitragem determinística de lances de Pedra, Papel e Tesoura, resolução de empates e preenchimento por timeout.
   - `RegraProximidadeComponent` (`proximity.go`): Algoritmo matemático autoritativo de proximidade e atribuição de faixas de pontuação (+4, +3, +2 ou 0).
   - `SecretTargetComponent` (`secret_target.go`): Sorteio criptograficamente seguro de metas ocultas no intervalo [5, 95] via `crypto/rand`.
-  - `SpectrumsComponent` (`spectrums.go`): Catálogo com 15 pares conceituais de espectro e sorteio estocástico de opções para o início de turno.
+  - `SpectrumsComponent` (`spectrums.go`): Catálogo canônico com 150 cartas de espectro em 5 categorias temáticas, baralho sem reposição via Knuth Shuffle (Fisher-Yates) e pilha de descarte reciclada automaticamente após 75 rodadas.
 
 ### 5.3. Blindagem de Sigilo Zero Trust e Projeções Sob Medida
 

@@ -7,7 +7,15 @@
  * meta secreta para o palpiteiro durante a fase de adivinhação).
  */
 
-import type { GameState, LobbyTeamChoice, Player, PlayerRole, PptMove, TeamId } from '../types';
+import type {
+	GameState,
+	LobbyTeamChoice,
+	Player,
+	PlayerRole,
+	PptMove,
+	SpectrumCard,
+	TeamId
+} from '../types';
 
 export interface TubeProjection {
 	nivelLiquido: number;
@@ -259,8 +267,8 @@ export function getRoundSpectrumProjection(state: GameState): SpectrumProjection
 
 	return {
 		hasCarta: carta !== null,
-		poloEsquerdo: carta ? carta.left : 'Esquerda',
-		poloDireito: carta ? carta.right : 'Direita',
+		poloEsquerdo: (carta ? carta.left || carta.esquerda : 'Esquerda') || 'Esquerda',
+		poloDireito: (carta ? carta.right || carta.direita : 'Direita') || 'Direita',
 		dica,
 		numeroRodada: numero,
 		equipeAtiva,
@@ -496,5 +504,107 @@ export function getPptProjection(state: GameState, meuJogadorId: string | null):
 		resultado,
 		vitoriaLocal,
 		mensagemStatus
+	};
+}
+
+export interface SpectrumPickerProjection {
+	cartas: SpectrumCard[];
+	cartaSelecionadaId: string | null;
+	votoParceiroCartaId: string | null;
+	prazoSegundosRestantes: number | null;
+	prazoIso: string | null;
+	souLider: boolean;
+	souParceiroVotante: boolean;
+	souEspectador: boolean;
+	minhaEquipe: TeamId | null;
+	equipeAtiva: TeamId;
+	equipeAtivaNome: string;
+	liderNome: string;
+	podeConfirmar: boolean;
+	statusMensagem: string;
+	maoCartaEsquerdaAtiva: boolean;
+	maoCartaDireitaAtiva: boolean;
+}
+
+/**
+ * Projeta o estado da fase de Escolha de Espectro (UI = f(State))
+ * Garante que todos os 4 participantes acompanhem a seleção em tempo real,
+ * com permissões Zero Trust rigorosamente delimitadas para o Líder e Parceiro.
+ */
+export function getSpectrumPickerProjection(
+	state: GameState,
+	meuJogadorId: string | null
+): SpectrumPickerProjection {
+	const cartas = state.cartasEspectroOpcoes || [];
+	const liderId = state.rodadaAtual.liderRodadaId || null;
+	const cartaSelecionadaId = state.rodadaAtual.cartaSelecionadaId || null;
+	const votoParceiroCartaId = state.rodadaAtual.votoParceiroCartaId || null;
+	const equipeAtiva = state.equipeAtiva;
+	const equipeAtivaNome = equipeAtiva === 'A' ? 'Pato' : 'Ganso';
+
+	// Identificação de papéis autoritativos
+	const playerA = state.equipes.A.membros.find((m) => m.id === meuJogadorId);
+	const playerB = state.equipes.B.membros.find((m) => m.id === meuJogadorId);
+	const minhaEquipe: TeamId | null = playerA ? 'A' : playerB ? 'B' : null;
+
+	const souLider = Boolean(meuJogadorId && liderId === meuJogadorId);
+	const isMinhaEquipeAtiva = minhaEquipe !== null && minhaEquipe === equipeAtiva;
+	const souParceiroVotante = Boolean(isMinhaEquipeAtiva && !souLider);
+	const souEspectador = !souLider && !souParceiroVotante;
+
+	// Nome do líder
+	const todosJogadores = [
+		...state.equipes.A.membros,
+		...state.equipes.B.membros,
+		...state.jogadoresAleatorios
+	];
+	const liderObj = todosJogadores.find((j) => j.id === liderId);
+	const liderNome = liderObj ? liderObj.nome : 'Líder';
+
+	// Cálculo do prazo de 30 segundos
+	let prazoSegundosRestantes: number | null = null;
+	const prazoIso = state.rodadaAtual.prazoEspectro || null;
+	if (prazoIso) {
+		const diff = Math.ceil((new Date(prazoIso).getTime() - Date.now()) / 1000);
+		prazoSegundosRestantes = Math.max(0, Math.min(30, diff));
+	}
+
+	// Posicionamento e ativação do ícone de voto da mãozinha (baseado no esboço do usuário)
+	const maoCartaEsquerdaAtiva = Boolean(
+		cartas.length > 0 && votoParceiroCartaId && votoParceiroCartaId === cartas[0].id
+	);
+	const maoCartaDireitaAtiva = Boolean(
+		cartas.length > 1 && votoParceiroCartaId && votoParceiroCartaId === cartas[1].id
+	);
+
+	// Validação de confirmação: líder pode confirmar se houver carta pré-selecionada, votada ou disponível
+	const podeConfirmar =
+		souLider &&
+		Boolean(cartaSelecionadaId || votoParceiroCartaId || (cartas.length > 0 && cartas[0].id));
+
+	// Mensagem contextual sem travessões e sem emojis
+	const statusMensagem = souLider
+		? 'Você é o Líder da rodada: selecione e confirme a carta da sua equipe.'
+		: souParceiroVotante
+			? `${liderNome} está escolhendo a carta: vote na sua opção preferida.`
+			: `${liderNome} (Equipe ${equipeAtivaNome}) está escolhendo a carta da rodada.`;
+
+	return {
+		cartas,
+		cartaSelecionadaId,
+		votoParceiroCartaId,
+		prazoSegundosRestantes,
+		prazoIso,
+		souLider,
+		souParceiroVotante,
+		souEspectador,
+		minhaEquipe,
+		equipeAtiva,
+		equipeAtivaNome,
+		liderNome,
+		podeConfirmar,
+		statusMensagem,
+		maoCartaEsquerdaAtiva,
+		maoCartaDireitaAtiva
 	};
 }

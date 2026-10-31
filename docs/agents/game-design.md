@@ -31,9 +31,27 @@ O fluxo tem início quando os participantes acessam a plataforma em seus disposi
 
 O primeiro jogador a ingressar na sala é designado autoritativamente pelo servidor como **Anfitrião da Sala (`is_host`)**. Durante a permanência no lobby, o anfitrião possui a prerrogativa soberana de moderação para remover participantes da sala (kick de jogador), garantindo a expurgação de jogadores inativos, intrusos ou inadequados e liberando imediatamente as vagas ocupadas para novos participantes. Uma vez preenchidas todas as 4 vagas da sala (independentemente de estarem em Pato, Ganso ou Aleatório), o anfitrião tem acesso exclusivo ao botão verde "Iniciar Partida" com ícone posicionado à direita. Ao ser acionado, o servidor Go nativo processa estocasticamente o balanceamento dos jogadores indecisos até que ambas as equipes contem com 2 integrantes cada, transicionando a partida para o minijogo digital de **Pedra, Papel e Tesoura (PPT)**. A equipe vencedora do PPT ganha a iniciativa e escolhe a carta temática da primeira rodada (ex.: "Fácil / Difícil").
 
-### Etapa 2: O Core Loop da Rodada (Dica, Palpite e Revelação)
+### Etapa 2: O Core Loop da Rodada (Espectro, Dica, Palpite e Revelação)
 
-Na fase ativa, o sistema sorteia um membro da equipe da vez para atuar como Codificador e preenche exclusivamente em sua tela um tubo de ensaio com nível percentual oculto (ex.: 70%), invisível aos demais jogadores. Esse integrante analisa a carta de espectro e digita uma pista associativa (máximo de 60 caracteres). O Palpiteiro recebe a dica e desliza o marcador analógico até onde estima estar o líquido. Finalizado o palpite, ocorre a revelação simultânea para todos os participantes: o tubo é aberto na tela de todos, exibindo a meta real e a linha do palpite, enquanto o algoritmo calcula os pontos obtidos.
+O ciclo de cada rodada é composto por quatro momentos sequenciais estritos:
+
+1. **Escolha de Espectro e Votação Cooperativa (30s):** O servidor Go sorteia duas cartas do baralho canônico de 150 espectros. A escolha é transmitida publicamente para todos os 4 participantes da sala. O Líder da equipe ativa possui a autoridade soberana de confirmação, contando com uma janela autoritativa de **30 segundos** antes do sorteio automático por timeout. Durante essa janela, o parceiro da equipe pode votar na carta de sua preferência clicando sobre ela, acionando o indicador de mão levantada (posicionado lateralmente em modo paisagem ou acima/abaixo em modo retrato).
+2. **Definição de Nível e Dica:** Escolhido o espectro, o servidor Go gera secretamente a meta oculta (5% a 95%). O Codificador da vez visualiza o tubo cheio em sua tela e digita uma pista associativa (máximo de 60 caracteres).
+3. **Palpite Analógico:** O Palpiteiro recebe a dica e arrasta o marcador analógico até onde estima estar o menisco do líquido.
+4. **Revelação Dramática e Pontuação:** O tubo e a linha do palpite são revelados simultaneamente para todos os jogadores, e o algoritmo de proximidade computa a pontuação obtida (+4, +3, +2 ou 0 pontos).
+
+### Regra Canônica de Alternância Compulsória de Cargos e Liderança
+
+A dinâmica cooperativa de Leveling Out exige distribuição equitativa de protagonismo e tomada de decisão:
+
+1. **Primeira Rodada da Equipe (Iniciativa / Rodada 1):**
+   - O primeiro integrante a entrar na equipe durante o lobby atua como líder da equipe no minijogo de PPT e, caso a equipe vença, na primeira escolha de espectro.
+   - Os cargos de **Codificador** e **Palpiteiro** dentro da equipe ativa são **sorteados aleatoriamente** pelo servidor Go na primeira rodada.
+2. **Rodadas Subsequentes (Revezamento Compulsório):**
+   - A cada nova posse de turno da equipe, **todos os privilégios operacionais alternam obrigatoriamente** para o outro integrante:
+     - Quem codificou na rodada anterior assume compulsoriamente a função de Palpiteiro na rodada seguinte, e vice-versa.
+     - A incumbência de Líder (quem decide a carta de espectro) transfere-se compulsoriamente para o integrante que não liderou a escolha anterior.
+   - É proibido a um jogador repetir a liderança ou o papel de codificador em rodadas consecutivas de sua própria equipe.
 
 ### Etapa 3: Progressão, Corrida e Conclusão com Revanche
 

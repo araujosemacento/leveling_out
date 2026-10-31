@@ -6,7 +6,15 @@
 
 import { calculateScore } from './score-rules';
 import { clampGuess, sanitizeNickname } from '../input/sanitize';
-import type { GameAction, GamePhase, GameState, Player, RoundState, TeamId } from '../types';
+import type {
+	GameAction,
+	GamePhase,
+	GameState,
+	Player,
+	RoundState,
+	SpectrumCard,
+	TeamId
+} from '../types';
 
 export function createInitialGameState(salaCodigo: string): GameState {
 	return {
@@ -172,6 +180,41 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 			};
 		}
 
+		case 'PRE_SELECT_SPECTRUM_INTENT': {
+			return {
+				...state,
+				rodadaAtual: {
+					...state.rodadaAtual,
+					cartaSelecionadaId: action.payload.cartaId
+				}
+			};
+		}
+
+		case 'VOTE_SPECTRUM_INTENT': {
+			const atual = state.rodadaAtual.votoParceiroCartaId;
+			return {
+				...state,
+				rodadaAtual: {
+					...state.rodadaAtual,
+					votoParceiroCartaId: atual === action.payload.cartaId ? null : action.payload.cartaId
+				}
+			};
+		}
+
+		case 'CONFIRM_SPECTRUM_INTENT': {
+			const cartaEncontrada = state.cartasEspectroOpcoes?.find(
+				(c) => c.id === action.payload.cartaId
+			);
+			return {
+				...state,
+				rodadaAtual: {
+					...state.rodadaAtual,
+					cartaSelecionadaId: action.payload.cartaId,
+					carta: cartaEncontrada || state.rodadaAtual.carta
+				}
+			};
+		}
+
 		case 'SUBMIT_CLUE_INTENT': {
 			return {
 				...state,
@@ -241,6 +284,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 			let faseRaw = (payload.fase ?? payload.sala?.fase ?? 'LOBBY') as GamePhase | string;
 			if (faseRaw === 'INICIATIVA') {
 				faseRaw = 'PPT_DISPUTA';
+			} else if (faseRaw === 'ESCOLHA_ESPECTRO') {
+				faseRaw = 'ESCOLHA_CARTA';
+			} else if (faseRaw === 'FIM_DE_JOGO') {
+				faseRaw = 'VITORIA';
 			}
 			const fase = faseRaw as GamePhase;
 
@@ -319,6 +366,16 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				cartaAtual = (rodadaObj as any).carta_espectro;
 			}
 
+			const cartasOpcoesRaw = payload.cartasOpcoes ?? payload.cartasEspectroOpcoes ?? [];
+			const cartasEspectroOpcoes: SpectrumCard[] = (cartasOpcoesRaw as any[]).map((c) => ({
+				id: c.id ?? c.ID ?? '',
+				left: c.left ?? c.esquerda ?? c.Esquerda ?? '',
+				right: c.right ?? c.direita ?? c.Direita ?? '',
+				esquerda: c.esquerda ?? c.Esquerda ?? c.left ?? '',
+				direita: c.direita ?? c.Direita ?? c.right ?? '',
+				categoria: c.categoria ?? c.Categoria ?? ''
+			}));
+
 			const rodadaAtual: RoundState = {
 				...state.rodadaAtual,
 				numero: numeroRodada,
@@ -331,6 +388,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 					rodadaObj?.palpiteiroId ??
 					(rodadaObj as any)?.palpiteiro_id ??
 					state.rodadaAtual.palpiteiroId,
+				liderRodadaId:
+					rodadaObj?.liderRodadaId ??
+					(rodadaObj as any)?.lider_rodada_id ??
+					state.rodadaAtual.liderRodadaId,
+				cartaSelecionadaId:
+					rodadaObj?.cartaSelecionadaId ??
+					(rodadaObj as any)?.carta_selecionada_id ??
+					state.rodadaAtual.cartaSelecionadaId,
+				votoParceiroCartaId:
+					rodadaObj?.votoParceiroCartaId ??
+					(rodadaObj as any)?.voto_parceiro_carta_id ??
+					state.rodadaAtual.votoParceiroCartaId,
+				prazoEspectro:
+					rodadaObj?.prazoEspectro ??
+					(rodadaObj as any)?.prazo_espectro ??
+					state.rodadaAtual.prazoEspectro,
 				carta: cartaAtual,
 				metaOculta:
 					rodadaObj?.metaOculta ?? (rodadaObj as any)?.meta_oculta ?? state.rodadaAtual.metaOculta,
@@ -356,7 +429,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				jogadoresAleatorios: aleatorios,
 				minhaEquipe,
 				ppt,
-				rodadaAtual
+				rodadaAtual,
+				cartasEspectroOpcoes:
+					cartasEspectroOpcoes.length > 0 ? cartasEspectroOpcoes : state.cartasEspectroOpcoes
 			};
 		}
 

@@ -272,6 +272,14 @@ export class GameSocket {
 		return this.enviar('LANCE_PPT', { lance });
 	}
 
+	public preSelecionarEspectro(cartaId: string) {
+		return this.enviar('PRE_SELECIONAR_ESPECTRO', { cartaId });
+	}
+
+	public votarEspectro(cartaId: string) {
+		return this.enviar('VOTAR_ESPECTRO', { cartaId });
+	}
+
 	public escolherEspectro(cartaId: string) {
 		return this.enviar('ESCOLHER_ESPECTRO', { cartaId });
 	}

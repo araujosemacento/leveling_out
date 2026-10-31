@@ -25,8 +25,11 @@ export type PptResult = 'VITÓRIA' | 'DERROTA' | 'EMPATE';
 
 export interface SpectrumCard {
 	id: string;
-	left: string;
-	right: string;
+	left?: string;
+	right?: string;
+	esquerda?: string;
+	direita?: string;
+	categoria?: string;
 }
 
 export type ScoreTier = 'NA_MOSCA' | 'MUITO_PERTO' | 'PERTO' | 'ERRO';
@@ -59,6 +62,10 @@ export interface RoundState {
 	equipeAtiva: TeamId;
 	codificadorId: string | null;
 	palpiteiroId: string | null;
+	liderRodadaId?: string | null;
+	cartaSelecionadaId?: string | null;
+	votoParceiroCartaId?: string | null;
+	prazoEspectro?: string | null;
 	carta: SpectrumCard | null;
 	/**
 	 * Meta secreta em porcentagem [0, 100].
@@ -100,6 +107,7 @@ export interface GameState {
 	meuJogadorId: string | null;
 	minhaEquipe: LobbyTeamChoice | null;
 	ppt?: PptState;
+	cartasEspectroOpcoes?: SpectrumCard[];
 }
 
 /**
@@ -143,6 +151,10 @@ export interface SnapshotSalaProjetado {
 		equipe?: TeamId;
 		codificadorId?: string | null;
 		palpiteiroId?: string | null;
+		liderRodadaId?: string | null;
+		cartaSelecionadaId?: string | null;
+		votoParceiroCartaId?: string | null;
+		prazoEspectro?: string | null;
 		espectroEsquerda?: string;
 		espectroDireita?: string;
 		dica?: string | null;
@@ -153,6 +165,7 @@ export interface SnapshotSalaProjetado {
 		label?: string;
 	};
 	cartasEspectroOpcoes?: SpectrumCard[];
+	cartasOpcoes?: SpectrumCard[];
 	// Compatibilidade defensiva com estrutura legada
 	sala?: any;
 }
@@ -172,6 +185,9 @@ export type GameAction =
 	| { type: 'SUBMIT_PPT_INTENT'; payload: { move: PptMove } }
 	| { type: 'SET_MEU_LANCE_PPT'; payload: { move: PptMove } }
 	| { type: 'SELECT_SPECTRUM_INTENT'; payload: { carta: SpectrumCard } }
+	| { type: 'PRE_SELECT_SPECTRUM_INTENT'; payload: { cartaId: string } }
+	| { type: 'VOTE_SPECTRUM_INTENT'; payload: { cartaId: string } }
+	| { type: 'CONFIRM_SPECTRUM_INTENT'; payload: { cartaId: string } }
 	| { type: 'SUBMIT_CLUE_INTENT'; payload: { dica: string } }
 	| { type: 'UPDATE_SLIDER_PREVIEW'; payload: { palpite: number } }
 	| { type: 'SUBMIT_GUESS_INTENT'; payload: { palpite: number } }

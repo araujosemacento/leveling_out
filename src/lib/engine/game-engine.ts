@@ -5,6 +5,8 @@
  */
 
 import {
+	createConfirmSpectrumAction,
+	createPreSelectSpectrumAction,
 	createRematchAction,
 	createSelectSpectrumAction,
 	createSetPlayerAction,
@@ -13,7 +15,8 @@ import {
 	createSubmitGuessAction,
 	createSubmitPptAction,
 	createSwitchTeamAction,
-	createUpdateSliderAction
+	createUpdateSliderAction,
+	createVoteSpectrumAction
 } from './input';
 import {
 	getLobbyProjection,
@@ -21,11 +24,13 @@ import {
 	getPptProjection,
 	getRoundSpectrumProjection,
 	getScoreBoardProjection,
+	getSpectrumPickerProjection,
 	getTubeProjection,
 	type LobbyProjection,
 	type PlayerRoleProjection,
 	type PptProjection,
 	type ScoreBoardProjection,
+	type SpectrumPickerProjection,
 	type SpectrumProjection,
 	type TubeProjection
 } from './render';
@@ -118,6 +123,18 @@ export class GameEngine {
 
 	public selectSpectrumCard(carta: SpectrumCard): void {
 		this.dispatch(createSelectSpectrumAction(carta));
+	}
+
+	public preSelectSpectrum(cartaId: string): void {
+		this.dispatch(createPreSelectSpectrumAction(cartaId));
+	}
+
+	public voteSpectrum(cartaId: string): void {
+		this.dispatch(createVoteSpectrumAction(cartaId));
+	}
+
+	public confirmSpectrum(cartaId: string): void {
+		this.dispatch(createConfirmSpectrumAction(cartaId));
 	}
 
 	public submitClue(dica: string): void {
@@ -215,5 +232,11 @@ export class GameEngine {
 
 	public getPptProjection(playerId: string | null = this.state.meuJogadorId): PptProjection {
 		return getPptProjection(this.state, playerId);
+	}
+
+	public getSpectrumPickerProjection(
+		playerId: string | null = this.state.meuJogadorId
+	): SpectrumPickerProjection {
+		return getSpectrumPickerProjection(this.state, playerId);
 	}
 }

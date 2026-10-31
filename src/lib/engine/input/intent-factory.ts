@@ -61,6 +61,33 @@ export function createSelectSpectrumAction(carta: SpectrumCard): GameAction {
 	};
 }
 
+export function createPreSelectSpectrumAction(cartaId: string): GameAction {
+	return {
+		type: 'PRE_SELECT_SPECTRUM_INTENT',
+		payload: {
+			cartaId
+		}
+	};
+}
+
+export function createVoteSpectrumAction(cartaId: string): GameAction {
+	return {
+		type: 'VOTE_SPECTRUM_INTENT',
+		payload: {
+			cartaId
+		}
+	};
+}
+
+export function createConfirmSpectrumAction(cartaId: string): GameAction {
+	return {
+		type: 'CONFIRM_SPECTRUM_INTENT',
+		payload: {
+			cartaId
+		}
+	};
+}
+
 export function createSubmitClueAction(rawDica: string): GameAction {
 	return {
 		type: 'SUBMIT_CLUE_INTENT',

@@ -10,11 +10,13 @@
 	import RoomHeader from '$lib/components/RoomHeader.svelte';
 	import LobbyArena from '$lib/components/LobbyArena.svelte';
 	import PptArena from '$lib/components/PptArena.svelte';
+	import SpectrumArena from '$lib/components/SpectrumArena.svelte';
 	import GamePlaceholder from '$lib/components/GamePlaceholder.svelte';
 
 	import IconAlertCircle from '~icons/lucide/alert-circle';
+	import type { PageProps } from './$types';
 
-	let { data } = $props<{ data: { roomCode: string } }>();
+	let { data }: PageProps = $props();
 	let roomCode = $derived(data.roomCode);
 
 	// Estados de ciclo de vida e conectividade
@@ -38,9 +40,12 @@
 	let engine = $state<GameEngine | null>(null);
 	let gameState = $state<any>(null);
 
-	// Projeções reativas do Lobby e PPT via GameEngine
+	// Projeções reativas do Lobby, PPT e Escolha de Espectro via GameEngine
 	let lobby = $derived(engine && gameState ? engine.getLobbyProjection(localPlayerId) : null);
 	let pptProjection = $derived(engine && gameState ? engine.getPptProjection(localPlayerId) : null);
+	let spectrumProjection = $derived(
+		engine && gameState ? engine.getSpectrumPickerProjection(localPlayerId) : null
+	);
 
 	let unsubscribeEngine: (() => void) | null = null;
 	let socket: GameSocket | null = null;
@@ -242,6 +247,7 @@
 			motivoFim: snap.motivoFim || null,
 			ppt: snap.ppt,
 			rodadaAtiva: snap.rodadaAtiva,
+			cartasOpcoes: snap.cartasOpcoes || snap.cartasEspectroOpcoes,
 			jogadores: (snap.jogadores || []).map((j: any) => {
 				const isMe = j.playerId === localPlayerId;
 				const eq = isMe && pendingTeamChoice ? equipeFinal : j.equipe || 'ALEATORIO';
@@ -341,6 +347,24 @@
 		socket?.lancePpt(move);
 	}
 
+	function handlePreSelectSpectrum(cartaId: string) {
+		if (!engine) return;
+		engine.preSelectSpectrum(cartaId);
+		socket?.preSelecionarEspectro(cartaId);
+	}
+
+	function handleVoteSpectrum(cartaId: string) {
+		if (!engine) return;
+		engine.voteSpectrum(cartaId);
+		socket?.votarEspectro(cartaId);
+	}
+
+	function handleConfirmSpectrum(cartaId: string) {
+		if (!engine) return;
+		engine.confirmSpectrum(cartaId);
+		socket?.escolherEspectro(cartaId);
+	}
+
 	async function copyRoomLink() {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
@@ -412,6 +436,14 @@
 		{:else if (gameState?.fase === 'PPT_DISPUTA' || gameState?.fase === 'PPT_RESULTADO' || gameState?.fase === 'INICIATIVA') && pptProjection}
 			<!-- Arena de Disputa de Iniciativa (Pedra, Papel e Tesoura) -->
 			<PptArena ppt={pptProjection} onSelectMove={handleLancePpt} />
+		{:else if (gameState?.fase === 'ESCOLHA_CARTA' || gameState?.fase === 'ESCOLHA_ESPECTRO') && spectrumProjection}
+			<!-- Arena de Escolha de Espectro da Rodada (30 segundos) -->
+			<SpectrumArena
+				projection={spectrumProjection}
+				onPreSelect={handlePreSelectSpectrum}
+				onVote={handleVoteSpectrum}
+				onConfirm={handleConfirmSpectrum}
+			/>
 		{:else}
 			<!-- Demais Fases da Partida -->
 			<GamePlaceholder />
