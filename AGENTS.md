@@ -8,29 +8,28 @@ Especificações detalhadas em `docs/`: [Game Design](docs/agents/game-design.md
 
 ## 1. Mandamentos Inegociáveis e Restrições Absolutas
 
-Todo código, estilo ou modificação submetida neste repositório deve respeitar rigorosamente as seguintes restrições:
+Todo código, estilo ou modificação neste repositório deve respeitar rigorosamente:
 
-1. **Runtime Bun Exclusivo:** O único runtime JavaScript/TypeScript e gerenciador de pacotes admitido é o **Bun** (`bun`). É expressamente proibido tentar executar comandos `node`, `npm`, `npx` ou `pnpm`.
-2. **Sistema Distribuído e Autoritarismo do Servidor (Zero Trust):** O front-end é responsável exclusivamente por Input e Render. O servidor Go nativo em memória detém autoridade soberana e exclusiva sobre Update (regras de integridade, pontuação e sigilo da `meta_oculta`). A `GameEngine` cliente sincroniza o estado via WebSockets full-duplex sem decidir regras por conta própria.
-3. **Composição por Entidades e Componentes:** Entidades são agregadores conceituais amplos (especializadas em ciclo de vida e nomeação). Componentes são imperativamente atômicos e de uso específico, conferindo capacidades operacionais às entidades.
+1. **Runtime Bun Exclusivo:** O único runtime JavaScript/TypeScript e gerenciador de pacotes admitido é o **Bun** (`bun`). Proibido usar `node`, `npm`, `npx` ou `pnpm`.
+2. **Sistema Distribuído e Autoritarismo do Servidor (Zero Trust):** O front-end é responsável exclusivamente por Input e Render. O servidor Go em memória detém autoridade soberana e exclusiva sobre Update (regras, pontuação e sigilo da `meta_oculta`). A `GameEngine` cliente sincroniza o estado via WebSockets full-duplex sem decidir regras por conta própria.
+3. **Composição por Entidades e Componentes:** Entidades são agregadores conceituais amplos (ciclo de vida e nomeação). Componentes são atômicos e conferem capacidades operacionais às entidades.
 4. **Sem Emojis:** Proibido utilizar emojis em títulos, botões, status ou ilustrações.
-5. **Sem Cards Genéricos:** Proibido utilizar contêineres decorativos padronizados no formato de "card" flutuante.
+5. **Sem Cards Genéricos:** Proibido utilizar contêineres decorativos padronizados no formato de "card" flutuante. A única exceção canônica autorizada são as Cartas de Espectro (`SpectrumCard.svelte`), projetadas com cantos retos intencionalmente para emular cartas físicas reais de mesa.
 6. **Sem Travessões como Separadores:** Proibido utilizar travessões (`–`, `—`) ou hífen como separador de títulos ou textos de interface. Utilize dois-pontos (`:`), barras (`/`) ou formulação textual contínua.
 7. **Sem Bullets Decorativos:** Proibido utilizar marcadores como `●`, `○`, `•`, `▪`, `✓` ou círculos decorativos (`rounded-full` em pings de status).
 8. **TypeScript Nativo:** Toda a lógica de motor, controladores, modelos de dados e testes deve ser estritamente tipada em TypeScript (`.ts`), com ações modeladas por uniões discriminadas.
-9. **Proibição de Commits e Pushes Autônomos:** Agentes de IA são expressamente proibidos de executar comandos de commit (`git commit`), criação de tags (`git tag`) ou envio para remotos (`git push`) de forma autônoma. A responsabilidade do agente restringe-se a fornecer propostas de sumário, descrição detalhada e o comando git sugerido pronto para que o desenvolvedor humano execute a ação por conta própria.
-10. **Filosofia Ponytail (Pragmatismo e Simplicidade Máxima):** O melhor código é aquele que não precisou ser escrito. Toda solução deve adotar o menor diff completo que atenda à demanda (YAGNI estrito), seguindo a Escada da Menor Mudança (`.agents/rules/ponytail.md`). Nunca corte validações de integridade (Zero Trust), segurança, acessibilidade ou tratamento de erros. Atalhos deliberados devem ser marcados com `// shortcut: <limite>, <quando refatorar>` para auditoria via `/ponytail-debt`.
+9. **Proibição de Commits e Pushes Autônomos:** Agentes de IA são expressamente proibidos de executar comandos de commit (`git commit`), criação de tags (`git tag`) ou envio para remotos (`git push`) de forma autônoma. O agente deve fornecer sumário, descrição detalhada e o comando git sugerido pronto para o desenvolvedor executar.
+10. **Filosofia Ponytail (Pragmatismo e Simplicidade Máxima):** Adotar o menor diff completo que atenda à demanda (YAGNI estrito), seguindo a Escada da Menor Mudança (`.agents/rules/ponytail.md`). Nunca cortar validações de integridade (Zero Trust), segurança ou acessibilidade. Atalhos deliberados: `// shortcut: <limite>, <quando refatorar>`.
 
 ---
 
 ## 2. Visão Geral e Game Loop
 
-**Leveling Out** é um _party game_ multiplayer focado em dedução e sintonia social. Duas equipes competem tentando calibrar conceitos subjetivos ao longo de uma escala percentual contínua (0% a 100%).
+**Leveling Out** é um _party game_ multiplayer de dedução social em escala percentual contínua (0% a 100%). O Codificador visualiza uma meta secreta no tubo de ensaio e envia uma dica em espectro bipolar. O Palpiteiro calibra o marcador analógico para onde estima estar o nível do líquido.
 
-- **Desafio Central:** O Codificador visualiza uma meta secreta no tubo de ensaio e envia uma dica textual baseada em um espectro bipolar. O Palpiteiro da equipe ajusta o marcador analógico até onde estima estar o nível do líquido.
 - **Cadência Canônica:**
-  1. _Lobby e Iniciativa:_ Entrada via slug (`/[sala]`), divisão de equipes e minijogo de Pedra, Papel e Tesoura (PPT).
-  2. _Core Loop:_ Escolha do espectro, envio de dica, arrasto analógico e revelação simultânea por tolerância de proximidade (+4, +3, +2 ou 0 pontos).
+  1. _Lobby e Iniciativa:_ Entrada via slug (`/[sala]`), equipes Pato e Ganso e minijogo de Pedra, Papel e Tesoura (PPT).
+  2. _Core Loop:_ Escolha de espectro, envio de dica, arrasto analógico e revelação por tolerância (+4, +3, +2 ou 0 pontos).
   3. _Conclusão:_ Turnos alternados até 10 pontos e revanche instantânea.
 
 > Detalhamento narrativo e mecânicas em [docs/agents/game-design.md](docs/agents/game-design.md) e [docs/sgdd/sgdd.md](docs/sgdd/sgdd.md).
@@ -39,10 +38,8 @@ Todo código, estilo ou modificação submetida neste repositório deve respeita
 
 ## 3. Arquitetura do Motor: Input $\rightarrow$ Update $\rightarrow$ Sync & Render
 
-O motor adota o desacoplamento de um sistema distribuído em tempo real:
-
-- **Input (Cliente - `src/lib/engine/input/`):** Sanitização defensiva rigorosa (`sanitize.ts`) e normalização de intenções (`intent-factory.ts`).
-- **Update (Servidor Go - `backend/`):** Autoridade soberana em memória com padrão de Ator (`RoomActor`), eliminando concorrência sem I/O de disco. Modela entidades (`entities/`) e componentes atômicos (`components/`).
+- **Input (Cliente - `src/lib/engine/input/`):** Sanitização defensiva (`sanitize.ts`) e normalização de intenções (`intent-factory.ts`).
+- **Update (Servidor Go - `backend/`):** Autoridade soberana em memória com padrão de Ator (`RoomActor`), eliminando concorrência sem I/O de disco. Modela entidades (`entities/`) e componentes (`components/`).
 - **Sincronização (Cliente - `src/lib/network/`):** WebSocket full-duplex (`GameSocket`), reconexão exponencial e reconciliação determinística (`state-machine.ts`).
 - **Render (Cliente - `src/lib/engine/render/`):** Projeções puras `UI = f(State)` (`projections.ts`) que blindam a meta oculta até a revelação.
 - **Orquestrador (`src/lib/engine/game-engine.ts`):** Coordena ciclo de vida e notifica listeners da interface.
@@ -53,17 +50,17 @@ O motor adota o desacoplamento de um sistema distribuído em tempo real:
 
 ## 4. Mapa Sintético de Localização por Domínio
 
-Para a catalogação exaustiva com todos os 29 arquivos e classes, consulte [docs/agents/architecture.md](docs/agents/architecture.md#6-catálogo-exaustivo-de-localização-do-código-e-recursos).
+Para a catalogação exaustiva, consulte [docs/agents/architecture.md](docs/agents/architecture.md#6-catálogo-exaustivo-de-localização-do-código-e-recursos).
 
-| Domínio de Engenharia         | Onde encontrar (Arquivo / Pasta)                              | Papel Principal                                                                      |
-| :---------------------------- | :------------------------------------------------------------ | :----------------------------------------------------------------------------------- |
-| **Motor e Estado Front-end**  | `src/lib/engine/` (`input/`, `update/`, `render/`)            | Captura de intenções, reducer determinístico, projeções de interface e orquestrador. |
-| **Componentes Visuais**       | `src/lib/components/` e `src/routes/`                         | Tubo de ensaio SVG procedural, slider analógico, lobby tripartite e casca da sala.   |
-| **Servidor Autoritário Go**   | `backend/internal/` (`actor/`, `entities/`, `components/`)    | Goroutines por sala (Actor Pattern), Zero Trust, árbitro PPT e segredo em memória.   |
-| **Rede e Protocolo**          | `backend/internal/protocol/` e `src/lib/network/`             | Protocolo WebSocket unificado full-duplex (`GameSocket`), reconexão e streaming.     |
-| **Identidade de Dispositivo** | `src/lib/config/device.ts`                                    | Tripla persistência resiliente com auto-cura de `device_id` para moderação.          |
-| **Especificações e SGDD**     | `docs/` (`sgdd/`, `entidades/`, `componentes/`, `diagramas/`) | SGDD acadêmico, modelagem das 5 entidades e catálogo dos 19 componentes.             |
-| **Diretrizes e Regras**       | `docs/agents/` e `.agents/rules/`                             | Guias de arquitetura, game design, estilo visual e filosofia Ponytail.               |
+| Domínio de Engenharia         | Onde encontrar (Arquivo / Pasta)                              | Papel Principal                                                                    |
+| :---------------------------- | :------------------------------------------------------------ | :--------------------------------------------------------------------------------- |
+| **Motor e Estado Front-end**  | `src/lib/engine/` (`input/`, `update/`, `render/`)            | Captura de intenções, reducer determinístico, projeções puras e orquestrador.      |
+| **Componentes Visuais**       | `src/lib/components/` e `src/routes/`                         | Tubo de ensaio SVG procedural, slider analógico, lobby tripartite e casca da sala. |
+| **Servidor Autoritário Go**   | `backend/internal/` (`actor/`, `entities/`, `components/`)    | Goroutines por sala (Actor Pattern), Zero Trust, árbitro PPT e segredo em memória. |
+| **Rede e Protocolo**          | `backend/internal/protocol/` e `src/lib/network/`             | Protocolo WebSocket unificado full-duplex (`GameSocket`), reconexão e streaming.   |
+| **Identidade de Dispositivo** | `src/lib/config/device.ts`                                    | Tripla persistência resiliente com auto-cura de `device_id` para moderação.        |
+| **Especificações e SGDD**     | `docs/` (`sgdd/`, `entidades/`, `componentes/`, `diagramas/`) | SGDD acadêmico, modelagem das 5 entidades e catálogo dos 19 componentes.           |
+| **Diretrizes e Regras**       | `docs/agents/` e `.agents/rules/`                             | Guias de arquitetura, game design, estilo visual e filosofia Ponytail.             |
 
 ---
 
@@ -74,7 +71,8 @@ Para a catalogação exaustiva com todos os 29 arquivos e classes, consulte [doc
   - Utilitárias (Legibilidade Rápida): `SN Pro` (cabeçalhos e avisos) e `Mona Sans` (textos corridos e métricas).
   - Monospace: `Fira Code` (códigos de sala `roomCode`).
 - **Paleta de Cores e Temas:** Matrizes semânticas para os modos Light (`#faf4eb`) e Dark (`#140e05`), mapeadas em `src/routes/layout.css` e consumidas por utilitários Tailwind v4.
-- **Convenção de Botões:** O ícone em botões de ação deve ser posicionado estritamente à direita do texto (ex.: `<span>Ação</span> <Icon ... />`).
+- **Padrão Soft UI (Neumorfismo):** O padrão canônico para botões e ações é o Soft UI (`.btn-soft-elevated`) com formato pílula (`rounded-full`), relevo tátil na superfície (`var(--bg-base)`), aspecto afundado (`inset`) quando ativo ou desativado, e ícone posicionado à direita do texto (ex.: `<span>Ação</span> <Icon ... />`).
+- **Exceção Deliberada para Cartas de Espectro:** As Cartas de Espectro (`SpectrumCard.svelte`) são uma exceção consciente de design ao Soft UI e à restrição de cards: utilizam cantos retos (`rounded-none`), cantoneiras geométricas e molduras internas para emular cartas físicas reais de mesa.
 
 > Para a especificação completa de tokens CSS hexadecimais e regras visuais, consulte [docs/agents/style-guide.md](docs/agents/style-guide.md).
 

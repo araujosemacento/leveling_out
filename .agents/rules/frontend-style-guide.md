@@ -31,12 +31,22 @@ O projeto baseia sua paleta em valores calibrados para contraste, acessibilidade
 3. **Monospace:**
    - **Fira Code (`.font-code`):** Exclusiva para códigos de sala (`roomCode`).
 
-## 3. Diretrizes de Componentes e Utilitários Tailwind
+## 3. Diretrizes de Componentes, Padrão Soft UI e Utilitários Tailwind
 
-1. **Posicionamento de Ícones em Botões de Formulário:**
-   - Em botões de formulário e ações de submissão/criação, o ícone deve ser posicionado estritamente à direita do texto (ex.: `<span>Rótulo</span> <Icon ... />`).
+1. **Padrão Canônico de Ações: Soft UI (Neumorfismo):**
+   - O padrão canônico e obrigatório para botões de ação e submissão na interface é o **Soft UI** (Neumorfismo tátil), implementado pela classe `.btn-soft-elevated` em `src/routes/layout.css`.
+   - **Formato:** Pílula contínua (`rounded-full`) e tipografia utilitária `SN Pro` (`font-util-heading`).
+   - **Superfície e Relevo:** Fundo integrado à base (`var(--bg-base)`), com efeito de relevo extrudado por sombras opostas de luz e sombra (`var(--shadow-neumorph-light)` e `var(--shadow-neumorph-dark)`). Nos estados pressionado (`:active`) e desativado (`:disabled`), assume aspecto rebaixado/afundado na superfície com sombras internas (`inset`).
 
-2. **Integração das Classes Tailwind com Variáveis de Tema:**
+2. **Exceção Deliberada de Design: Cartas de Espectro:**
+   - As **Cartas de Espectro** (`SpectrumCard.svelte`) constituem uma exceção consciente e deliberada ao Soft UI e à regra de não usar cards genéricos.
+   - Foram intencionalmente desenhadas com cantos retos e afiados (`rounded-none`), moldura interna e cantoneiras geométricas em SVG especificamente para evocar a materialidade, rigidez e tangibilidade de cartas físicas colecionáveis de um jogo de mesa real.
+   - Todos os demais botões da mesma tela (como o botão "Confirmar Carta" em `SpectrumArena.svelte`) continuam seguindo obrigatoriamente o padrão Soft UI (`.btn-soft-elevated`).
+
+3. **Posicionamento de Ícones em Botões de Formulário:**
+   - Em botões de formulário e ações de submissão/criação, o ícone deve ser posicionado estritamente à direita do texto (ex.: `<span>Rótulo</span> <Icon ... />`), com transição sutil no hover (`group-hover:translate-x-0.5` ou `group-hover:scale-110`).
+
+4. **Integração das Classes Tailwind com Variáveis de Tema:**
    - Utilizar as classes utilitárias do Tailwind CSS v4 configuradas no bloco `@theme` (`bg-primary`, `bg-accent`, `bg-bg-surface`, `bg-bg-surface-soft`, `border-border-subtle`, `text-text-primary`, `text-text-muted`, etc.).
    - Evitar hardcoding de cores hexadecimais literais quando houver token semântico mapeado.
 
@@ -49,7 +59,7 @@ Neste repositório, é **expressamente proibido** incluir no front-end:
    - Utilizar apenas tipografia limpa e vetores SVG funcionais.
 
 2. **Cards:**
-   - Não utilizar elementos genéricos com estilo de "card" (contêineres flutuantes decorativos, caixas de card padronizadas ou designs baseados em cartões) a menos que haja um comando explícito no prompt para tal.
+   - Não utilizar elementos genéricos com estilo de "card" (contêineres flutuantes decorativos, caixas de card padronizadas ou designs baseados em cartões). Exceção canônica única: Cartas de Espectro (`SpectrumCard.svelte`), desenhadas com cantos retos para emular cartas físicas reais.
 
 3. **Travessões (–, —) e suas variações:**
    - Proibido o uso de travessões (en-dash `–`, em-dash `—`) ou hífen como separador de títulos e textos de interface. Utilizar dois-pontos (`:`), barras (`/`), ou reescrever a frase de forma fluida.

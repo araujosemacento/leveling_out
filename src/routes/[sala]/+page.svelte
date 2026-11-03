@@ -11,6 +11,9 @@
 	import LobbyArena from '$lib/components/LobbyArena.svelte';
 	import PptArena from '$lib/components/PptArena.svelte';
 	import SpectrumArena from '$lib/components/SpectrumArena.svelte';
+	import SpectrumCard from '$lib/components/SpectrumCard.svelte';
+	import TestTube from '$lib/components/TestTube.svelte';
+	import ClueEnvelope from '$lib/components/ClueEnvelope.svelte';
 	import GamePlaceholder from '$lib/components/GamePlaceholder.svelte';
 
 	import IconAlertCircle from '~icons/lucide/alert-circle';
@@ -45,6 +48,15 @@
 	let pptProjection = $derived(engine && gameState ? engine.getPptProjection(localPlayerId) : null);
 	let spectrumProjection = $derived(
 		engine && gameState ? engine.getSpectrumPickerProjection(localPlayerId) : null
+	);
+	let roleProjection = $derived(
+		engine && gameState ? engine.getRoleProjection(localPlayerId) : null
+	);
+	let roundSpectrumProjection = $derived(
+		engine && gameState ? engine.getSpectrumProjection() : null
+	);
+	let tubeProjection = $derived(
+		engine && gameState ? engine.getTubeProjection(localPlayerId) : null
 	);
 
 	let unsubscribeEngine: (() => void) | null = null;
@@ -365,6 +377,12 @@
 		socket?.escolherEspectro(cartaId);
 	}
 
+	function handleSubmitClue(dica: string) {
+		if (!engine) return;
+		engine.submitClue(dica);
+		socket?.submeterDica(dica);
+	}
+
 	async function copyRoomLink() {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
@@ -444,6 +462,53 @@
 				onVote={handleVoteSpectrum}
 				onConfirm={handleConfirmSpectrum}
 			/>
+		{:else if gameState?.fase === 'RODADA_DICA'}
+			<!-- Arena de Envio de Dica da Rodada (Codificador & Espectadores) -->
+			<div class="flex w-full flex-col items-center gap-6 py-2 sm:gap-8">
+				<!-- Status Superior do Turno -->
+				<div class="flex flex-col items-center gap-1 text-center">
+					<span class="font-sn text-xs font-bold tracking-wider text-text-muted uppercase">
+						Rodada {gameState.rodadaAtual?.numero || 1} : Equipe {roundSpectrumProjection?.equipeAtivaNome ||
+							'Ativa'}
+					</span>
+					<p class="font-sn text-sm font-semibold text-text-primary">
+						{tubeProjection?.statusTexto || 'Aguardando o envio da dica conceitual...'}
+					</p>
+				</div>
+
+				<!-- Visualização Conjunta: Carta de Espectro + Tubo de Ensaio (Zero Trust) -->
+				<div
+					class="flex w-full max-w-4xl flex-col items-center justify-center gap-6 md:flex-row md:items-center md:gap-12"
+				>
+					{#if gameState.rodadaAtual?.carta}
+						<div class="w-full max-w-97.5 shrink-0">
+							<SpectrumCard
+								carta={gameState.rodadaAtual.carta}
+								equipe={gameState.equipeAtiva}
+								interativo={false}
+							/>
+						</div>
+					{/if}
+
+					{#if tubeProjection}
+						<div class="flex shrink-0 flex-col items-center justify-center">
+							<TestTube
+								level={tubeProjection.metaVisivel ?? 0}
+								team={gameState.equipeAtiva === 'A' ? 'pato' : 'ganso'}
+								class="h-64 w-auto"
+							/>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Envelope Físico com Abas, Dobra e Voo (ClueEnvelope) -->
+				<div class="mt-2 flex w-full justify-center">
+					<ClueEnvelope
+						podeDigitar={Boolean(roleProjection?.podeDigitarDica)}
+						onSubmit={handleSubmitClue}
+					/>
+				</div>
+			</div>
 		{:else}
 			<!-- Demais Fases da Partida -->
 			<GamePlaceholder />

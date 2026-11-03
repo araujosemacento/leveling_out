@@ -399,16 +399,66 @@
 	<!-- Painel Inferior: Ações e Botão Exclusivo do Anfitrião -->
 	<div class="mt-4 flex flex-col items-center justify-center gap-4 text-center">
 		{#if lobby?.isHost}
-			<!-- Botão Verde de Iniciar Partida (Exclusivo do Dono da Sala) -->
+			<!-- Botão Elevado de Iniciar Partida (Exclusivo do Dono da Sala) -->
 			<button
 				type="button"
 				onclick={onStartMatch}
 				disabled={!lobby?.podeIniciarPartida || isStartingMatch}
-				class="flex items-center gap-2 rounded-xl px-8 py-3.5 font-util-heading text-sm font-bold tracking-wide transition-all duration-200 {lobby?.podeIniciarPartida
-					? 'animate-pulse cursor-pointer bg-emerald-600 text-white shadow-lg hover:bg-emerald-500 hover:shadow-xl active:scale-98'
-					: 'cursor-not-allowed border border-border-subtle bg-bg-surface-elevated text-text-muted opacity-60'}"
+				class="btn-soft-elevated group relative flex items-center justify-center gap-2 overflow-hidden rounded-full px-8 py-3.5 font-util-heading text-sm font-semibold tracking-wide disabled:pointer-events-none disabled:opacity-50 {lobby?.podeIniciarPartida
+					? 'font-bold text-accent'
+					: ''}"
 			>
-				<span>
+				{#if lobby?.podeIniciarPartida && !isStartingMatch}
+					<!-- Efeito Shimmer Diagonal Verde (Sweep Horizontal de Fundo) -->
+					<div
+						class="shimmer-sweep pointer-events-none absolute inset-0 z-0"
+						aria-hidden="true"
+					></div>
+
+					<!-- Camada de Texto e Ícone Invertidos com Mask-Image Sincronizada -->
+					<div
+						class="shimmer-text-mask pointer-events-none absolute inset-0 z-20 flex items-center justify-center gap-2 font-bold text-white select-none"
+						aria-hidden="true"
+					>
+						<span>
+							{#if isStartingMatch}
+								Iniciando Partida<span class="animated-ellipsis"
+									><span>.</span><span>.</span><span>.</span></span
+								>
+							{:else if lobby?.quorumCompleto}
+								Iniciar Partida
+							{:else}
+								Aguardando 4 Jogadores ({lobby?.totalJogadores || 0}/4)<span
+									class="animated-ellipsis"><span>.</span><span>.</span><span>.</span></span
+								>
+							{/if}
+						</span>
+						<IconPlay class="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+					</div>
+
+					<!-- Camada de Texto e Ícone Invertidos com Mask-Image Sincronizada -->
+					<div
+						class="shimmer-text-mask pointer-events-none absolute inset-0 z-20 flex items-center justify-center gap-2 font-bold text-white select-none"
+						aria-hidden="true"
+					>
+						<span>
+							{#if isStartingMatch}
+								Iniciando Partida<span class="animated-ellipsis"
+									><span>.</span><span>.</span><span>.</span></span
+								>
+							{:else if lobby?.quorumCompleto}
+								Iniciar Partida
+							{:else}
+								Aguardando 4 Jogadores ({lobby?.totalJogadores || 0}/4)<span
+									class="animated-ellipsis"><span>.</span><span>.</span><span>.</span></span
+								>
+							{/if}
+						</span>
+						<IconPlay class="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+					</div>
+				{/if}
+
+				<span class="relative z-10">
 					{#if isStartingMatch}
 						Iniciando Partida<span class="animated-ellipsis"
 							><span>.</span><span>.</span><span>.</span></span
@@ -421,7 +471,9 @@
 						>
 					{/if}
 				</span>
-				<IconPlay class="h-4 w-4" />
+				<IconPlay
+					class="relative z-10 h-4 w-4 transition-transform duration-200 group-hover:scale-110"
+				/>
 			</button>
 
 			{#if !lobby?.quorumCompleto}
@@ -452,3 +504,74 @@
 		{/if}
 	</div>
 </main>
+
+<style>
+	.shimmer-sweep {
+		background: linear-gradient(
+			115deg,
+			transparent 0%,
+			transparent 40%,
+			color-mix(in srgb, var(--tertiary) 20%, transparent) 45%,
+			color-mix(in srgb, var(--tertiary) 75%, transparent) 50%,
+			color-mix(in srgb, var(--tertiary) 20%, transparent) 55%,
+			transparent 60%,
+			transparent 100%
+		);
+		background-size: 250% 100%;
+		background-repeat: no-repeat;
+		animation: shimmer-sweep 2.5s ease-in-out infinite;
+	}
+
+	.shimmer-text-mask {
+		-webkit-mask-image: linear-gradient(
+			115deg,
+			transparent 0%,
+			transparent 44%,
+			black 48%,
+			black 52%,
+			transparent 56%,
+			transparent 100%
+		);
+		mask-image: linear-gradient(
+			115deg,
+			transparent 0%,
+			transparent 44%,
+			black 48%,
+			black 52%,
+			transparent 56%,
+			transparent 100%
+		);
+		-webkit-mask-size: 250% 100%;
+		mask-size: 250% 100%;
+		-webkit-mask-repeat: no-repeat;
+		mask-repeat: no-repeat;
+		animation: shimmer-sweep 2.5s ease-in-out infinite;
+	}
+
+	@keyframes shimmer-sweep {
+		0% {
+			background-position: 110% 0;
+			-webkit-mask-position: 110% 0;
+			mask-position: 110% 0;
+			opacity: 0;
+		}
+		10% {
+			opacity: 1;
+		}
+		65% {
+			background-position: -30% 0;
+			-webkit-mask-position: -30% 0;
+			mask-position: -30% 0;
+			opacity: 1;
+		}
+		65.1% {
+			opacity: 0;
+		}
+		100% {
+			background-position: -30% 0;
+			-webkit-mask-position: -30% 0;
+			mask-position: -30% 0;
+			opacity: 0;
+		}
+	}
+</style>

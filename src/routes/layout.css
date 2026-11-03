@@ -272,6 +272,17 @@ pre,
 		inset -1px -1px 2px var(--shadow-neumorph-light);
 }
 
+.btn-soft-elevated:disabled,
+.btn-soft-elevated[disabled] {
+	cursor: not-allowed;
+	pointer-events: none;
+	opacity: 0.55;
+	text-shadow: none;
+	box-shadow:
+		inset 1px 1px 3px var(--shadow-neumorph-dark),
+		inset -1px -1px 3px var(--shadow-neumorph-light);
+}
+
 /* Reticência Animada Ponto a Ponto */
 .animated-ellipsis {
 	display: inline-flex;

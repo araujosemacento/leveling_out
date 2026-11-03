@@ -184,21 +184,24 @@
 	<footer class="flex w-full max-w-md flex-col items-center gap-3">
 		{#if projection.souLider}
 			<button
+				type="button"
 				onclick={handleConfirm}
 				disabled={!projection.podeConfirmar}
-				class="text-primary-contrast font-capriola inline-flex w-full cursor-pointer items-center justify-center gap-3 border-2 border-primary bg-primary px-8 py-3.5 text-base font-bold shadow-md transition-all duration-150 hover:brightness-105 active:translate-y-0.5 active:shadow-xs disabled:pointer-events-none disabled:opacity-50 sm:w-auto"
+				class="btn-soft-elevated group inline-flex w-full items-center justify-center gap-2 rounded-full px-8 py-3.5 font-util-heading text-sm font-semibold tracking-wide disabled:pointer-events-none disabled:opacity-50 sm:w-auto {projection.podeConfirmar
+					? 'font-bold text-accent'
+					: ''}"
 			>
 				<span>Confirmar Carta</span>
 				<svg
-					width="18"
-					height="18"
+					width="16"
+					height="16"
 					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
 					stroke-width="2.5"
 					stroke-linecap="round"
 					stroke-linejoin="round"
-					class="shrink-0"
+					class="shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
 					aria-hidden="true"
 				>
 					<polyline points="9 18 15 12 9 6"></polyline>
@@ -206,13 +209,13 @@
 			</button>
 		{:else if projection.souParceiroVotante}
 			<div
-				class="border-surface-border bg-surface-muted border px-4 py-2 text-center text-xs font-medium text-text-muted"
+				class="rounded-xl border border-border-subtle bg-bg-surface-elevated px-4 py-2 text-center font-util-body text-xs font-medium text-text-muted"
 			>
 				Clique em uma das cartas para votar. O Líder {projection.liderNome} confirmará a escolha final.
 			</div>
 		{:else}
 			<div
-				class="border-surface-border bg-surface-muted border px-4 py-2 text-center text-xs font-medium text-text-muted"
+				class="rounded-xl border border-border-subtle bg-bg-surface-elevated px-4 py-2 text-center font-util-body text-xs font-medium text-text-muted"
 			>
 				Aguardando {projection.liderNome} (Líder da Equipe {projection.equipeAtivaNome}) confirmar a
 				carta de espectro...
