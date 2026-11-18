@@ -2,6 +2,8 @@
 	import { fade, fly } from 'svelte/transition';
 	import IconVial from '~icons/game-icons/vial';
 	import IconArrowRight from '~icons/lucide/arrow-right';
+	import IconUndo from '~icons/lucide/undo-2';
+	import { resolve } from '$app/paths';
 
 	type StatusConexao = 'VERIFICANDO' | 'AGUARDANDO_APELIDO' | 'CONECTANDO' | 'CONECTADO' | 'ERRO';
 
@@ -92,6 +94,14 @@
 						class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
 					/>
 				</button>
+
+				<a
+					href={resolve('/')}
+					class="group mt-4 flex items-center justify-center gap-1.5 font-util-body text-xs text-text-muted transition-colors hover:text-accent sm:text-sm"
+				>
+					<span>Código errado? Voltar e corrigir a sala</span>
+					<IconUndo class="h-3.5 w-3.5" />
+				</a>
 			</form>
 		</div>
 	</div>
