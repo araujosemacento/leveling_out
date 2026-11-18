@@ -4,6 +4,7 @@
 	import IconArrowRight from '~icons/lucide/arrow-right';
 	import IconUndo from '~icons/lucide/undo-2';
 	import { resolve } from '$app/paths';
+	import { validateNickname } from '$lib/engine/input/sanitize';
 
 	type StatusConexao = 'VERIFICANDO' | 'AGUARDANDO_APELIDO' | 'CONECTANDO' | 'CONECTADO' | 'ERRO';
 
@@ -11,7 +12,7 @@
 		isOpen,
 		roomCode,
 		statusConexao,
-		erroIngresso,
+		erroIngresso = $bindable(''),
 		rawNickname = $bindable(''),
 		cleanNickname,
 		onSubmit
@@ -25,11 +26,26 @@
 		onSubmit: (e: SubmitEvent) => void;
 	}>();
 
+	let validation = $derived(validateNickname(rawNickname));
+	let hasInteracted = $state(false);
+
+	// Feedback de erro visual prioritário: erro vindo do servidor/submissão ou validação em tempo real
+	let feedbackErro = $derived(
+		erroIngresso || (hasInteracted && !validation.valido ? (validation.erro ?? 'Nickname inválido') : '')
+	);
+
 	function autofocus(node: HTMLInputElement) {
 		requestAnimationFrame(() => {
 			node.focus();
 			node.select();
 		});
+	}
+
+	function handleInput() {
+		hasInteracted = true;
+		if (erroIngresso) {
+			erroIngresso = '';
+		}
 	}
 </script>
 
@@ -63,28 +79,31 @@
 					<input
 						type="text"
 						bind:value={rawNickname}
+						oninput={handleInput}
 						placeholder="Seu apelido..."
 						maxlength="20"
-						required
 						autocomplete="off"
 						spellcheck="false"
 						disabled={statusConexao === 'CONECTANDO'}
 						use:autofocus
-						class="w-full border-b-2 border-border-medium bg-transparent px-3 py-3 text-center font-subheading text-2xl text-text-primary placeholder:text-text-subtle/50 focus:border-accent focus:outline-none sm:text-3xl"
+						class="w-full border-b-2 {feedbackErro ? 'border-secondary' : 'border-border-medium'} bg-transparent px-3 py-3 text-center font-subheading text-2xl text-text-primary placeholder:text-text-subtle/50 focus:border-accent focus:outline-none sm:text-3xl"
 					/>
 				</div>
 
-				{#if erroIngresso}
+				{#if feedbackErro}
 					<div
-						class="mt-4 rounded-xl border border-secondary/30 bg-secondary-soft px-4 py-2.5 text-center text-xs text-secondary"
+						role="alert"
+						aria-live="assertive"
+						class="mt-4 flex items-center justify-center gap-2 rounded-xl border border-secondary/30 bg-secondary-soft px-4 py-2.5 text-center text-xs text-secondary"
+						transition:fade={{ duration: 150 }}
 					>
-						<span class="font-util-body font-semibold">{erroIngresso}</span>
+						<span class="font-util-body font-semibold">{feedbackErro}</span>
 					</div>
 				{/if}
 
 				<button
 					type="submit"
-					disabled={statusConexao === 'CONECTANDO' || !cleanNickname.trim()}
+					disabled={statusConexao === 'CONECTANDO' || !validation.valido}
 					class="btn-soft-elevated group mt-7 flex w-full items-center justify-center gap-2 rounded-full px-6 py-3.5 font-util-heading text-sm font-semibold tracking-wide disabled:pointer-events-none disabled:opacity-50"
 				>
 					<span>

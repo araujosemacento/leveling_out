@@ -38,6 +38,90 @@ export function sanitizeClue(rawClue: unknown): string {
 	return clean;
 }
 
+export interface NicknameValidationResult {
+	valido: boolean;
+	erro: string | null;
+	sanitizado: string;
+}
+
+/**
+ * Valida rigorosamente apelidos de jogadores conforme as regras do sistema:
+ * - Mínimo de 1 caractere visível (não vazio nem apenas espaços).
+ * - Limite máximo de 20 caracteres.
+ * - Sem emojis (Mandamento 4 do AGENTS.md).
+ * - Sem tags HTML ou caracteres angulares (< e >).
+ * - Retorna erro amigável prefixado com "Nickname inválido" caso rejeitado.
+ */
+export function validateNickname(rawNickname: unknown): NicknameValidationResult {
+	if (typeof rawNickname !== 'string') {
+		return {
+			valido: false,
+			erro: 'Nickname inválido',
+			sanitizado: ''
+		};
+	}
+
+	const trimmed = rawNickname.trim();
+	if (trimmed.length === 0) {
+		return {
+			valido: false,
+			erro: 'Nickname inválido: digite pelo menos 1 caractere',
+			sanitizado: ''
+		};
+	}
+
+	// Regra Mandamento 4: Sem emojis
+	const emojiRegex = /\p{Extended_Pictographic}/u;
+	if (emojiRegex.test(rawNickname)) {
+		return {
+			valido: false,
+			erro: 'Nickname inválido: emojis não são permitidos',
+			sanitizado: ''
+		};
+	}
+
+	// Rejeita tags HTML e caracteres angulares
+	if (/<[^>]*>|[<>]/.test(rawNickname)) {
+		return {
+			valido: false,
+			erro: 'Nickname inválido: tags HTML ou caracteres angulares (< >) não são permitidos',
+			sanitizado: ''
+		};
+	}
+
+	// Normaliza quebras de linha e caracteres de controle
+	const clean = rawNickname
+		.replace(/[\r\n\t\x00-\x1F\x7F]/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim();
+
+	if (clean.length === 0) {
+		return {
+			valido: false,
+			erro: 'Nickname inválido',
+			sanitizado: ''
+		};
+	}
+
+	if (clean.length > 20) {
+		return {
+			valido: false,
+			erro: 'Nickname inválido: limite máximo de 20 caracteres',
+			sanitizado: clean.slice(0, 20).trim()
+		};
+	}
+
+	return {
+		valido: true,
+		erro: null,
+		sanitizado: clean
+	};
+}
+
+export function isValidNickname(rawNickname: unknown): boolean {
+	return validateNickname(rawNickname).valido;
+}
+
 /**
  * Sanitiza apelidos de jogadores.
  * - Limite de 20 caracteres.
