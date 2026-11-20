@@ -38,11 +38,11 @@ A paleta conta com matrizes base e extrapolações semânticas para os temas Lig
 
 ### 2.2. Tema Dark
 
-- **Base:** `--text: #fdecd8`, `--background: #140e05`, `--primary: #e2931d`, `--secondary: #74281a`, `--tertiary: #08b41f`, `--accent: #704ed4`
+- **Base:** `--text: #fdecd8`, `--background: #140e05`, `--primary: #e2931d`, `--secondary: #f06449`, `--tertiary: #08b41f`, `--accent: #704ed4`
 - **Superfícies:** `--bg-base: #140e05`, `--bg-surface: #1e1509`, `--bg-surface-soft: #291e10`, `--bg-surface-elevated: #352717`
 - **Bordas:** `--border-subtle: #3a2b19`, `--border-medium: #4e3a24`, `--border-strong: #fdecd8`, `--border-accent: #704ed4`
-- **Textos:** `--text-primary: #fdecd8`, `--text-muted: #cbb49c`, `--text-subtle: #8e7a63`, `--text-on-accent: #ffffff`
-- **Ações:** `--primary-hover: #f0a32d`, `--secondary-hover: #8f3322`, `--tertiary-hover: #12cc2b`, `--accent-hover: #8666e8`
+- **Textos:** `--text-primary: #fdecd8`, `--text-muted: #cbb49c`, `--text-subtle: #8e7a63`, `--text-on-accent: #ffffff`, `--text-on-secondary: #140e05`
+- **Ações:** `--primary-hover: #f0a32d`, `--secondary-hover: #f37d65`, `--secondary-soft: #381914`, `--tertiary-hover: #12cc2b`, `--accent-hover: #8666e8`
 
 ---
 

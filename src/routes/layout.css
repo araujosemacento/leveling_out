@@ -102,6 +102,7 @@
 	--accent-hover: #3c2091;
 	--accent-soft: #efeafc;
 	--accent-glow: rgba(76, 43, 177, 0.25);
+	--secondary-glow: rgba(229, 152, 139, 0.25);
 
 	--color-team-a: var(--accent);
 	--color-team-b: var(--secondary);
@@ -121,7 +122,7 @@
 	--text: #fdecd8;
 	--background: #140e05;
 	--primary: #e2931d;
-	--secondary: #74281a;
+	--secondary: #f06449;
 	--tertiary: #08b41f;
 	--accent: #704ed4;
 
@@ -144,18 +145,19 @@
 	--text-subtle: #8e7a63;
 	--text-on-accent: #ffffff;
 	--text-on-primary: #140e05;
-	--text-on-secondary: #fdecd8;
+	--text-on-secondary: #140e05;
 
 	/* Extrapolação Dark: Estados, Acentos e Equipes */
 	--primary-hover: #f0a32d;
 	--primary-soft: #2e1d05;
-	--secondary-hover: #8f3322;
-	--secondary-soft: #2d100a;
+	--secondary-hover: #f37d65;
+	--secondary-soft: #381914;
 	--tertiary-hover: #12cc2b;
 	--tertiary-soft: #052609;
 	--accent-hover: #8666e8;
 	--accent-soft: #25174f;
 	--accent-glow: rgba(112, 78, 212, 0.3);
+	--secondary-glow: rgba(240, 100, 73, 0.3);
 
 	--color-team-a: var(--accent);
 	--color-team-b: var(--secondary);
