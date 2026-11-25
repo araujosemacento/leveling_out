@@ -3,11 +3,13 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { GameEngine, type LobbyTeamChoice, type PptMove } from '$lib/engine';
+	import { haptics } from '$lib/engine/input';
 	import { validateNickname } from '$lib/engine/input/sanitize';
 	import { GameSocket } from '$lib/network/game-socket';
 
 	import NicknameModal from '$lib/components/NicknameModal.svelte';
 	import RoomHeader from '$lib/components/RoomHeader.svelte';
+	import ScoreBoardHud from '$lib/components/ScoreBoardHud.svelte';
 	import LobbyArena from '$lib/components/LobbyArena.svelte';
 	import PptArena from '$lib/components/PptArena.svelte';
 	import SpectrumArena from '$lib/components/SpectrumArena.svelte';
@@ -15,7 +17,8 @@
 	import TestTube from '$lib/components/TestTube.svelte';
 	import ClueEnvelope from '$lib/components/ClueEnvelope.svelte';
 	import AnalogSlider from '$lib/components/AnalogSlider.svelte';
-	import GamePlaceholder from '$lib/components/GamePlaceholder.svelte';
+	import RevealArena from '$lib/components/RevealArena.svelte';
+	import VictoryArena from '$lib/components/VictoryArena.svelte';
 
 	import IconAlertCircle from '~icons/lucide/alert-circle';
 	import IconCheck from '~icons/lucide/check';
@@ -59,6 +62,36 @@
 	let tubeProjection = $derived(
 		engine && gameState ? engine.getTubeProjection(localPlayerId) : null
 	);
+	let scoreProjection = $derived(engine && gameState ? engine.getScoreBoardProjection() : null);
+	let revealProjection = $derived(
+		engine && gameState ? engine.getRevealProjection(localPlayerId) : null
+	);
+	let victoryProjection = $derived(
+		engine && gameState ? engine.getVictoryProjection(localPlayerId) : null
+	);
+	let phaseLabel = $derived.by(() => {
+		const fase = gameState?.fase;
+		const rNum = gameState?.rodadaAtual?.numero || 1;
+		if (fase === 'PPT_DISPUTA' || fase === 'PPT_RESULTADO' || fase === 'INICIATIVA') {
+			return 'Iniciativa';
+		}
+		if (fase === 'ESCOLHA_CARTA' || fase === 'ESCOLHA_ESPECTRO') {
+			return `Rodada ${rNum} : Espectro`;
+		}
+		if (fase === 'RODADA_DICA') {
+			return `Rodada ${rNum} : Dica`;
+		}
+		if (fase === 'RODADA_PALPITE') {
+			return `Rodada ${rNum} : Palpite`;
+		}
+		if (fase === 'RODADA_REVELACAO') {
+			return `Rodada ${rNum} : Revelação`;
+		}
+		if (fase === 'VITORIA') {
+			return 'Resultado Final';
+		}
+		return 'Lobby';
+	});
 
 	let unsubscribeEngine: (() => void) | null = null;
 	let socket: GameSocket | null = null;
@@ -67,11 +100,12 @@
 	let pendingTeamChoice = $state<{ target: LobbyTeamChoice; timestamp: number } | null>(null);
 	let pendingTeamTimeout: ReturnType<typeof setTimeout> | null = null;
 
-	// Estados reativos da transmissão de dica e decodificação do palpite analógico
+	// Estados reativos da transmissão de dica, palpite analógico e revanche
 	let isSendingClue = $state(false);
 	let hasPlayedClueArrival = $state(false);
 	let sliderValue = $state(50);
 	let isConfirmingGuess = $state(false);
+	let isRequestingRematch = $state(false);
 	let currentRoundNum = $state(1);
 
 	$effect(() => {
@@ -444,10 +478,35 @@
 	function handleConfirmGuess() {
 		if (!roleProjection?.podeArrastarSlider || isConfirmingGuess) return;
 		isConfirmingGuess = true;
+		haptics.tap();
 		socket?.confirmarPalpite();
 		engine?.submitGuess(sliderValue);
 		setTimeout(() => {
 			isConfirmingGuess = false;
+		}, 1000);
+	}
+
+	function handleAbortMatch() {
+		if (!lobby?.isHost || gameState?.fase === 'LOBBY' || statusConexao !== 'CONECTADO') return;
+		if (
+			!confirm(
+				'Tem certeza de que deseja encerrar a partida em andamento e retornar todos os jogadores ao Lobby?'
+			)
+		) {
+			return;
+		}
+		haptics.tap();
+		socket?.desfazerPartida();
+	}
+
+	function handleRevanche() {
+		if (!engine || isRequestingRematch) return;
+		isRequestingRematch = true;
+		haptics.tap();
+		engine.rematch();
+		socket?.revanche();
+		setTimeout(() => {
+			isRequestingRematch = false;
 		}, 1000);
 	}
 
@@ -463,7 +522,7 @@
 </script>
 
 <svelte:head>
-	<title>Lobby: Sala {roomCode} | Leveling Out</title>
+	<title>{phaseLabel} | Sala {roomCode} | Leveling Out</title>
 </svelte:head>
 
 <!-- Modal Bloqueante de Identificação do Apelido (Zero Trust Handshake) -->
@@ -494,8 +553,18 @@
 			{playerName}
 			isHost={Boolean(lobby?.isHost)}
 			{copied}
+			{phaseLabel}
 			onCopyLink={copyRoomLink}
+			onAbortMatch={handleAbortMatch}
 		/>
+
+		{#if gameState && gameState.fase !== 'LOBBY' && gameState.fase !== 'VITORIA' && scoreProjection}
+			<ScoreBoardHud
+				score={scoreProjection}
+				equipeAtiva={gameState.equipeAtiva}
+				numeroRodada={gameState.rodadaAtual?.numero || 0}
+			/>
+		{/if}
 
 		<!-- Feedback de Aviso Temporário -->
 		{#if avisoTemporario}
@@ -531,7 +600,7 @@
 			/>
 		{:else if gameState?.fase === 'RODADA_DICA' || isSendingClue}
 			<!-- Arena de Envio de Dica da Rodada (Codificador & Espectadores) -->
-			<div class="flex w-full flex-col items-center gap-6 py-2 sm:gap-8">
+			<div class="phase-enter flex w-full flex-col items-center gap-6 py-2 sm:gap-8">
 				<!-- Status Superior do Turno -->
 				<div class="flex flex-col items-center gap-1 text-center">
 					<span class="font-sn text-xs font-bold tracking-wider text-text-muted uppercase">
@@ -562,6 +631,8 @@
 							<TestTube
 								level={tubeProjection.metaVisivel ?? 0}
 								team={gameState.equipeAtiva === 'A' ? 'pato' : 'ganso'}
+								duration={tubeProjection.periodoMeniscoSegundos}
+								showBubbles={tubeProjection.mostrarBorbulhas}
 								class="h-64 w-auto"
 							/>
 						</div>
@@ -580,7 +651,7 @@
 			</div>
 		{:else if gameState?.fase === 'RODADA_PALPITE'}
 			<!-- Arena de Palpite Analógico (Decodificação da Dica Transmitida) -->
-			<div class="flex w-full flex-col items-center gap-6 py-2 sm:gap-8">
+			<div class="phase-enter flex w-full flex-col items-center gap-6 py-2 sm:gap-8">
 				<!-- Status Superior do Turno -->
 				<div class="flex flex-col items-center gap-1 text-center">
 					<span class="font-sn text-xs font-bold tracking-wider text-text-muted uppercase">
@@ -651,9 +722,47 @@
 					{/if}
 				</div>
 			</div>
-		{:else}
-			<!-- Demais Fases da Partida -->
-			<GamePlaceholder />
+		{:else if gameState?.fase === 'RODADA_REVELACAO' && revealProjection}
+			<!-- Arena de Revelação Dramática da Rodada -->
+			<div class="phase-enter w-full">
+				<RevealArena
+					reveal={revealProjection}
+					periodoMenisco={tubeProjection?.periodoMeniscoSegundos ?? 2.5}
+				/>
+			</div>
+		{:else if gameState?.fase === 'VITORIA' && victoryProjection}
+			<!-- Arena de Vitória e Revanche Imediata -->
+			<div class="phase-enter w-full">
+				<VictoryArena
+					victory={victoryProjection}
+					onRematch={handleRevanche}
+					onBackHome={() => goto(resolve('/'))}
+					{isRequestingRematch}
+				/>
+			</div>
 		{/if}
 	</div>
 {/if}
+
+<style>
+	.phase-enter {
+		animation: phaseEnter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+
+	@keyframes phaseEnter {
+		0% {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.phase-enter {
+			animation: none;
+		}
+	}
+</style>
