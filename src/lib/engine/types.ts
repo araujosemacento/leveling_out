@@ -41,6 +41,22 @@ export interface ScoreResult {
 	label: string;
 }
 
+export interface RoundHistoryEntry {
+	numero: number;
+	equipe: TeamId;
+	codificadorId: string;
+	palpiteiroId: string;
+	espectroEsquerda: string;
+	espectroDireita: string;
+	metaOculta: number;
+	palpite: number;
+	dica: string;
+	pontos: number;
+	tier: ScoreTier;
+	diff: number;
+	duracaoSegundos: number;
+}
+
 export interface Player {
 	id: string;
 	nome: string;
@@ -75,6 +91,8 @@ export interface RoundState {
 	metaOculta: number | null;
 	dica: string | null;
 	palpite: number | null;
+	sliderPosicao?: number;
+	transicaoEm?: string | null;
 	resultado: ScoreResult | null;
 	revelada: boolean;
 }
@@ -102,6 +120,8 @@ export interface GameState {
 	equipeAtiva: TeamId;
 	rodadaAtual: RoundState;
 	historicoRodadas: RoundState[];
+	resumoPartida?: RoundHistoryEntry[];
+	motivoFim?: string | null;
 	metaPontuacao: number;
 	vencedor: TeamId | null;
 	meuJogadorId: string | null;
@@ -160,12 +180,16 @@ export interface SnapshotSalaProjetado {
 		dica?: string | null;
 		metaOculta?: number | null;
 		palpite?: number | null;
+		sliderPosicao?: number | null;
 		pontos?: number;
 		tier?: string;
 		label?: string;
+		diff?: number | null;
+		transicaoEm?: string | null;
 	};
 	cartasEspectroOpcoes?: SpectrumCard[];
 	cartasOpcoes?: SpectrumCard[];
+	historico?: RoundHistoryEntry[];
 	// Compatibilidade defensiva com estrutura legada
 	sala?: any;
 }

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	computeMeniscusPeriodSeconds,
 	getPlayerRoleProjection,
+	getRevealProjection,
 	getRoundSpectrumProjection,
 	getScoreBoardProjection,
-	getTubeProjection
+	getTubeProjection,
+	getVictoryProjection
 } from '../../src/lib/engine/render/projections';
 import { createInitialGameState } from '../../src/lib/engine/update/state-machine';
 
@@ -143,6 +146,162 @@ describe('Projeções Puras de Renderização (render/projections.ts)', () => {
 			expect(spectrumProj.dica).toBe('Neymar');
 			expect(spectrumProj.numeroRodada).toBe(3);
 			expect(spectrumProj.equipeAtiva).toBe('B');
+		});
+	});
+
+	describe('computeMeniscusPeriodSeconds (Modulador de Tensão)', () => {
+		it('deve acelerar de 5s em 0x0 até 0.25s em 10x8 com valor intermediário em 5x3', () => {
+			expect(computeMeniscusPeriodSeconds(0, 0, 10)).toBe(5);
+			const mid = computeMeniscusPeriodSeconds(5, 3, 10);
+			expect(mid).toBeGreaterThan(0.25);
+			expect(mid).toBeLessThan(5);
+			expect(computeMeniscusPeriodSeconds(10, 8, 10)).toBe(0.25);
+
+			const state = createInitialGameState('SALA1');
+			state.equipes.A.pontos = 10;
+			state.equipes.B.pontos = 8;
+			expect(getTubeProjection(state, null).periodoMeniscoSegundos).toBe(0.25);
+		});
+	});
+
+	describe('getRevealProjection', () => {
+		it('deve projetar dados da revelação com rótulos limpos sem exclamações ou travessões', () => {
+			const state = createInitialGameState('SALA1');
+			state.fase = 'RODADA_REVELACAO';
+			state.equipes.A.pontos = 4;
+			state.equipes.B.pontos = 2;
+			state.equipes.A.membros = [
+				{ id: 'p1', nome: 'Alice', equipe: 'A', isOnline: true },
+				{ id: 'p2', nome: 'Bruno', equipe: 'A', isOnline: true }
+			];
+			state.rodadaAtual = {
+				numero: 2,
+				equipeAtiva: 'A',
+				codificadorId: 'p1',
+				palpiteiroId: 'p2',
+				carta: { id: 'c2', left: 'Antigo', right: 'Moderno' },
+				metaOculta: 74,
+				dica: 'Relógio de Sol',
+				palpite: 72,
+				transicaoEm: '2026-11-25T05:10:00Z',
+				resultado: { points: 4, diff: 2, tier: 'NA_MOSCA', label: 'Na Mosca!' },
+				revelada: true
+			};
+
+			const rev = getRevealProjection(state, 'p2');
+			expect(rev.numeroRodada).toBe(2);
+			expect(rev.equipeAtivaNome).toBe('Pato');
+			expect(rev.codificadorNome).toBe('Alice');
+			expect(rev.palpiteiroNome).toBe('Bruno');
+			expect(rev.poloEsquerdo).toBe('Antigo');
+			expect(rev.poloDireito).toBe('Moderno');
+			expect(rev.dica).toBe('Relógio de Sol');
+			expect(rev.metaReal).toBe(74);
+			expect(rev.palpite).toBe(72);
+			expect(rev.diff).toBe(2);
+			expect(rev.pontosGanhos).toBe(4);
+			expect(rev.tier).toBe('NA_MOSCA');
+			expect(rev.rotuloSintonia).toBe('Na Mosca');
+			expect(rev.rotuloSintonia).not.toContain('!');
+			expect(rev.placarA).toBe(4);
+			expect(rev.placarB).toBe(2);
+			expect(rev.transicaoEmIso).toBe('2026-11-25T05:10:00Z');
+		});
+	});
+
+	describe('getVictoryProjection', () => {
+		it('deve calcular métricas de sintonia a partir de resumoPartida', () => {
+			const state = createInitialGameState('SALA1');
+			state.fase = 'VITORIA';
+			state.hostId = 'p1';
+			state.vencedor = 'A';
+			state.motivoFim = 'VITORIA';
+			state.equipes.A.pontos = 10;
+			state.equipes.B.pontos = 5;
+			state.equipes.A.membros = [
+				{ id: 'p1', nome: 'Alice', equipe: 'A', isOnline: true, isHost: true }
+			];
+			state.equipes.B.membros = [{ id: 'p3', nome: 'Carla', equipe: 'B', isOnline: true }];
+			state.resumoPartida = [
+				{
+					numero: 1,
+					equipe: 'A',
+					codificadorId: 'p1',
+					palpiteiroId: 'p2',
+					espectroEsquerda: 'Frio',
+					espectroDireita: 'Quente',
+					metaOculta: 80,
+					palpite: 78,
+					dica: 'Café',
+					pontos: 4,
+					tier: 'NA_MOSCA',
+					diff: 2,
+					duracaoSegundos: 20
+				},
+				{
+					numero: 2,
+					equipe: 'B',
+					codificadorId: 'p3',
+					palpiteiroId: 'p4',
+					espectroEsquerda: 'Lento',
+					espectroDireita: 'Rápido',
+					metaOculta: 50,
+					palpite: 60,
+					dica: 'Guepardo',
+					pontos: 2,
+					tier: 'PERTO',
+					diff: 10,
+					duracaoSegundos: 30
+				}
+			];
+
+			const vicHost = getVictoryProjection(state, 'p1');
+			expect(vicHost.vencedorEquipe).toBe('A');
+			expect(vicHost.vencedorNome).toBe('Equipe Pato');
+			expect(vicHost.minhaEquipeVenceu).toBe(true);
+			expect(vicHost.motivoFim).toBe('VITORIA');
+			expect(vicHost.totalRodadas).toBe(2);
+			expect(vicHost.precisaoMedia).toBe(94); // média de (98, 90)
+			expect(vicHost.melhorRodada?.numero).toBe(1);
+			expect(vicHost.contagemNaMosca).toBe(1);
+			expect(vicHost.isHost).toBe(true);
+			expect(vicHost.podePedirRevanche).toBe(true);
+
+			const vicOponente = getVictoryProjection(state, 'p3');
+			expect(vicOponente.minhaEquipeVenceu).toBe(false);
+			expect(vicOponente.isHost).toBe(false);
+			expect(vicOponente.podePedirRevanche).toBe(true);
+		});
+
+		it('deve usar fallback de historicoRodadas quando resumoPartida estiver vazio', () => {
+			const state = createInitialGameState('SALA1');
+			state.fase = 'VITORIA';
+			state.vencedor = 'B';
+			state.equipes.A.pontos = 4;
+			state.equipes.B.pontos = 10;
+			state.resumoPartida = [];
+			state.historicoRodadas = [
+				{
+					numero: 1,
+					equipeAtiva: 'B',
+					codificadorId: 'p3',
+					palpiteiroId: 'p4',
+					carta: { id: 'c1', left: 'Seco', right: 'Molhado' },
+					metaOculta: 60,
+					dica: 'Chuva',
+					palpite: 60,
+					resultado: { points: 4, diff: 0, tier: 'NA_MOSCA', label: 'Na Mosca!' },
+					revelada: true
+				}
+			];
+
+			const vic = getVictoryProjection(state, null);
+			expect(vic.vencedorEquipe).toBe('B');
+			expect(vic.totalRodadas).toBe(1);
+			expect(vic.precisaoMedia).toBe(100);
+			expect(vic.melhorRodada?.diff).toBe(0);
+			expect(vic.contagemNaMosca).toBe(1);
+			expect(vic.podePedirRevanche).toBe(false);
 		});
 	});
 });

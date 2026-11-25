@@ -11,10 +11,20 @@ import type {
 	GamePhase,
 	GameState,
 	Player,
+	RoundHistoryEntry,
 	RoundState,
+	ScoreResult,
+	ScoreTier,
 	SpectrumCard,
 	TeamId
 } from '../types';
+
+function normalizeTier(rawTier?: string | null): ScoreTier {
+	if (rawTier === 'NA_MOSCA' || rawTier === 'MUITO_PERTO' || rawTier === 'PERTO') {
+		return rawTier;
+	}
+	return 'ERRO';
+}
 
 export function createInitialGameState(salaCodigo: string): GameState {
 	return {
@@ -50,6 +60,8 @@ export function createInitialGameState(salaCodigo: string): GameState {
 			revelada: false
 		},
 		historicoRodadas: [],
+		resumoPartida: [],
+		motivoFim: null,
 		metaPontuacao: 10,
 		vencedor: null,
 		meuJogadorId: null,
@@ -286,7 +298,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				faseRaw = 'PPT_DISPUTA';
 			} else if (faseRaw === 'ESCOLHA_ESPECTRO') {
 				faseRaw = 'ESCOLHA_CARTA';
-			} else if (faseRaw === 'FIM_DE_JOGO') {
+			} else if (faseRaw === 'REVELACAO') {
+				faseRaw = 'RODADA_REVELACAO';
+			} else if (faseRaw === 'FIM_JOGO' || faseRaw === 'FIM_DE_JOGO') {
 				faseRaw = 'VITORIA';
 			}
 			const fase = faseRaw as GamePhase;
@@ -355,7 +369,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 						state.rodadaAtual.numero
 				) || 1;
 
-			let cartaAtual = state.rodadaAtual.carta;
+			const mudouRodada =
+				numeroRodada !== state.rodadaAtual.numero || fase === 'LOBBY' || fase === 'PPT_DISPUTA';
+
+			let cartaAtual = mudouRodada ? null : state.rodadaAtual.carta;
 			if (rodadaObj?.espectroEsquerda && rodadaObj?.espectroDireita) {
 				cartaAtual = {
 					id: 'carta_' + numeroRodada,
@@ -364,6 +381,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				};
 			} else if (rodadaObj && 'carta_espectro' in rodadaObj && (rodadaObj as any).carta_espectro) {
 				cartaAtual = (rodadaObj as any).carta_espectro;
+			} else if (rodadaObj && fase === 'ESCOLHA_CARTA') {
+				cartaAtual = null;
 			}
 
 			const cartasOpcoesRaw = payload.cartasOpcoes ?? payload.cartasEspectroOpcoes ?? [];
@@ -376,6 +395,84 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				categoria: c.categoria ?? c.Categoria ?? ''
 			}));
 
+			const metaOculta = rodadaObj
+				? (rodadaObj.metaOculta ?? (rodadaObj as any).meta_oculta ?? null)
+				: mudouRodada
+					? null
+					: state.rodadaAtual.metaOculta;
+
+			const dica = rodadaObj
+				? (rodadaObj.dica ?? null)
+				: mudouRodada
+					? null
+					: state.rodadaAtual.dica;
+
+			const cartaSelecionadaId = rodadaObj
+				? (rodadaObj.cartaSelecionadaId ?? (rodadaObj as any).carta_selecionada_id ?? null)
+				: mudouRodada
+					? null
+					: state.rodadaAtual.cartaSelecionadaId;
+
+			const votoParceiroCartaId = rodadaObj
+				? (rodadaObj.votoParceiroCartaId ?? (rodadaObj as any).voto_parceiro_carta_id ?? null)
+				: mudouRodada
+					? null
+					: state.rodadaAtual.votoParceiroCartaId;
+
+			const prazoEspectro = rodadaObj
+				? (rodadaObj.prazoEspectro ?? (rodadaObj as any).prazo_espectro ?? null)
+				: mudouRodada
+					? null
+					: state.rodadaAtual.prazoEspectro;
+
+			const palpite = rodadaObj
+				? (rodadaObj.palpite ?? (mudouRodada ? 50 : state.rodadaAtual.palpite))
+				: mudouRodada
+					? 50
+					: state.rodadaAtual.palpite;
+
+			const sliderPosicao = rodadaObj
+				? (rodadaObj.sliderPosicao ?? undefined)
+				: mudouRodada
+					? undefined
+					: state.rodadaAtual.sliderPosicao;
+
+			const transicaoEm = rodadaObj
+				? (rodadaObj.transicaoEm ?? null)
+				: mudouRodada
+					? null
+					: (state.rodadaAtual.transicaoEm ?? null);
+
+			let resultado: ScoreResult | null = null;
+			if (
+				(fase === 'RODADA_REVELACAO' || fase === 'VITORIA') &&
+				rodadaObj &&
+				metaOculta != null &&
+				rodadaObj.palpite != null
+			) {
+				const fallbackCalc = calculateScore(metaOculta, rodadaObj.palpite);
+				resultado = {
+					points: rodadaObj.pontos ?? fallbackCalc.points,
+					diff: rodadaObj.diff ?? fallbackCalc.diff,
+					tier: rodadaObj.tier ? normalizeTier(rodadaObj.tier) : fallbackCalc.tier,
+					label: rodadaObj.label || fallbackCalc.label
+				};
+			} else if (
+				!mudouRodada &&
+				fase !== 'ESCOLHA_CARTA' &&
+				fase !== 'RODADA_DICA' &&
+				fase !== 'RODADA_PALPITE' &&
+				!rodadaObj
+			) {
+				resultado = state.rodadaAtual.resultado;
+			}
+
+			const revelada = rodadaObj
+				? Boolean(metaOculta != null && (fase === 'RODADA_REVELACAO' || fase === 'VITORIA'))
+				: mudouRodada
+					? false
+					: state.rodadaAtual.revelada;
+
 			const rodadaAtual: RoundState = {
 				...state.rodadaAtual,
 				numero: numeroRodada,
@@ -383,44 +480,46 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				codificadorId:
 					rodadaObj?.codificadorId ??
 					(rodadaObj as any)?.codificador_id ??
-					state.rodadaAtual.codificadorId,
+					(mudouRodada ? null : state.rodadaAtual.codificadorId),
 				palpiteiroId:
 					rodadaObj?.palpiteiroId ??
 					(rodadaObj as any)?.palpiteiro_id ??
-					state.rodadaAtual.palpiteiroId,
+					(mudouRodada ? null : state.rodadaAtual.palpiteiroId),
 				liderRodadaId:
 					rodadaObj?.liderRodadaId ??
 					(rodadaObj as any)?.lider_rodada_id ??
-					state.rodadaAtual.liderRodadaId,
-				cartaSelecionadaId:
-					rodadaObj?.cartaSelecionadaId ??
-					(rodadaObj as any)?.carta_selecionada_id ??
-					state.rodadaAtual.cartaSelecionadaId,
-				votoParceiroCartaId:
-					rodadaObj?.votoParceiroCartaId ??
-					(rodadaObj as any)?.voto_parceiro_carta_id ??
-					state.rodadaAtual.votoParceiroCartaId,
-				prazoEspectro:
-					rodadaObj?.prazoEspectro ??
-					(rodadaObj as any)?.prazo_espectro ??
-					state.rodadaAtual.prazoEspectro,
+					(mudouRodada ? null : state.rodadaAtual.liderRodadaId),
+				cartaSelecionadaId,
+				votoParceiroCartaId,
+				prazoEspectro,
 				carta: cartaAtual,
-				metaOculta:
-					rodadaObj?.metaOculta ?? (rodadaObj as any)?.meta_oculta ?? state.rodadaAtual.metaOculta,
-				dica: rodadaObj?.dica ?? state.rodadaAtual.dica,
-				palpite: rodadaObj?.palpite ?? state.rodadaAtual.palpite,
-				revelada: Boolean(
-					rodadaObj?.metaOculta !== undefined &&
-					rodadaObj?.metaOculta !== null &&
-					(fase === 'RODADA_REVELACAO' || fase === 'VITORIA')
-				)
+				metaOculta,
+				dica,
+				palpite,
+				sliderPosicao,
+				transicaoEm,
+				resultado,
+				revelada
 			};
+
+			const reiniciarResumo =
+				fase === 'LOBBY' || (fase === 'PPT_DISPUTA' && placarA === 0 && placarB === 0);
+			const resumoPartida: RoundHistoryEntry[] = reiniciarResumo
+				? []
+				: (payload.historico ?? state.resumoPartida ?? []).map((h) => ({
+						...h,
+						tier: normalizeTier(h.tier)
+					}));
+			const motivoFim = reiniciarResumo
+				? (payload.motivoFim ?? null)
+				: (payload.motivoFim ?? state.motivoFim ?? null);
 
 			return {
 				...state,
 				fase,
 				hostId,
 				vencedor,
+				motivoFim,
 				equipeAtiva,
 				equipes: {
 					A: { ...state.equipes.A, pontos: placarA, membros: membrosA },
@@ -430,6 +529,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 				minhaEquipe,
 				ppt,
 				rodadaAtual,
+				resumoPartida,
 				cartasEspectroOpcoes:
 					cartasEspectroOpcoes.length > 0 ? cartasEspectroOpcoes : state.cartasEspectroOpcoes
 			};
@@ -456,7 +556,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 					resultado: null,
 					revelada: false
 				},
-				historicoRodadas: []
+				historicoRodadas: [],
+				resumoPartida: [],
+				motivoFim: null
 			};
 		}
 

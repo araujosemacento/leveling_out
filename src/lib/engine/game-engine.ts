@@ -22,17 +22,21 @@ import {
 	getLobbyProjection,
 	getPlayerRoleProjection,
 	getPptProjection,
+	getRevealProjection,
 	getRoundSpectrumProjection,
 	getScoreBoardProjection,
 	getSpectrumPickerProjection,
 	getTubeProjection,
+	getVictoryProjection,
 	type LobbyProjection,
 	type PlayerRoleProjection,
 	type PptProjection,
+	type RevealProjection,
 	type ScoreBoardProjection,
 	type SpectrumPickerProjection,
 	type SpectrumProjection,
-	type TubeProjection
+	type TubeProjection,
+	type VictoryProjection
 } from './render';
 import { createInitialGameState, gameReducer } from './update';
 import type {
@@ -238,5 +242,15 @@ export class GameEngine {
 		playerId: string | null = this.state.meuJogadorId
 	): SpectrumPickerProjection {
 		return getSpectrumPickerProjection(this.state, playerId);
+	}
+
+	public getRevealProjection(playerId: string | null = this.state.meuJogadorId): RevealProjection {
+		return getRevealProjection(this.state, playerId);
+	}
+
+	public getVictoryProjection(
+		playerId: string | null = this.state.meuJogadorId
+	): VictoryProjection {
+		return getVictoryProjection(this.state, playerId);
 	}
 }

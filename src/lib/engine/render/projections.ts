@@ -13,6 +13,8 @@ import type {
 	Player,
 	PlayerRole,
 	PptMove,
+	RoundHistoryEntry,
+	ScoreTier,
 	SpectrumCard,
 	TeamId
 } from '../types';
@@ -24,8 +26,25 @@ export interface TubeProjection {
 	marcadorPalpite: number;
 	mostrarMenisco: boolean;
 	mostrarBorbulhas: boolean;
+	periodoMeniscoSegundos: number;
 	statusTexto: string;
 	podeInteragir: boolean;
+}
+
+/**
+ * Calcula o período da onda senoidal do menisco (Canal do Fluxo / Modulador de Tensão).
+ * Acelera inversamente de 5.0s em 0 pontos até 0.25s ao atingir a meta de vitória.
+ */
+export function computeMeniscusPeriodSeconds(
+	placarA: number,
+	placarB: number,
+	metaPontuacao: number = 10
+): number {
+	const maxScore = Math.max(0, placarA, placarB);
+	const progress = Math.min(1, maxScore / Math.max(1, metaPontuacao));
+	// Curva quadrática suave para tensão progressiva nos pontos finais (7..10 pts)
+	const curved = Math.pow(progress, 1.35);
+	return Number((5.0 - curved * (5.0 - 0.25)).toFixed(2));
 }
 
 export interface PlayerRoleProjection {
@@ -70,6 +89,11 @@ export function getTubeProjection(state: GameState, meuJogadorId: string | null)
 	const { rodadaAtual, fase } = state;
 	const isCodificador = Boolean(meuJogadorId && rodadaAtual.codificadorId === meuJogadorId);
 	const isPalpiteiro = Boolean(meuJogadorId && rodadaAtual.palpiteiroId === meuJogadorId);
+	const periodoMeniscoSegundos = computeMeniscusPeriodSeconds(
+		state.equipes.A.pontos,
+		state.equipes.B.pontos,
+		state.metaPontuacao
+	);
 
 	// 1. Fase de Revelação ou Vitória: exibe a meta real e o palpite para todos
 	if (rodadaAtual.revelada || fase === 'RODADA_REVELACAO' || fase === 'VITORIA') {
@@ -81,6 +105,7 @@ export function getTubeProjection(state: GameState, meuJogadorId: string | null)
 			marcadorPalpite: rodadaAtual.palpite ?? 50,
 			mostrarMenisco: true,
 			mostrarBorbulhas: true,
+			periodoMeniscoSegundos,
 			statusTexto: rodadaAtual.resultado
 				? `${rodadaAtual.resultado.label}: +${rodadaAtual.resultado.points} pontos`
 				: 'Revelação da Rodada',
@@ -99,6 +124,7 @@ export function getTubeProjection(state: GameState, meuJogadorId: string | null)
 				marcadorPalpite: 50,
 				mostrarMenisco: true,
 				mostrarBorbulhas: true,
+				periodoMeniscoSegundos,
 				statusTexto: 'Sua vez de codificar: analise o nível e digite uma pista contextualizada!',
 				podeInteragir: false
 			};
@@ -112,6 +138,7 @@ export function getTubeProjection(state: GameState, meuJogadorId: string | null)
 			marcadorPalpite: 50,
 			mostrarMenisco: false,
 			mostrarBorbulhas: false,
+			periodoMeniscoSegundos,
 			statusTexto: 'Aguardando o Codificador analisar a carta e enviar a dica...',
 			podeInteragir: false
 		};
@@ -128,6 +155,7 @@ export function getTubeProjection(state: GameState, meuJogadorId: string | null)
 				marcadorPalpite: palpite,
 				mostrarMenisco: true,
 				mostrarBorbulhas: false,
+				periodoMeniscoSegundos,
 				statusTexto:
 					'Sua vez de decodificar: deslize o marcador analógico até onde acredita estar o nível!',
 				podeInteragir: true
@@ -141,6 +169,7 @@ export function getTubeProjection(state: GameState, meuJogadorId: string | null)
 			marcadorPalpite: palpite,
 			mostrarMenisco: true,
 			mostrarBorbulhas: false,
+			periodoMeniscoSegundos,
 			statusTexto: 'Palpiteiro ajustando a calibração do nível...',
 			podeInteragir: false
 		};
@@ -154,6 +183,7 @@ export function getTubeProjection(state: GameState, meuJogadorId: string | null)
 		marcadorPalpite: 50,
 		mostrarMenisco: true,
 		mostrarBorbulhas: false,
+		periodoMeniscoSegundos,
 		statusTexto: 'Aguardando início da rodada...',
 		podeInteragir: false
 	};
@@ -606,5 +636,218 @@ export function getSpectrumPickerProjection(
 		statusMensagem,
 		maoCartaEsquerdaAtiva,
 		maoCartaDireitaAtiva
+	};
+}
+
+export interface RevealProjection {
+	numeroRodada: number;
+	equipeAtiva: TeamId;
+	equipeAtivaNome: string;
+	codificadorNome: string;
+	palpiteiroNome: string;
+	poloEsquerdo: string;
+	poloDireito: string;
+	dica: string;
+	metaReal: number;
+	palpite: number;
+	diff: number;
+	pontosGanhos: 0 | 2 | 3 | 4;
+	tier: ScoreTier;
+	rotuloSintonia: string;
+	placarA: number;
+	placarB: number;
+	metaPontuacao: number;
+	transicaoEmIso: string | null;
+}
+
+const REVEAL_TIER_LABELS: Record<ScoreTier, string> = {
+	NA_MOSCA: 'Na Mosca',
+	MUITO_PERTO: 'Muito Perto',
+	PERTO: 'Perto',
+	ERRO: 'Fora da Margem'
+};
+
+function tierFromDiff(diff: number): ScoreTier {
+	if (diff <= 2) return 'NA_MOSCA';
+	if (diff <= 6) return 'MUITO_PERTO';
+	if (diff <= 12) return 'PERTO';
+	return 'ERRO';
+}
+
+function pointsFromTier(tier: ScoreTier): 0 | 2 | 3 | 4 {
+	if (tier === 'NA_MOSCA') return 4;
+	if (tier === 'MUITO_PERTO') return 3;
+	if (tier === 'PERTO') return 2;
+	return 0;
+}
+
+/**
+ * Projeta os dados da revelação dramática da rodada para exibição sem lógica na view.
+ */
+export function getRevealProjection(
+	state: GameState,
+	meuJogadorId: string | null = null
+): RevealProjection {
+	void meuJogadorId;
+	const { rodadaAtual } = state;
+	const equipeAtiva = rodadaAtual.equipeAtiva || state.equipeAtiva;
+	const equipeAtivaNome = equipeAtiva === 'A' ? 'Pato' : 'Ganso';
+
+	const todosJogadores = [
+		...state.equipes.A.membros,
+		...state.equipes.B.membros,
+		...(state.jogadoresAleatorios || [])
+	];
+
+	const codificadorNome =
+		todosJogadores.find((j) => j.id === rodadaAtual.codificadorId)?.nome || 'Codificador';
+	const palpiteiroNome =
+		todosJogadores.find((j) => j.id === rodadaAtual.palpiteiroId)?.nome || 'Palpiteiro';
+
+	const carta = rodadaAtual.carta;
+	const poloEsquerdo = (carta ? carta.left || carta.esquerda : 'Esquerda') || 'Esquerda';
+	const poloDireito = (carta ? carta.right || carta.direita : 'Direita') || 'Direita';
+	const dica = rodadaAtual.dica ?? '';
+
+	const metaReal = rodadaAtual.metaOculta ?? 50;
+	const palpite = rodadaAtual.palpite ?? 50;
+	const diff = rodadaAtual.resultado?.diff ?? Math.abs(metaReal - palpite);
+	const tier: ScoreTier = rodadaAtual.resultado?.tier ?? tierFromDiff(diff);
+
+	const rawPoints = rodadaAtual.resultado?.points;
+	const pontosGanhos: 0 | 2 | 3 | 4 =
+		rawPoints === 4 || rawPoints === 3 || rawPoints === 2 || rawPoints === 0
+			? rawPoints
+			: pointsFromTier(tier);
+
+	return {
+		numeroRodada: rodadaAtual.numero,
+		equipeAtiva,
+		equipeAtivaNome,
+		codificadorNome,
+		palpiteiroNome,
+		poloEsquerdo,
+		poloDireito,
+		dica,
+		metaReal,
+		palpite,
+		diff,
+		pontosGanhos,
+		tier,
+		rotuloSintonia: REVEAL_TIER_LABELS[tier],
+		placarA: state.equipes.A.pontos,
+		placarB: state.equipes.B.pontos,
+		metaPontuacao: Math.max(1, state.metaPontuacao),
+		transicaoEmIso: rodadaAtual.transicaoEm ?? null
+	};
+}
+
+export interface VictoryProjection {
+	vencedorEquipe: TeamId;
+	vencedorNome: string;
+	minhaEquipeVenceu: boolean | null;
+	motivoFim: string;
+	placarA: number;
+	placarB: number;
+	totalRodadas: number;
+	precisaoMedia: number;
+	melhorRodada: RoundHistoryEntry | null;
+	contagemNaMosca: number;
+	historico: RoundHistoryEntry[];
+	isHost: boolean;
+	podePedirRevanche: boolean;
+}
+
+/**
+ * Projeta o resumo da partida encerrada e as métricas agregadas para a tela de vitória.
+ */
+export function getVictoryProjection(
+	state: GameState,
+	meuJogadorId: string | null
+): VictoryProjection {
+	const placarA = state.equipes.A.pontos;
+	const placarB = state.equipes.B.pontos;
+	const vencedorEquipe: TeamId = state.vencedor ?? (placarB > placarA ? 'B' : 'A');
+	const vencedorNome = vencedorEquipe === 'A' ? 'Equipe Pato' : 'Equipe Ganso';
+
+	const todosJogadores = [
+		...state.equipes.A.membros,
+		...state.equipes.B.membros,
+		...(state.jogadoresAleatorios || [])
+	];
+	const meuJogador = meuJogadorId
+		? (todosJogadores.find((j) => j.id === meuJogadorId) ?? null)
+		: null;
+	const minhaEquipeVal = meuJogador ? meuJogador.equipe : state.minhaEquipe;
+	const minhaEquipeVenceu: boolean | null =
+		minhaEquipeVal === 'A' || minhaEquipeVal === 'B' ? minhaEquipeVal === vencedorEquipe : null;
+
+	const historico: RoundHistoryEntry[] =
+		state.resumoPartida && state.resumoPartida.length > 0
+			? state.resumoPartida
+			: (state.historicoRodadas || []).map((r) => {
+					const metaOculta = r.metaOculta ?? 50;
+					const palpite = r.palpite ?? 50;
+					const diff = r.resultado?.diff ?? Math.abs(metaOculta - palpite);
+					const tier: ScoreTier = r.resultado?.tier ?? tierFromDiff(diff);
+					const pontos = r.resultado?.points ?? pointsFromTier(tier);
+					return {
+						numero: r.numero,
+						equipe: r.equipeAtiva,
+						codificadorId: r.codificadorId ?? '',
+						palpiteiroId: r.palpiteiroId ?? '',
+						espectroEsquerda:
+							(r.carta ? r.carta.left || r.carta.esquerda : 'Esquerda') || 'Esquerda',
+						espectroDireita: (r.carta ? r.carta.right || r.carta.direita : 'Direita') || 'Direita',
+						metaOculta,
+						palpite,
+						dica: r.dica ?? '',
+						pontos,
+						tier,
+						diff,
+						duracaoSegundos: 0
+					};
+				});
+
+	const totalRodadas = historico.length;
+	const precisaoMedia =
+		totalRodadas === 0
+			? 0
+			: Number(
+					(
+						historico.reduce((acc, item) => acc + Math.max(0, 100 - item.diff), 0) / totalRodadas
+					).toFixed(1)
+				);
+
+	let melhorRodada: RoundHistoryEntry | null = null;
+	for (const entry of historico) {
+		if (!melhorRodada || entry.diff < melhorRodada.diff) {
+			melhorRodada = entry;
+		}
+	}
+
+	const contagemNaMosca = historico.filter((entry) => entry.tier === 'NA_MOSCA').length;
+
+	const isHost = Boolean(
+		meuJogador?.isHost || (state.hostId && meuJogadorId && state.hostId === meuJogadorId)
+	);
+	const podePedirRevanche = Boolean(
+		meuJogadorId && (meuJogador ? meuJogador.isOnline !== false : true)
+	);
+
+	return {
+		vencedorEquipe,
+		vencedorNome,
+		minhaEquipeVenceu,
+		motivoFim: state.motivoFim || 'VITORIA',
+		placarA,
+		placarB,
+		totalRodadas,
+		precisaoMedia,
+		melhorRodada,
+		contagemNaMosca,
+		historico,
+		isHost,
+		podePedirRevanche
 	};
 }

@@ -295,6 +295,7 @@
 			ppt: snap.ppt,
 			rodadaAtiva: snap.rodadaAtiva,
 			cartasOpcoes: snap.cartasOpcoes || snap.cartasEspectroOpcoes,
+			historico: snap.historico,
 			jogadores: (snap.jogadores || []).map((j: any) => {
 				const isMe = j.playerId === localPlayerId;
 				const eq = isMe && pendingTeamChoice ? equipeFinal : j.equipe || 'ALEATORIO';

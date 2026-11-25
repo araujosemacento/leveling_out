@@ -151,4 +151,165 @@ describe('Máquina de Estados Pura (update/state-machine.ts)', () => {
 		expect(state.equipes.B.pontos).toBe(0);
 		expect(state.historicoRodadas).toHaveLength(0);
 	});
+
+	it('deve mapear FULL_SYNC com fase REVELACAO e tier FORA_DA_MARGEM reconstruindo resultado', () => {
+		let state = createInitialGameState('SALA1');
+		state = gameReducer(state, {
+			type: 'FULL_SYNC',
+			payload: {
+				codigo: 'SALA1',
+				fase: 'REVELACAO',
+				rodada: 1,
+				equipeAtiva: 'A',
+				placarA: 0,
+				placarB: 0,
+				rodadaAtiva: {
+					numero: 1,
+					equipe: 'A',
+					codificadorId: 'p1',
+					palpiteiroId: 'p2',
+					espectroEsquerda: 'Quente',
+					espectroDireita: 'Frio',
+					dica: 'Vulcão',
+					metaOculta: 15,
+					palpite: 80,
+					pontos: 0,
+					tier: 'FORA_DA_MARGEM',
+					diff: 65,
+					transicaoEm: '2026-11-25T05:00:00Z'
+				}
+			}
+		});
+
+		expect(state.fase).toBe('RODADA_REVELACAO');
+		expect(state.rodadaAtual.revelada).toBe(true);
+		expect(state.rodadaAtual.transicaoEm).toBe('2026-11-25T05:00:00Z');
+		expect(state.rodadaAtual.resultado).toEqual({
+			points: 0,
+			diff: 65,
+			tier: 'ERRO',
+			label: 'Fora da Margem'
+		});
+	});
+
+	it('deve mapear FULL_SYNC com fase FIM_JOGO e hidratar resumoPartida normalizando tiers', () => {
+		let state = createInitialGameState('SALA1');
+		state = gameReducer(state, {
+			type: 'FULL_SYNC',
+			payload: {
+				codigo: 'SALA1',
+				fase: 'FIM_JOGO',
+				rodada: 2,
+				equipeAtiva: 'A',
+				placarA: 10,
+				placarB: 3,
+				vencedor: 'A',
+				motivoFim: 'VITORIA',
+				historico: [
+					{
+						numero: 1,
+						equipe: 'A',
+						codificadorId: 'p1',
+						palpiteiroId: 'p2',
+						espectroEsquerda: 'Leve',
+						espectroDireita: 'Pesado',
+						metaOculta: 80,
+						palpite: 81,
+						dica: 'Chumbo',
+						pontos: 4,
+						tier: 'NA_MOSCA',
+						diff: 1,
+						duracaoSegundos: 18
+					},
+					{
+						numero: 2,
+						equipe: 'B',
+						codificadorId: 'p3',
+						palpiteiroId: 'p4',
+						espectroEsquerda: 'Silencioso',
+						espectroDireita: 'Barulhento',
+						metaOculta: 20,
+						palpite: 70,
+						dica: 'Sussurro',
+						pontos: 0,
+						tier: 'FORA_DA_MARGEM' as any,
+						diff: 50,
+						duracaoSegundos: 25
+					}
+				]
+			}
+		});
+
+		expect(state.fase).toBe('VITORIA');
+		expect(state.vencedor).toBe('A');
+		expect(state.motivoFim).toBe('VITORIA');
+		expect(state.resumoPartida).toHaveLength(2);
+		expect(state.resumoPartida?.[0].tier).toBe('NA_MOSCA');
+		expect(state.resumoPartida?.[1].tier).toBe('ERRO');
+	});
+
+	it('deve limpar metaOculta, dica, resultado e metadados de escolha ao transicionar da Rodada 1 para Rodada 2', () => {
+		let state = createInitialGameState('SALA1');
+		state = gameReducer(state, {
+			type: 'FULL_SYNC',
+			payload: {
+				codigo: 'SALA1',
+				fase: 'REVELACAO',
+				rodada: 1,
+				equipeAtiva: 'A',
+				placarA: 4,
+				placarB: 0,
+				rodadaAtiva: {
+					numero: 1,
+					equipe: 'A',
+					codificadorId: 'p1',
+					palpiteiroId: 'p2',
+					cartaSelecionadaId: 'c1',
+					votoParceiroCartaId: 'c1',
+					prazoEspectro: '2026-11-25T05:00:00Z',
+					espectroEsquerda: 'Fácil',
+					espectroDireita: 'Difícil',
+					dica: 'Somar 1+1',
+					metaOculta: 12,
+					palpite: 12,
+					pontos: 4,
+					tier: 'NA_MOSCA',
+					diff: 0
+				}
+			}
+		});
+
+		expect(state.rodadaAtual.metaOculta).toBe(12);
+		expect(state.rodadaAtual.dica).toBe('Somar 1+1');
+		expect(state.rodadaAtual.resultado).not.toBeNull();
+
+		// Rodada 2 começa para um jogador sem permissão de ver metaOculta (campos omitidos pelo Zero Trust)
+		state = gameReducer(state, {
+			type: 'FULL_SYNC',
+			payload: {
+				codigo: 'SALA1',
+				fase: 'ESCOLHA_ESPECTRO',
+				rodada: 2,
+				equipeAtiva: 'B',
+				placarA: 4,
+				placarB: 0,
+				rodadaAtiva: {
+					numero: 2,
+					equipe: 'B',
+					codificadorId: 'p3',
+					palpiteiroId: 'p4'
+				}
+			}
+		});
+
+		expect(state.fase).toBe('ESCOLHA_CARTA');
+		expect(state.rodadaAtual.numero).toBe(2);
+		expect(state.rodadaAtual.metaOculta).toBeNull();
+		expect(state.rodadaAtual.dica).toBeNull();
+		expect(state.rodadaAtual.resultado).toBeNull();
+		expect(state.rodadaAtual.cartaSelecionadaId).toBeNull();
+		expect(state.rodadaAtual.votoParceiroCartaId).toBeNull();
+		expect(state.rodadaAtual.prazoEspectro).toBeNull();
+		expect(state.rodadaAtual.revelada).toBe(false);
+	});
 });
