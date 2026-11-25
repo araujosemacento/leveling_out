@@ -14,9 +14,11 @@
 	import SpectrumCard from '$lib/components/SpectrumCard.svelte';
 	import TestTube from '$lib/components/TestTube.svelte';
 	import ClueEnvelope from '$lib/components/ClueEnvelope.svelte';
+	import AnalogSlider from '$lib/components/AnalogSlider.svelte';
 	import GamePlaceholder from '$lib/components/GamePlaceholder.svelte';
 
 	import IconAlertCircle from '~icons/lucide/alert-circle';
+	import IconCheck from '~icons/lucide/check';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -64,6 +66,30 @@
 	// Trava otimista para troca de equipe
 	let pendingTeamChoice = $state<{ target: LobbyTeamChoice; timestamp: number } | null>(null);
 	let pendingTeamTimeout: ReturnType<typeof setTimeout> | null = null;
+
+	// Estados reativos da transmissão de dica e decodificação do palpite analógico
+	let isSendingClue = $state(false);
+	let hasPlayedClueArrival = $state(false);
+	let sliderValue = $state(50);
+	let isConfirmingGuess = $state(false);
+	let currentRoundNum = $state(1);
+
+	$effect(() => {
+		const rNum = gameState?.rodadaAtual?.numero || 1;
+		if (rNum !== currentRoundNum) {
+			currentRoundNum = rNum;
+			hasPlayedClueArrival = false;
+			sliderValue = 50;
+		}
+	});
+
+	$effect(() => {
+		if (gameState?.rodadaAtual?.palpite !== undefined && gameState?.rodadaAtual?.palpite !== null) {
+			if (!roleProjection?.podeArrastarSlider) {
+				sliderValue = gameState.rodadaAtual.palpite;
+			}
+		}
+	});
 
 	function mostrarAviso(msg: string) {
 		avisoTemporario = msg;
@@ -117,6 +143,9 @@
 			onSliderStream: (posicao) => {
 				if (engine) {
 					engine.updateSliderPreview(posicao);
+				}
+				if (!roleProjection?.podeArrastarSlider) {
+					sliderValue = posicao;
 				}
 			},
 			onKicked: (motivo) => {
@@ -294,6 +323,15 @@
 				if (pendingTeamTimeout) clearTimeout(pendingTeamTimeout);
 			}
 		}
+
+		// Espelhamento do slider analógico para espectadores e codificador
+		if (
+			snap.rodadaAtiva?.sliderPosicao !== undefined &&
+			snap.rodadaAtiva?.sliderPosicao !== null &&
+			!roleProjection?.podeArrastarSlider
+		) {
+			sliderValue = snap.rodadaAtiva.sliderPosicao;
+		}
 	}
 
 	function solicitarTrocaEquipe(targetEquipe: LobbyTeamChoice) {
@@ -385,8 +423,31 @@
 
 	function handleSubmitClue(dica: string) {
 		if (!engine) return;
+		isSendingClue = true;
 		engine.submitClue(dica);
 		socket?.submeterDica(dica);
+	}
+
+	function handleClueFlightComplete() {
+		isSendingClue = false;
+	}
+
+	function handleSliderChange(val: number) {
+		sliderValue = val;
+		if (roleProjection?.podeArrastarSlider) {
+			socket?.moverSlider(val);
+			engine?.updateSliderPreview(val);
+		}
+	}
+
+	function handleConfirmGuess() {
+		if (!roleProjection?.podeArrastarSlider || isConfirmingGuess) return;
+		isConfirmingGuess = true;
+		socket?.confirmarPalpite();
+		engine?.submitGuess(sliderValue);
+		setTimeout(() => {
+			isConfirmingGuess = false;
+		}, 1000);
 	}
 
 	async function copyRoomLink() {
@@ -467,7 +528,7 @@
 				onVote={handleVoteSpectrum}
 				onConfirm={handleConfirmSpectrum}
 			/>
-		{:else if gameState?.fase === 'RODADA_DICA'}
+		{:else if gameState?.fase === 'RODADA_DICA' || isSendingClue}
 			<!-- Arena de Envio de Dica da Rodada (Codificador & Espectadores) -->
 			<div class="flex w-full flex-col items-center gap-6 py-2 sm:gap-8">
 				<!-- Status Superior do Turno -->
@@ -510,8 +571,83 @@
 				<div class="mt-2 flex w-full justify-center">
 					<ClueEnvelope
 						podeDigitar={Boolean(roleProjection?.podeDigitarDica)}
+						modo={roleProjection?.podeDigitarDica ? 'envio' : 'espera'}
 						onSubmit={handleSubmitClue}
+						onComplete={handleClueFlightComplete}
 					/>
+				</div>
+			</div>
+		{:else if gameState?.fase === 'RODADA_PALPITE'}
+			<!-- Arena de Palpite Analógico (Decodificação da Dica Transmitida) -->
+			<div class="flex w-full flex-col items-center gap-6 py-2 sm:gap-8">
+				<!-- Status Superior do Turno -->
+				<div class="flex flex-col items-center gap-1 text-center">
+					<span class="font-sn text-xs font-bold tracking-wider text-text-muted uppercase">
+						Rodada {gameState.rodadaAtual?.numero || 1} : Equipe {roundSpectrumProjection?.equipeAtivaNome ||
+							'Ativa'}
+					</span>
+					<p class="font-sn text-sm font-semibold text-text-primary">
+						{tubeProjection?.statusTexto ||
+							'Ajuste o marcador analógico para decodificar a dica conceitual!'}
+					</p>
+				</div>
+
+				<!-- Visualização Conjunta: Carta de Espectro + Dica Entregue (ClueEnvelope) -->
+				<div
+					class="flex w-full max-w-4xl flex-col items-center justify-center gap-6 md:flex-row md:items-center md:gap-12"
+				>
+					{#if gameState.rodadaAtual?.carta}
+						<div class="w-full max-w-97.5 shrink-0">
+							<SpectrumCard
+								carta={gameState.rodadaAtual.carta}
+								equipe={gameState.equipeAtiva}
+								interativo={false}
+							/>
+						</div>
+					{/if}
+
+					<div class="flex shrink-0 flex-col items-center justify-center">
+						<ClueEnvelope
+							dica={gameState.rodadaAtual?.dica || ''}
+							podeDigitar={false}
+							modo={!hasPlayedClueArrival && !roleProjection?.podeDigitarDica
+								? 'chegada'
+								: 'leitura'}
+							onArrived={() => {
+								hasPlayedClueArrival = true;
+							}}
+						/>
+					</div>
+				</div>
+
+				<!-- Seção do Slider Analógico com Polos e Ação Soft UI -->
+				<div class="flex w-full max-w-2xl flex-col items-center gap-4 px-2">
+					<AnalogSlider
+						bind:value={sliderValue}
+						disabled={!roleProjection?.podeArrastarSlider}
+						leftLabel={roundSpectrumProjection?.poloEsquerdo || ''}
+						rightLabel={roundSpectrumProjection?.poloDireito || ''}
+						onChange={handleSliderChange}
+					/>
+
+					{#if roleProjection?.podeArrastarSlider}
+						<button
+							type="button"
+							class="btn-soft-elevated group mt-2 flex items-center justify-center gap-2 rounded-full px-8 py-3.5 font-util-heading text-sm font-semibold tracking-wide disabled:pointer-events-none disabled:opacity-50"
+							disabled={isConfirmingGuess}
+							onclick={handleConfirmGuess}
+							aria-label="Confirmar calibração do palpite analógico"
+						>
+							<span>Confirmar Palpite</span>
+							<IconCheck class="h-4 w-4 shrink-0 transition-transform group-hover:scale-110" />
+						</button>
+					{:else}
+						<p class="font-util-body text-xs text-text-muted">
+							Aguardando o Palpiteiro calibrar o nível analógico<span class="animated-ellipsis"
+								><span>.</span><span>.</span><span>.</span></span
+							>
+						</p>
+					{/if}
 				</div>
 			</div>
 		{:else}

@@ -180,7 +180,7 @@ Para cada componente escolhido, são definidos seus dados atômicos, comportamen
 - **Camada:** Frontend (Sanitização defensiva de Input) e Backend (Armazenamento em memória no `RoomActor`).
 - **Arquivo(s) no Código:**
   - _Backend (Go):_ [`backend/internal/actor/room_actor.go`](../../backend/internal/actor/room_actor.go) e [`backend/internal/protocol/messages.go`](../../backend/internal/protocol/messages.go) (`MsgSubmeterDica`).
-  - _Frontend (TypeScript):_ [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeClue`) e [`src/lib/network/game-socket.ts`](../../src/lib/network/game-socket.ts) (`submeterDica`).
+  - _Frontend (TypeScript / Svelte):_ [`src/lib/engine/input/sanitize.ts`](../../src/lib/engine/input/sanitize.ts) (`sanitizeClue`), [`src/lib/components/ClueEnvelope.svelte`](../../src/lib/components/ClueEnvelope.svelte) (Ciclo cinético de envio, espera, chegada e revelação) e [`src/lib/network/game-socket.ts`](../../src/lib/network/game-socket.ts) (`submeterDica`).
 - **Justificativa da Atomicidade:** Trata unicamente da validação, integridade e sanitização da pista enviada.
 
 ---
