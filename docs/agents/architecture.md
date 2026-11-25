@@ -74,17 +74,20 @@ Os componentes são peças atômicas, reutilizáveis e de uso específico. São 
 
 Na camada de interface e cliente, o front-end adota Composição sobre Herança:
 
-- **Controladores Especializados:** Classes dedicadas em TypeScript isolam rotinas complexas da interface:
+- **Controladores e Utilitários Especializados:** Módulos dedicados em TypeScript isolam rotinas complexas da interface:
   - `SliderDragController`: captura de toques, cálculo de offset percentual e sensibilidade tátil.
   - `GameSocket`: cliente WebSocket full-duplex com reconexão exponencial resiliente e streaming contínuo.
+  - `haptics.ts`: abstração de feedback háptico via `navigator.vibrate` (`tick`, `tap`, `reveal`), respeitando `prefers-reduced-motion`.
 - **Componentes Visuais Finos e Decomposição de Páginas:** Para prevenir arquivos monolíticos (_God Files_), as páginas delegam suas fases e diálogos a componentes atômicos/compostos em `src/lib/components/`:
   - `NicknameModal.svelte`: diálogo bloqueante de identificação de apelido com validação defensiva Zero Trust.
   - `RoomHeader.svelte`: cabeçalho de status da sala, identificação do jogador e botão de cópia com feedback.
   - `LobbyArena.svelte`: grade tripartite de divisão de equipes (Pato, Aleatório, Ganso) e controle de quórum.
   - `PptArena.svelte`: arena sincronizada de disputa de iniciativa via Pedra, Papel e Tesoura.
+  - `ScoreBoardHud.svelte`: placar simétrico em tempo real com barras de progresso das equipes e indicador de turno.
   - `AnalogSlider.svelte`: marcador analógico procedural com suporte a arraste e teclas direcionais.
   - `TestTube.svelte`: tubo SVG procedural reativo com menisco duplo e dinâmica de fluidos.
-  - `GamePlaceholder.svelte`: transição visual para a fase de partida em andamento.
+  - `RevealArena.svelte`: coreografia da Revelação Dramática com zonas de tolerância, veredito de sintonia e contagem regressiva.
+  - `VictoryArena.svelte`: arena de encerramento com celebração da equipe vencedora e disparo imediato de revanche.
 
 ---
 
@@ -174,7 +177,11 @@ A tabela abaixo mapeia cada subsistema, arquivo e sua respectiva responsabilidad
 | **Barra Superior da Sala**                     | `src/lib/components/RoomHeader.svelte`                   | Identificação do jogador, badge de host, código da sala e cópia de link.                                          |
 | **Identidade Resiliente do Dispositivo**       | `src/lib/config/device.ts`                               | Tripla persistência resiliente com auto-cura de device_id para moderação Zero Trust.                              |
 | **Arena do Lobby (Painel Tripartite)**         | `src/lib/components/LobbyArena.svelte`                   | Distribuição tripartite de equipes (Pato, Aleatório, Ganso) e início pelo anfitrião.                              |
+| **Placar em Tempo Real (HUD)**                 | `src/lib/components/ScoreBoardHud.svelte`                | Placar simétrico Pato vs Ganso, barras de progresso até 10 pontos e indicador de turno ativo.                     |
 | **Componente do Tubo de Ensaio (SVG)**         | `src/lib/components/TestTube.svelte`                     | Tubo procedural SVG, dupla camada de menisco contínuo e física de agitação tátil.                                 |
+| **Arena de Revelação Dramática**               | `src/lib/components/RevealArena.svelte`                  | Coreografia em 4 tempos com enchimento do tubo, faixas de tolerância, veredito e contagem regressiva.             |
+| **Arena de Vitória e Revanche**                | `src/lib/components/VictoryArena.svelte`                 | Celebração da equipe vencedora com tubo temático, placar final e gatilho de revanche imediata.                    |
+| **Feedback Háptico Mobile**                    | `src/lib/engine/input/haptics.ts`                        | Motor tátil via `navigator.vibrate` (`tick`, `tap`, `reveal`) com respeito a `prefers-reduced-motion`.            |
 | **Camada de Input (Intenção & Sanitização)**   | `src/lib/engine/input/`                                  | Higienização defensiva (sanitize.ts) e normalização de intenções (intent-factory.ts).                             |
 | **Camada de Update (Máquina de Estados)**      | `src/lib/engine/update/`                                 | Reducer determinístico (state-machine.ts) e algoritmo de proximidade (score-rules.ts).                            |
 | **Camada de Render (Projeções UI)**            | `src/lib/engine/render/`                                 | Seletores puros UI = f(State) e blindagem de sigilo da meta oculta (projections.ts).                              |

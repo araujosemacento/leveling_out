@@ -94,12 +94,12 @@ Para a catalogação exaustiva, consulte [docs/agents/architecture.md](docs/agen
 
 Para o histórico completo de entregas das Fases 1 e 2, consulte [docs/agents/roadmap.md](docs/agents/roadmap.md).
 
-### Fase 3: Polimento e Experiência de Jogo (Em Andamento)
+### Fase 3: Polimento e Experiência de Jogo (Concluída)
 
 - [x] Ícone animado procedural da identidade visual (`TestTube` no Title Card).
 - [x] Streaming contínuo do slider analógico em tempo real via WebSockets (30-60 Hz).
 - [x] Eliminação completa dos arquivos legados em `static/` (`p5.min.js`, `p5.sound.min.js`, `pocketbase.umd.js`).
-- [ ] Dinamizar a aceleração do menisco em função da pontuação acumulada (Canal do Fluxo / Modulador de Tensão).
-- [ ] Animação da Revelação Dramática com cálculo de sintonia e preenchimento de placar.
-- [ ] Interface de Revanche imediata mantendo a sala e alternando posições.
-- [ ] Otimizações táteis e feedback háptico (`navigator.vibrate`) em dispositivos móveis.
+- [x] Dinamizar a aceleração do menisco em função da pontuação acumulada (Canal do Fluxo / Modulador de Tensão).
+- [x] Animação da Revelação Dramática com cálculo de sintonia e preenchimento de placar.
+- [x] Interface de Revanche imediata mantendo a sala e alternando posições.
+- [x] Otimizações táteis e feedback háptico (`navigator.vibrate`) em dispositivos móveis.

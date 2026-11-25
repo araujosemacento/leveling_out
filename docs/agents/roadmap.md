@@ -31,12 +31,12 @@ Este documento registra o histórico consolidado de entregas e os objetivos em a
 
 ---
 
-## Fase 3: Polimento e Experiência de Jogo (Em Andamento)
+## Fase 3: Polimento e Experiência de Jogo (Concluída)
 
 - [x] Criar ícone animado procedural da identidade visual (substituindo o placeholder do favicon no Title Card pelo `TestTube`).
 - [x] Suporte nativo a streaming contínuo do slider analógico em tempo real via WebSockets (30-60 Hz).
 - [x] Eliminação completa dos arquivos legados em `static/` (`p5.min.js`, `p5.sound.min.js`, `pocketbase.umd.js`).
-- [ ] Dinamizar a aceleração do menisco em função da pontuação acumulada das equipes (Canal do Fluxo / Modulador de Tensão: duração de 5.0s a 0.25s).
-- [ ] Animação da Revelação Dramática com cálculo de sintonia e preenchimento de placar.
-- [ ] Interface de Revanche imediata mantendo a sala e alternando posições.
-- [ ] Otimizações táteis e feedback háptico (`navigator.vibrate`) em dispositivos móveis.
+- [x] Dinamizar a aceleração do menisco em função da pontuação acumulada das equipes (Canal do Fluxo / Modulador de Tensão: duração de 5.0s a 0.25s).
+- [x] Animação da Revelação Dramática com cálculo de sintonia e preenchimento de placar.
+- [x] Interface de Revanche imediata mantendo a sala e alternando posições.
+- [x] Otimizações táteis e feedback háptico (`navigator.vibrate`) em dispositivos móveis.
