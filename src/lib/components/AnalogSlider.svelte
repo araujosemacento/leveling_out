@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import IconLock from '~icons/lucide/lock';
+	import { haptics } from '$lib/engine/input/haptics';
 	import { SliderDragController } from '$lib/engine/input/slider-controller';
 
 	interface Props {
@@ -30,6 +31,15 @@
 	let trackElement: HTMLElement | null = $state(null);
 	let isDragging = $state(false);
 	let controller: SliderDragController | null = null;
+	let lastDragValue = 50;
+
+	function didCrossTenMark(prev: number, curr: number): boolean {
+		if (prev === curr) return false;
+		if (curr % 10 === 0) return true;
+		if (curr > prev && Math.floor((curr - 1) / 10) > Math.floor(prev / 10)) return true;
+		if (curr < prev && Math.ceil((curr + 1) / 10) < Math.ceil(prev / 10)) return true;
+		return false;
+	}
 
 	onMount(() => {
 		controller = new SliderDragController({
@@ -37,15 +47,21 @@
 			disabled,
 			onDragStart: (val) => {
 				isDragging = true;
+				lastDragValue = val;
 				value = val;
 				onDragStart?.(val);
 			},
 			onDragMove: (val) => {
+				if (didCrossTenMark(lastDragValue, val)) {
+					haptics.tick();
+				}
+				lastDragValue = val;
 				value = val;
 				onChange?.(val);
 			},
 			onDragEnd: (val) => {
 				isDragging = false;
+				lastDragValue = val;
 				value = val;
 				onDragEnd?.(val);
 			},
@@ -124,38 +140,42 @@
 			aria-disabled={disabled}
 			onpointerdown={handlePointerDown}
 			onkeydown={handleKeyDown}
-			class="relative flex h-8 w-full cursor-pointer touch-none items-center rounded-full border border-border-medium/70 bg-bg-surface-soft px-3 shadow-inner transition-colors focus:ring-2 focus:ring-accent/40 focus:outline-hidden sm:h-9 {disabled
+			class="group relative flex h-8 w-full cursor-pointer touch-none items-center rounded-full border border-border-medium/70 bg-bg-surface-soft px-3 shadow-inner transition-colors focus:ring-2 focus:ring-accent/40 focus:outline-hidden sm:h-9 {disabled
 				? 'cursor-not-allowed opacity-65'
 				: 'hover:border-primary/60'}"
 		>
 			<!-- Barra de Preenchimento Dinâmico Suave -->
-			<div
-				class="pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 rounded-full bg-linear-to-r from-primary/30 to-accent/40 transition-[width] duration-75"
-				style:width="calc({value}% - {value * 0.03}px)"
-			></div>
+			<div class="pointer-events-none absolute inset-1.5 overflow-hidden rounded-full">
+				<div
+					class="h-full w-full origin-left rounded-full bg-linear-to-r from-primary/30 to-accent/40 motion-reduce:transition-none {isDragging
+						? 'transition-none'
+						: 'transition-transform duration-100 ease-out'}"
+					style:transform="scaleX({value / 100})"
+				></div>
+			</div>
 
 			<!-- Entalhes / Ticks Graduados do Espectro -->
-			<div
-				class="pointer-events-none absolute inset-x-4 flex items-center justify-between opacity-35"
-			>
+			<div class="pointer-events-none absolute inset-x-4 flex items-center justify-between">
 				{#each Array.from({ length: 11 }, (_, idx) => idx) as tick (tick)}
 					<span
-						class="w-0.5 rounded-full bg-text-subtle transition-all {tick === 5
+						class="w-0.5 rounded-full transition-colors {tick === 5
 							? 'h-3.5 bg-accent opacity-90'
-							: tick === 0 || tick === 10
-								? 'h-3'
-								: 'h-2'}"
+							: `${tick === 0 || tick === 10 ? 'h-3' : 'h-2'} ${
+									tick * 10 <= value ? 'bg-accent/70 opacity-90' : 'bg-text-subtle opacity-35'
+								}`}"
 					></span>
 				{/each}
 			</div>
 
 			<!-- Marcador / Agulha Analógica Deslizante -->
 			<div
-				class="pointer-events-none absolute top-1/2 -translate-y-1/2 transition-[left] duration-75"
+				class="pointer-events-none absolute top-1/2 -translate-y-1/2 motion-reduce:transition-none {isDragging
+					? 'transition-none'
+					: 'transition-[left] duration-100 ease-out'}"
 				style:left="calc({value}% - {value * 0.28}px)"
 			>
 				<div
-					class="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-accent text-white shadow-md transition-transform duration-150 {isDragging
+					class="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-accent text-white shadow-md transition-transform duration-150 motion-reduce:transition-none {isDragging
 						? 'scale-115 ring-4 ring-accent/30'
 						: 'group-hover:scale-105'}"
 				>
@@ -168,7 +188,7 @@
 					<!-- Balão Flutuante de Valor com Destaque no Arrasto -->
 					{#if isDragging}
 						<div
-							class="absolute -top-8 flex -translate-x-1/2 items-center rounded-md border border-accent/40 bg-accent px-1.5 py-0.5 font-code text-[10px] font-bold text-white shadow-lg"
+							class="absolute -top-9 left-1/2 flex -translate-x-1/2 items-center rounded-md border border-accent/40 bg-accent px-1.5 py-0.5 font-code text-[10px] font-bold text-white shadow-lg"
 						>
 							{value}%
 						</div>

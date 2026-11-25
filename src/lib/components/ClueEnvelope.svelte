@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import { haptics } from '$lib/engine/input/haptics';
 	import { sanitizeClue } from '$lib/engine/input/sanitize';
 
 	export type ClueEnvelopeMode = 'envio' | 'espera' | 'chegada' | 'leitura';
@@ -90,6 +91,13 @@
 		timers = [];
 	}
 
+	function prefersReducedMotion(): boolean {
+		return (
+			typeof window !== 'undefined' &&
+			Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+		);
+	}
+
 	onDestroy(() => {
 		limparTimers();
 	});
@@ -108,6 +116,16 @@
 		onSubmit?.(dicaFinal);
 
 		limparTimers();
+
+		if (prefersReducedMotion()) {
+			timers.push(
+				setTimeout(() => {
+					faseAnimacao = 'completed';
+					onComplete?.();
+				}, 50)
+			);
+			return;
+		}
 
 		// T = 10ms: As 4 abas emergem de trás do card (100ms)
 		timers.push(
@@ -134,6 +152,7 @@
 		timers.push(
 			setTimeout(() => {
 				faseAnimacao = 'fold-3';
+				haptics.tap();
 			}, 310)
 		);
 
@@ -183,6 +202,17 @@
 
 		limparTimers();
 
+		if (prefersReducedMotion()) {
+			faseAnimacao = 'revealed';
+			timers.push(
+				setTimeout(() => {
+					faseAnimacao = 'completed';
+					onArrived?.();
+				}, 50)
+			);
+			return;
+		}
+
 		// T = 0ms: Voo veloz de entrada da esquerda até o centro em 300ms
 		faseAnimacao = 'arrive-slide';
 
@@ -191,6 +221,7 @@
 			setTimeout(() => {
 				faseAnimacao = 'arrive-wobble';
 				isArrivalDustActive = true;
+				haptics.tap();
 			}, 300)
 		);
 
@@ -1021,10 +1052,25 @@
 		display: none;
 	}
 
+	.modo-espera {
+		animation: envelopeIdleFloat 2.8s ease-in-out infinite;
+	}
+
+	@keyframes envelopeIdleFloat {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-3px);
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.step-shoot-right,
 		.step-shoot-in,
-		.step-wobble {
+		.step-wobble,
+		.modo-espera {
 			animation: none !important;
 			transform: none !important;
 		}

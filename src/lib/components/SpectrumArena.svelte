@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
+	import { haptics } from '$lib/engine/input/haptics';
 	import type { SpectrumPickerProjection } from '$lib/engine/render/projections';
 	import SpectrumCard from '$lib/components/SpectrumCard.svelte';
 	import PptIcon from '$lib/components/PptIcon.svelte';
@@ -12,6 +14,10 @@
 	}
 
 	let { projection, onPreSelect, onVote, onConfirm }: Props = $props();
+
+	const prefersReducedMotion =
+		typeof window !== 'undefined' &&
+		Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
 	let agora = $state(Date.now());
 	let animTimer: ReturnType<typeof setInterval> | null = null;
@@ -34,6 +40,7 @@
 	});
 
 	let progressoPercentual = $derived(Math.max(0, Math.min(100, (segundosRestantes / 30) * 100)));
+	let isUrgent = $derived(segundosRestantes <= 7);
 
 	let cartas = $derived(projection.cartas);
 	let carta0 = $derived(cartas[0]);
@@ -48,14 +55,17 @@
 
 	function handleCardClick(cartaId: string) {
 		if (projection.souLider) {
+			haptics.tap();
 			onPreSelect?.(cartaId);
 		} else if (projection.souParceiroVotante) {
+			haptics.tap();
 			onVote?.(cartaId);
 		}
 	}
 
 	function handleConfirm() {
 		if (projection.podeConfirmar && cartaSelecionadaEfetiva) {
+			haptics.tap();
 			onConfirm?.(cartaSelecionadaEfetiva);
 		}
 	}
@@ -73,7 +83,11 @@
 					Equipe {projection.equipeAtivaNome} : Escolha de Espectro
 				</span>
 			</div>
-			<div class="flex items-center gap-1.5 font-mono text-sm font-black text-text-primary">
+			<div
+				class="flex items-center gap-1.5 font-mono text-sm font-black transition-colors {isUrgent
+					? 'animate-pulse text-secondary motion-reduce:animate-none'
+					: 'text-text-primary'}"
+			>
 				<svg
 					width="14"
 					height="14"
@@ -83,7 +97,7 @@
 					stroke-width="2.5"
 					stroke-linecap="round"
 					stroke-linejoin="round"
-					class="shrink-0 text-primary"
+					class="shrink-0 transition-colors {isUrgent ? 'text-secondary' : 'text-primary'}"
 					aria-hidden="true"
 				>
 					<circle cx="12" cy="12" r="10"></circle>
@@ -94,10 +108,12 @@
 		</div>
 
 		<!-- Barra de Progresso Contínua do Temporizador -->
-		<div class="bg-surface-muted h-1.5 w-full overflow-hidden">
+		<div class="h-1.5 w-full overflow-hidden bg-bg-surface-soft">
 			<div
-				class="h-full bg-primary transition-all duration-100 ease-linear"
-				style="width: {progressoPercentual}%;"
+				class="h-full w-full origin-left transition-transform duration-100 ease-linear motion-reduce:transition-none {isUrgent
+					? 'animate-pulse bg-secondary motion-reduce:animate-none'
+					: 'bg-primary'}"
+				style:transform="scaleX({progressoPercentual / 100})"
 			></div>
 		</div>
 
@@ -134,7 +150,14 @@
 				</div>
 
 				<!-- Carta 0 -->
-				<div class="w-full max-w-97.5">
+				<div
+					class="w-full max-w-97.5"
+					in:fly={{
+						y: prefersReducedMotion ? 0 : 14,
+						duration: prefersReducedMotion ? 0 : 240,
+						delay: 0
+					}}
+				>
 					<SpectrumCard
 						carta={carta0}
 						equipe={projection.equipeAtiva}
@@ -152,7 +175,14 @@
 				class="flex w-full max-w-97.5 flex-col items-center justify-center md:max-w-none md:flex-row"
 			>
 				<!-- Carta 1 -->
-				<div class="w-full max-w-97.5">
+				<div
+					class="w-full max-w-97.5"
+					in:fly={{
+						y: prefersReducedMotion ? 0 : 14,
+						duration: prefersReducedMotion ? 0 : 240,
+						delay: prefersReducedMotion ? 0 : 75
+					}}
+				>
 					<SpectrumCard
 						carta={carta1}
 						equipe={projection.equipeAtiva}

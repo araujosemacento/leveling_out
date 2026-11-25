@@ -4,14 +4,27 @@
 	import IconCrown from '~icons/lucide/crown';
 	import IconCopy from '~icons/lucide/copy';
 	import IconCheck from '~icons/lucide/check';
+	import IconLogOut from '~icons/lucide/log-out';
 
-	let { roomCode, playerName, isHost, copied, onCopyLink } = $props<{
+	interface Props {
 		roomCode: string;
 		playerName: string;
 		isHost: boolean;
 		copied: boolean;
+		phaseLabel?: string;
 		onCopyLink: () => void;
-	}>();
+		onAbortMatch?: () => void;
+	}
+
+	let {
+		roomCode,
+		playerName,
+		isHost,
+		copied,
+		phaseLabel = 'Lobby',
+		onCopyLink,
+		onAbortMatch
+	}: Props = $props();
 </script>
 
 <header
@@ -23,7 +36,7 @@
 		</div>
 		<div class="flex flex-col">
 			<span class="font-util-heading text-xs leading-none text-text-muted">
-				Partida Multiplayer : Lobby
+				Partida Multiplayer : {phaseLabel}
 			</span>
 			<span
 				class="mt-1 flex items-baseline gap-1.5 font-util-heading text-base font-bold text-text-primary"
@@ -34,7 +47,7 @@
 		</div>
 	</div>
 
-	<div class="flex items-center gap-3">
+	<div class="flex flex-wrap items-center gap-3">
 		<!-- Identificação do Jogador -->
 		<div
 			class="flex items-center gap-2 rounded-xl border border-border-subtle bg-bg-base px-3.5 py-1.5 text-xs text-text-primary"
@@ -56,8 +69,22 @@
 			{/if}
 		</div>
 
+		<!-- Ação Discreta de Encerramento Seguro para o Anfitrião fora do Lobby -->
+		{#if isHost && phaseLabel !== 'Lobby' && onAbortMatch}
+			<button
+				type="button"
+				onclick={onAbortMatch}
+				class="flex items-center gap-1.5 rounded-xl border border-secondary/35 bg-secondary-soft/70 px-3.5 py-2 font-util-heading text-xs leading-none font-semibold text-secondary transition hover:bg-secondary-soft"
+				title="Encerrar partida em andamento e retornar ao Lobby"
+			>
+				<span>Encerrar Partida</span>
+				<IconLogOut class="h-3.5 w-3.5" />
+			</button>
+		{/if}
+
 		<!-- Botão de Copiar Link -->
 		<button
+			type="button"
 			onclick={onCopyLink}
 			class="flex items-center gap-1.5 rounded-xl border border-border-subtle bg-bg-surface-soft px-3.5 py-2 font-util-heading text-xs leading-none font-semibold text-accent transition hover:bg-bg-surface-elevated"
 			title="Copiar link para convidar colegas de equipe"

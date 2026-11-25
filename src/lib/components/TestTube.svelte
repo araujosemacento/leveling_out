@@ -5,7 +5,7 @@
   Implementado com Svelte 5 Runes ($props, $derived).
 -->
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, untrack } from 'svelte';
 
 	interface Props {
 		level?: number;
@@ -17,8 +17,14 @@
 		duration?: number;
 		interactiveShake?: boolean;
 		cycleHue?: boolean;
+		showBubbles?: boolean;
+		smoothLevel?: boolean;
+		guessLevel?: number | null;
+		showToleranceZones?: boolean;
 		class?: string;
 	}
+
+	const uid = $props.id();
 
 	let {
 		level = 50,
@@ -30,22 +36,60 @@
 		duration = 5,
 		interactiveShake = false,
 		cycleHue = false,
+		showBubbles = false,
+		smoothLevel = true,
+		guessLevel = null,
+		showToleranceZones = false,
 		class: className = 'w-44 h-auto'
 	}: Props = $props();
 
 	// Limites geométricos da coluna útil de líquido no viewBox (0 a 380)
 	const Y_BASE = 320; // 0%
 	const Y_TOPO = 70; // 100%
-
-	// Cálculo da posição vertical do menisco a partir do nível percentual
-	let clampedLevel = $derived(Math.max(0, Math.min(100, level)));
-	let currentY = $derived(Y_BASE - (clampedLevel / 100) * (Y_BASE - Y_TOPO));
+	const TUBE_HEIGHT = Y_BASE - Y_TOPO;
 
 	// Período senoidal exato das ondas (comprimento de onda lambda no viewBox)
 	const WAVE_LENGTH = 80;
 
+	const BUBBLES = [
+		{ x: 48, r: 2.2, offset: 0.05 },
+		{ x: 62, r: 1.6, offset: 0.28 },
+		{ x: 75, r: 2.5, offset: 0.52 },
+		{ x: 88, r: 1.8, offset: 0.74 },
+		{ x: 100, r: 2.0, offset: 0.91 }
+	] as const;
+
+	// Cálculo da posição vertical do menisco com inércia viscosa
+	let clampedLevel = $derived(Math.max(0, Math.min(100, level)));
+	let displayedLevel = $state(untrack(() => Math.max(0, Math.min(100, level))));
+	let levelVelocity = 0;
+
+	let renderLevel = $derived(!smoothLevel ? clampedLevel : displayedLevel);
+	let currentY = $derived(Y_BASE - (renderLevel / 100) * TUBE_HEIGHT);
+	let targetY = $derived(Y_BASE - (clampedLevel / 100) * TUBE_HEIGHT);
+
+	let clampedGuess = $derived(
+		guessLevel !== null && guessLevel !== undefined ? Math.max(0, Math.min(100, guessLevel)) : null
+	);
+	let guessY = $derived(clampedGuess !== null ? Y_BASE - (clampedGuess / 100) * TUBE_HEIGHT : null);
+
 	let isPressed = $state(false);
 	let wavePhase = $state(0); // Offset angular contínuo da onda no ciclo [0, WAVE_LENGTH)
+
+	function computeWaveAmplitude(dur: number, shake: number, vel: number): number {
+		const durationTension = Math.max(0, Math.min(1, (4.5 - dur) / 4));
+		const velocityTension = Math.max(0, Math.min(1, Math.abs(vel) / 140));
+		const combinedTension = Math.min(1, Math.max(durationTension, shake, velocityTension));
+		return +(12 + combinedTension * 9).toFixed(2);
+	}
+
+	let waveAmp = $state(
+		computeWaveAmplitude(
+			untrack(() => duration),
+			0,
+			0
+		)
+	);
 
 	// Cores semânticas das equipes ou rotação contínua de matiz (Hue) no mesmo ciclo temporal da onda
 	let currentHue = $derived((245 + (wavePhase / WAVE_LENGTH) * 360) % 360);
@@ -53,54 +97,61 @@
 	let liquidColor = $derived(
 		cycleHue
 			? `hsl(${currentHue.toFixed(1)}, 80%, 55%)`
-			: (customColor ?? (team === 'ganso' ? '#f59e0b' : team === 'neutral' ? '#0ea5e9' : '#4f46e5'))
+			: (customColor ?? (team === 'ganso' ? '#f06449' : team === 'neutral' ? '#0ea5e9' : '#4f46e5'))
 	);
 
 	let liquidDarkColor = $derived(
 		cycleHue
 			? `hsl(${currentHue.toFixed(1)}, 80%, 30%)`
 			: (customDarkColor ??
-					(team === 'ganso' ? '#78350f' : team === 'neutral' ? '#0369a1' : '#272269'))
+					(team === 'ganso' ? '#7c2d12' : team === 'neutral' ? '#0369a1' : '#272269'))
 	);
 
 	// Gera o contorno superior contínuo da onda senoidal de startCycle até endCycle
 	// Cada ciclo de 80px possui uma crista (semi-círculo convexo) e um vale (semi-círculo côncavo)
-	function generateWaveTop(y: number, startCycle: number, endCycle: number): string {
+	function generateWaveTop(y: number, startCycle: number, endCycle: number, amp = 12): string {
 		let path = `M ${startCycle * WAVE_LENGTH},${y}`;
 		for (let i = startCycle; i < endCycle; i++) {
 			const x0 = i * WAVE_LENGTH;
 			// Meio ciclo (40px): crista convexa para cima (semi-círculo senoidal)
-			path += ` C ${x0 + 13},${y - 19} ${x0 + 27},${y - 19} ${x0 + 40},${y}`;
+			path += ` C ${x0 + 13},${y - amp} ${x0 + 27},${y - amp} ${x0 + 40},${y}`;
 			// Meio ciclo (40px): vale côncavo para baixo
-			path += ` C ${x0 + 53},${y + 19} ${x0 + 67},${y + 19} ${x0 + 80},${y}`;
+			path += ` C ${x0 + 53},${y + amp} ${x0 + 67},${y + amp} ${x0 + 80},${y}`;
 		}
 		return path;
 	}
 
 	// Gera os arcos de reflexo especular na crista de cada ciclo
-	function generateWaveHighlights(y: number, startCycle: number, endCycle: number): string {
+	function generateWaveHighlights(
+		y: number,
+		startCycle: number,
+		endCycle: number,
+		amp = 12
+	): string {
+		const yBaseOffset = +(amp * (5 / 19)).toFixed(1);
+		const yPeakOffset = +Math.max(2, amp - 2).toFixed(1);
 		let path = '';
 		for (let i = startCycle; i < endCycle; i++) {
 			const x0 = i * WAVE_LENGTH;
-			path += ` M ${x0 + 8},${y - 5} C ${x0 + 15},${y - 17} ${x0 + 25},${y - 17} ${x0 + 32},${y - 5}`;
+			path += ` M ${x0 + 8},${y - yBaseOffset} C ${x0 + 15},${y - yPeakOffset} ${x0 + 25},${y - yPeakOffset} ${x0 + 32},${y - yBaseOffset}`;
 		}
 		return path;
 	}
 
 	// Caminho SVG do elemento de background: 4 ciclos (-1 até 3 = x de -80 a 240)
-	let bgWavePath = $derived(`${generateWaveTop(currentY, -1, 3)} L 240,380 L -80,380 Z`);
+	let bgWavePath = $derived(`${generateWaveTop(currentY, -1, 3, waveAmp)} L 240,380 L -80,380 Z`);
 
 	// Linha de contorno superior da crista traseira de background
-	let bgCrestPath = $derived(generateWaveTop(currentY, -1, 3));
+	let bgCrestPath = $derived(generateWaveTop(currentY, -1, 3, waveAmp));
 
 	// Caminho SVG do elemento de foreground: 4 ciclos (-1 até 3 = x de -80 a 240)
-	let fgWavePath = $derived(`${generateWaveTop(currentY, -1, 3)} L 240,380 L -80,380 Z`);
+	let fgWavePath = $derived(`${generateWaveTop(currentY, -1, 3, waveAmp)} L 240,380 L -80,380 Z`);
 
 	// Linha de contorno superior da onda de foreground
-	let fgCrestPath = $derived(generateWaveTop(currentY, -1, 3));
+	let fgCrestPath = $derived(generateWaveTop(currentY, -1, 3, waveAmp));
 
 	// Linhas de brilho especular nas cristas de foreground
-	let fgHighlightPath = $derived(generateWaveHighlights(currentY, -1, 3));
+	let fgHighlightPath = $derived(generateWaveHighlights(currentY, -1, 3, waveAmp));
 
 	// --- INTEGRAÇÃO CONTÍNUA DE FASE E FÍSICA ADITIVA DO EASTER EGG ---
 	const MIN_DURATION = 0.25; // Duração mínima segura (tensão máxima / agitação máxima)
@@ -111,12 +162,34 @@
 	let lastFrameTime = 0;
 	let animFrameId: number | null = null;
 
+	function isReducedMotion(): boolean {
+		return (
+			typeof window !== 'undefined' &&
+			Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+		);
+	}
+
 	function tick(now: number) {
 		if (!lastFrameTime) lastFrameTime = now;
 		const dt = Math.min(0.1, (now - lastFrameTime) / 1000); // Segundos decorridos protegidos contra tab inativa
 		lastFrameTime = now;
 
-		if (interactiveShake) {
+		const reducedMotion = isReducedMotion();
+
+		if (!smoothLevel || reducedMotion) {
+			displayedLevel = clampedLevel;
+			levelVelocity = 0;
+		} else {
+			const force = (clampedLevel - displayedLevel) * 14;
+			levelVelocity = (levelVelocity + force * dt) * Math.exp(-6.5 * dt);
+			displayedLevel += levelVelocity * dt;
+			if (Math.abs(clampedLevel - displayedLevel) < 0.05 && Math.abs(levelVelocity) < 0.05) {
+				displayedLevel = clampedLevel;
+				levelVelocity = 0;
+			}
+		}
+
+		if (interactiveShake && !reducedMotion) {
 			// Decaimento exponencial contínuo da agitação (viscosidade/amortecimento)
 			// Dissipa a energia suavemente em cerca de 1 a 1.5s sem resets abruptos
 			shakeEnergy *= Math.pow(0.95, dt * 60);
@@ -131,11 +204,15 @@
 			duration - shakeEnergy * (duration - MIN_DURATION)
 		);
 
+		waveAmp = reducedMotion
+			? 12
+			: computeWaveAmplitude(effectiveDuration, shakeEnergy, levelVelocity);
+
 		// Velocidade linear da onda em pixels por segundo
 		const speed = WAVE_LENGTH / effectiveDuration;
 
 		// Integração contínua da fase: avança continuamente sem saltos de fase nem flickering
-		if (animated) {
+		if (animated && !reducedMotion) {
 			wavePhase = (wavePhase + speed * dt) % WAVE_LENGTH;
 		}
 
@@ -199,7 +276,7 @@
 	viewBox="0 0 140 380"
 	fill="none"
 	xmlns="http://www.w3.org/2000/svg"
-	class="{className} {interactiveShake
+	class="overflow-visible {className} {interactiveShake
 		? isPressed
 			? 'cursor-grabbing touch-none select-none'
 			: 'cursor-grab touch-none select-none'
@@ -213,7 +290,7 @@
 >
 	<defs>
 		<!-- Máscara do interior do tubo para recorte perfeito do líquido e da base arredondada em U -->
-		<clipPath id="tubeInteriorClip-{team}">
+		<clipPath id="tubeInteriorClip-{uid}">
 			<path
 				d="
 					M 34,42 
@@ -228,7 +305,7 @@
 
 		<!-- Padrão hachurado sutil para evidenciar a área de background do menisco -->
 		<pattern
-			id="diagonalHatch-{team}"
+			id="diagonalHatch-{uid}"
 			width="6"
 			height="6"
 			patternTransform="rotate(45 0 0)"
@@ -238,7 +315,7 @@
 		</pattern>
 
 		<!-- Gradiente de reflexo da parede externa de vidro -->
-		<linearGradient id="glassGlazeReflect" x1="0" y1="0" x2="1" y2="0">
+		<linearGradient id="glassGlazeReflect-{uid}" x1="0" y1="0" x2="1" y2="0">
 			<stop offset="0%" stop-color="#ffffff" stop-opacity="0.35" />
 			<stop offset="25%" stop-color="#ffffff" stop-opacity="0.05" />
 			<stop offset="75%" stop-color="#ffffff" stop-opacity="0" />
@@ -261,7 +338,7 @@
 	/>
 
 	<!-- 2. LÍQUIDO RECORTADO NO INTERIOR DO TUBO -->
-	<g clip-path="url(#tubeInteriorClip-{team})">
+	<g clip-path="url(#tubeInteriorClip-{uid})">
 		<!-- ELEMENTO DE BACKGROUND DO LÍQUIDO (Mais escuro / onda posterior animada em sentido oposto) -->
 		<g
 			class="meniscus-bg-group"
@@ -270,7 +347,7 @@
 			<path d={bgWavePath} fill={liquidDarkColor} />
 
 			<!-- Hachuras de profundidade no elemento escuro (conforme rascunho) -->
-			<path d={bgWavePath} fill="url(#diagonalHatch-{team})" opacity="0.6" />
+			<path d={bgWavePath} fill="url(#diagonalHatch-{uid})" opacity="0.6" />
 
 			<!-- Traço de contorno da crista traseira -->
 			<path d={bgCrestPath} fill="none" stroke={liquidDarkColor} stroke-width="1.8" />
@@ -296,6 +373,56 @@
 				stroke-linecap="round"
 			/>
 		</g>
+
+		<!-- MICRO-BOLHAS ASCENDENTES (Sincronizadas em wavePhase) -->
+		{#if showBubbles && renderLevel > 6}
+			{@const travel = Math.max(0, Y_BASE - (currentY + 8))}
+			<g class="tube-bubbles" aria-hidden="true">
+				{#each BUBBLES as bubble (bubble.x)}
+					{@const progress = (wavePhase / WAVE_LENGTH + bubble.offset) % 1}
+					{@const by = Y_BASE - progress * travel}
+					{@const bOpacity =
+						progress < 0.1 ? progress * 5 : progress > 0.85 ? (1 - progress) * 3.3 : 0.45}
+					<circle
+						cx={bubble.x}
+						cy={by.toFixed(1)}
+						r={bubble.r}
+						fill="#ffffff"
+						fill-opacity={Math.max(0, bOpacity).toFixed(2)}
+					/>
+				{/each}
+			</g>
+		{/if}
+
+		<!-- FAIXAS DE TOLERÂNCIA PARA REVELAÇÃO (+/-12%, +/-6%, +/-2%) -->
+		{#if showToleranceZones}
+			<g aria-hidden="true">
+				<rect
+					x="34"
+					y={targetY - 0.12 * TUBE_HEIGHT}
+					width="80"
+					height={0.24 * TUBE_HEIGHT}
+					fill="#facc15"
+					opacity="0.10"
+				/>
+				<rect
+					x="34"
+					y={targetY - 0.06 * TUBE_HEIGHT}
+					width="80"
+					height={0.12 * TUBE_HEIGHT}
+					fill="#facc15"
+					opacity="0.16"
+				/>
+				<rect
+					x="34"
+					y={targetY - 0.02 * TUBE_HEIGHT}
+					width="80"
+					height={0.04 * TUBE_HEIGHT}
+					fill="#facc15"
+					opacity="0.28"
+				/>
+			</g>
+		{/if}
 	</g>
 
 	<!-- 3. ESCALA GRADUADA NA PAREDE DIREITA (1 a 10) -->
@@ -350,7 +477,7 @@
 			C 98,366 114,355 114,320 
 			L 114,38
 		"
-		fill="url(#glassGlazeReflect)"
+		fill="url(#glassGlazeReflect-{uid})"
 		stroke="currentColor"
 		stroke-width="2.5"
 		stroke-linecap="round"
@@ -408,6 +535,33 @@
 		stroke-width="2.5"
 		stroke-linecap="round"
 	/>
+
+	<!-- 5. AGULHA TRACEJADA DO PALPITE (Para comparação na Revelação) -->
+	{#if guessY !== null && clampedGuess !== null}
+		<g aria-label="Palpite registrado em {Math.round(clampedGuess)} por cento">
+			<line
+				x1="28"
+				y1={guessY}
+				x2="120"
+				y2={guessY}
+				stroke="currentColor"
+				stroke-width="2"
+				stroke-dasharray="4 3"
+			/>
+			<path d="M 20,{guessY - 5} L 30,{guessY} L 20,{guessY + 5} Z" fill="currentColor" />
+			<text
+				x="17"
+				y={guessY + 3}
+				text-anchor="end"
+				font-family="var(--font-code, 'Fira Code', monospace)"
+				font-size="9"
+				font-weight="700"
+				fill="currentColor"
+			>
+				{Math.round(clampedGuess)}%
+			</text>
+		</g>
+	{/if}
 </svg>
 
 <style>
