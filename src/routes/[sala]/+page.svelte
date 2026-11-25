@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { GameEngine, type LobbyTeamChoice, type PptMove } from '$lib/engine';
-	import { sanitizeNickname } from '$lib/engine/input/sanitize';
+	import { validateNickname } from '$lib/engine/input/sanitize';
 	import { GameSocket } from '$lib/network/game-socket';
 
 	import NicknameModal from '$lib/components/NicknameModal.svelte';
@@ -28,7 +28,6 @@
 	let erroIngresso = $state('');
 
 	let rawNickname = $state('');
-	let cleanNickname = $derived(sanitizeNickname(rawNickname));
 
 	let localPlayerId = $state('');
 	let sessionToken = $state('');
@@ -211,7 +210,14 @@
 
 	function handleEntrarComApelido(e: SubmitEvent) {
 		e.preventDefault();
-		if (!cleanNickname.trim() || statusConexao === 'CONECTANDO') return;
+
+		const validation = validateNickname(rawNickname);
+		if (!validation.valido) {
+			erroIngresso = validation.erro ?? 'Nickname inválido';
+			return;
+		}
+
+		if (statusConexao === 'CONECTANDO') return;
 
 		statusConexao = 'CONECTANDO';
 		erroIngresso = '';
@@ -219,9 +225,9 @@
 		inicializarEngine();
 		const novoId = localPlayerId || 'p_' + crypto.randomUUID().slice(0, 10);
 		localPlayerId = novoId;
-		playerName = cleanNickname;
+		playerName = validation.sanitizado;
 
-		socket?.conectar(roomCode, novoId, sessionToken, cleanNickname);
+		socket?.conectar(roomCode, novoId, sessionToken, validation.sanitizado);
 	}
 
 	function inicializarEngine() {
@@ -403,9 +409,8 @@
 	isOpen={statusConexao === 'AGUARDANDO_APELIDO' || statusConexao === 'CONECTANDO'}
 	{roomCode}
 	{statusConexao}
-	{erroIngresso}
+	bind:erroIngresso
 	bind:rawNickname
-	{cleanNickname}
 	onSubmit={handleEntrarComApelido}
 />
 
