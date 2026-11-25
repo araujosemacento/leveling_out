@@ -73,8 +73,14 @@ export type SandboxPresetId =
 	| 'espectro_voto_parceiro'
 	| 'rodada_dica'
 	| 'rodada_palpite'
+	| 'rodada_match_point_tensao'
 	| 'rodada_revelacao'
-	| 'fim_de_jogo_vitoria';
+	| 'rodada_revelacao_muito_perto'
+	| 'rodada_revelacao_perto'
+	| 'rodada_revelacao_fora_margem'
+	| 'fim_de_jogo_vitoria'
+	| 'fim_de_jogo_ganso'
+	| 'fim_de_jogo_wo';
 
 export interface SandboxPresetDefinition {
 	id: SandboxPresetId;
@@ -85,14 +91,14 @@ export interface SandboxPresetDefinition {
 	snapshot: SnapshotSalaProjetado;
 }
 
-const CARTAS_EXEMPLO: SpectrumCard[] = [
+export const SANDBOX_SPECTRUM_DECK: SpectrumCard[] = [
 	{
 		id: 'c1',
 		left: 'Insosso',
 		right: 'Salgado',
 		esquerda: 'Insosso',
 		direita: 'Salgado',
-		categoria: 'Sensoriais'
+		categoria: 'Sensoriais e Físicos'
 	},
 	{
 		id: 'c2',
@@ -100,9 +106,75 @@ const CARTAS_EXEMPLO: SpectrumCard[] = [
 		right: 'Boss Battle',
 		esquerda: 'Sidequest',
 		direita: 'Boss Battle',
-		categoria: 'Cultura Pop'
+		categoria: 'Cultura Pop e Ficcional'
+	},
+	{
+		id: 'c3',
+		left: 'Gelado',
+		right: 'Fervendo',
+		esquerda: 'Gelado',
+		direita: 'Fervendo',
+		categoria: 'Sensoriais e Físicos'
+	},
+	{
+		id: 'c4',
+		left: 'Entediante',
+		right: 'Empolgante',
+		esquerda: 'Entediante',
+		direita: 'Empolgante',
+		categoria: 'Juízos de Valor e Opinião'
+	},
+	{
+		id: 'c5',
+		left: 'Barato',
+		right: 'Luxuoso',
+		esquerda: 'Barato',
+		direita: 'Luxuoso',
+		categoria: 'Juízos de Valor e Opinião'
+	},
+	{
+		id: 'c6',
+		left: 'Subestimado',
+		right: 'Superestimado',
+		esquerda: 'Subestimado',
+		direita: 'Superestimado',
+		categoria: 'Juízos de Valor e Opinião'
+	},
+	{
+		id: 'c7',
+		left: 'Frágil',
+		right: 'Indestrutível',
+		esquerda: 'Frágil',
+		direita: 'Indestrutível',
+		categoria: 'Sensoriais e Físicos'
+	},
+	{
+		id: 'c8',
+		left: 'Modinha passageira',
+		right: 'Clássico atemporal',
+		esquerda: 'Modinha passageira',
+		direita: 'Clássico atemporal',
+		categoria: 'Juízos de Valor e Opinião'
+	},
+	{
+		id: 'c9',
+		left: 'Silencioso',
+		right: 'Barulhento',
+		esquerda: 'Silencioso',
+		direita: 'Barulhento',
+		categoria: 'Sensoriais e Físicos'
+	},
+	{
+		id: 'c10',
+		left: 'Inútil',
+		right: 'Indispensável',
+		esquerda: 'Inútil',
+		direita: 'Indispensável',
+		categoria: 'Juízos de Valor e Opinião'
 	}
 ];
+
+const CARTAS_EXEMPLO: SpectrumCard[] = SANDBOX_SPECTRUM_DECK.slice(0, 2);
 
 function montarJogadoresSnapshot(
 	config: Array<{ id: string; equipe: LobbyTeamChoice; papel?: PlayerRole }>
@@ -490,6 +562,39 @@ export const SANDBOX_PRESETS: Record<SandboxPresetId, SandboxPresetDefinition> =
 			}
 		}
 	},
+	rodada_match_point_tensao: {
+		id: 'rodada_match_point_tensao',
+		titulo: 'Rodada Match Point : Placar 9 x 9 e Menisco Acelerado',
+		categoria: 'Rodada',
+		fase: 'RODADA_DICA',
+		defaultPovId: 'p1',
+		snapshot: {
+			codigo: 'SALA-DEV',
+			fase: 'RODADA_DICA',
+			rodada: 6,
+			equipeAtiva: 'A',
+			placarA: 9,
+			placarB: 9,
+			hostId: 'p1',
+			jogadores: montarJogadoresSnapshot([
+				{ id: 'p1', equipe: 'A', papel: 'CODIFICADOR' },
+				{ id: 'p2', equipe: 'A', papel: 'PALPITEIRO' },
+				{ id: 'p3', equipe: 'B', papel: 'ESPECTADOR' },
+				{ id: 'p4', equipe: 'B', papel: 'ESPECTADOR' }
+			]),
+			rodadaAtiva: {
+				numero: 6,
+				equipe: 'A',
+				codificadorId: 'p1',
+				palpiteiroId: 'p2',
+				espectroEsquerda: 'Entediante',
+				espectroDireita: 'Empolgante',
+				metaOculta: 86,
+				dica: '',
+				palpite: 50
+			}
+		}
+	},
 	rodada_revelacao: {
 		id: 'rodada_revelacao',
 		titulo: 'Revelação Dramática : Líquido Sobe e Revela +4 Pontos',
@@ -522,7 +627,123 @@ export const SANDBOX_PRESETS: Record<SandboxPresetId, SandboxPresetDefinition> =
 				palpite: 71,
 				pontos: 4,
 				tier: 'NA_MOSCA',
-				label: 'Na Mosca!'
+				label: 'Na Mosca!',
+				diff: 1,
+				transicaoEm: new Date(Date.now() + 6500).toISOString()
+			}
+		}
+	},
+	rodada_revelacao_muito_perto: {
+		id: 'rodada_revelacao_muito_perto',
+		titulo: 'Revelação : Muito Perto (+3 Pontos, Erro 4%)',
+		categoria: 'Rodada',
+		fase: 'RODADA_REVELACAO',
+		defaultPovId: 'p2',
+		snapshot: {
+			codigo: 'SALA-DEV',
+			fase: 'REVELACAO',
+			rodada: 3,
+			equipeAtiva: 'A',
+			placarA: 7,
+			placarB: 4,
+			hostId: 'p1',
+			jogadores: montarJogadoresSnapshot([
+				{ id: 'p1', equipe: 'A', papel: 'CODIFICADOR' },
+				{ id: 'p2', equipe: 'A', papel: 'PALPITEIRO' },
+				{ id: 'p3', equipe: 'B', papel: 'ESPECTADOR' },
+				{ id: 'p4', equipe: 'B', papel: 'ESPECTADOR' }
+			]),
+			rodadaAtiva: {
+				numero: 3,
+				equipe: 'A',
+				codificadorId: 'p1',
+				palpiteiroId: 'p2',
+				espectroEsquerda: 'Barato',
+				espectroDireita: 'Luxuoso',
+				metaOculta: 64,
+				dica: 'Jantar em bistrô no centro',
+				palpite: 60,
+				pontos: 3,
+				tier: 'MUITO_PERTO',
+				label: 'Muito Perto!',
+				diff: 4,
+				transicaoEm: new Date(Date.now() + 6500).toISOString()
+			}
+		}
+	},
+	rodada_revelacao_perto: {
+		id: 'rodada_revelacao_perto',
+		titulo: 'Revelação : Perto (+2 Pontos, Erro 10%, Equipe Ganso)',
+		categoria: 'Rodada',
+		fase: 'RODADA_REVELACAO',
+		defaultPovId: 'p3',
+		snapshot: {
+			codigo: 'SALA-DEV',
+			fase: 'REVELACAO',
+			rodada: 4,
+			equipeAtiva: 'B',
+			placarA: 4,
+			placarB: 6,
+			hostId: 'p1',
+			jogadores: montarJogadoresSnapshot([
+				{ id: 'p1', equipe: 'A', papel: 'ESPECTADOR' },
+				{ id: 'p2', equipe: 'A', papel: 'ESPECTADOR' },
+				{ id: 'p3', equipe: 'B', papel: 'CODIFICADOR' },
+				{ id: 'p4', equipe: 'B', papel: 'PALPITEIRO' }
+			]),
+			rodadaAtiva: {
+				numero: 4,
+				equipe: 'B',
+				codificadorId: 'p3',
+				palpiteiroId: 'p4',
+				espectroEsquerda: 'Gelado',
+				espectroDireita: 'Fervendo',
+				metaOculta: 30,
+				dica: 'Chuva de outono no fim da tarde',
+				palpite: 40,
+				pontos: 2,
+				tier: 'PERTO',
+				label: 'Perto!',
+				diff: 10,
+				transicaoEm: new Date(Date.now() + 6500).toISOString()
+			}
+		}
+	},
+	rodada_revelacao_fora_margem: {
+		id: 'rodada_revelacao_fora_margem',
+		titulo: 'Revelação : Fora da Margem (0 Pontos, Erro 37%)',
+		categoria: 'Rodada',
+		fase: 'RODADA_REVELACAO',
+		defaultPovId: 'p2',
+		snapshot: {
+			codigo: 'SALA-DEV',
+			fase: 'REVELACAO',
+			rodada: 2,
+			equipeAtiva: 'A',
+			placarA: 4,
+			placarB: 3,
+			hostId: 'p1',
+			jogadores: montarJogadoresSnapshot([
+				{ id: 'p1', equipe: 'A', papel: 'CODIFICADOR' },
+				{ id: 'p2', equipe: 'A', papel: 'PALPITEIRO' },
+				{ id: 'p3', equipe: 'B', papel: 'ESPECTADOR' },
+				{ id: 'p4', equipe: 'B', papel: 'ESPECTADOR' }
+			]),
+			rodadaAtiva: {
+				numero: 2,
+				equipe: 'A',
+				codificadorId: 'p1',
+				palpiteiroId: 'p2',
+				espectroEsquerda: 'Sidequest',
+				espectroDireita: 'Boss Battle',
+				metaOculta: 82,
+				dica: 'Enfrentar um dragão opcional antes do chefe final',
+				palpite: 45,
+				pontos: 0,
+				tier: 'FORA_DA_MARGEM',
+				label: 'Fora da Margem',
+				diff: 37,
+				transicaoEm: new Date(Date.now() + 6500).toISOString()
 			}
 		}
 	},
@@ -534,8 +755,8 @@ export const SANDBOX_PRESETS: Record<SandboxPresetId, SandboxPresetDefinition> =
 		defaultPovId: 'p1',
 		snapshot: {
 			codigo: 'SALA-DEV',
-			fase: 'FIM_DE_JOGO',
-			rodada: 4,
+			fase: 'FIM_JOGO',
+			rodada: 5,
 			equipeAtiva: 'A',
 			placarA: 10,
 			placarB: 6,
@@ -549,7 +770,7 @@ export const SANDBOX_PRESETS: Record<SandboxPresetId, SandboxPresetDefinition> =
 				{ id: 'p4', equipe: 'B', papel: 'ESPECTADOR' }
 			]),
 			rodadaAtiva: {
-				numero: 4,
+				numero: 5,
 				equipe: 'A',
 				codificadorId: 'p1',
 				palpiteiroId: 'p2',
@@ -560,8 +781,257 @@ export const SANDBOX_PRESETS: Record<SandboxPresetId, SandboxPresetDefinition> =
 				palpite: 71,
 				pontos: 4,
 				tier: 'NA_MOSCA',
-				label: 'Na Mosca!'
-			}
+				label: 'Na Mosca!',
+				diff: 1
+			},
+			historico: [
+				{
+					numero: 1,
+					equipe: 'A',
+					codificadorId: 'p1',
+					palpiteiroId: 'p2',
+					espectroEsquerda: 'Gelado',
+					espectroDireita: 'Fervendo',
+					metaOculta: 24,
+					palpite: 23,
+					dica: 'Sorvete derretendo no freezer',
+					pontos: 4,
+					tier: 'NA_MOSCA',
+					diff: 1,
+					duracaoSegundos: 16
+				},
+				{
+					numero: 2,
+					equipe: 'B',
+					codificadorId: 'p3',
+					palpiteiroId: 'p4',
+					espectroEsquerda: 'Barato',
+					espectroDireita: 'Luxuoso',
+					metaOculta: 78,
+					palpite: 73,
+					dica: 'Relógio suíço de vitrine',
+					pontos: 3,
+					tier: 'MUITO_PERTO',
+					diff: 5,
+					duracaoSegundos: 21
+				},
+				{
+					numero: 3,
+					equipe: 'A',
+					codificadorId: 'p2',
+					palpiteiroId: 'p1',
+					espectroEsquerda: 'Sidequest',
+					espectroDireita: 'Boss Battle',
+					metaOculta: 62,
+					palpite: 52,
+					dica: 'Torneio secreto de arena',
+					pontos: 2,
+					tier: 'PERTO',
+					diff: 10,
+					duracaoSegundos: 19
+				},
+				{
+					numero: 4,
+					equipe: 'B',
+					codificadorId: 'p4',
+					palpiteiroId: 'p3',
+					espectroEsquerda: 'Silencioso',
+					espectroDireita: 'Barulhento',
+					metaOculta: 41,
+					palpite: 45,
+					dica: 'Cafeteria cheia pela manhã',
+					pontos: 3,
+					tier: 'MUITO_PERTO',
+					diff: 4,
+					duracaoSegundos: 14
+				},
+				{
+					numero: 5,
+					equipe: 'A',
+					codificadorId: 'p1',
+					palpiteiroId: 'p2',
+					espectroEsquerda: 'Insosso',
+					espectroDireita: 'Salgado',
+					metaOculta: 72,
+					palpite: 71,
+					dica: 'Pipoca de cinema com manteiga extra',
+					pontos: 4,
+					tier: 'NA_MOSCA',
+					diff: 1,
+					duracaoSegundos: 15
+				}
+			]
+		}
+	},
+	fim_de_jogo_ganso: {
+		id: 'fim_de_jogo_ganso',
+		titulo: 'Vitória Final : Equipe Ganso Vence por 11 x 8',
+		categoria: 'Vitória',
+		fase: 'VITORIA',
+		defaultPovId: 'p3',
+		snapshot: {
+			codigo: 'SALA-DEV',
+			fase: 'FIM_JOGO',
+			rodada: 6,
+			equipeAtiva: 'B',
+			placarA: 8,
+			placarB: 11,
+			vencedor: 'B',
+			motivoFim: 'VITORIA',
+			hostId: 'p1',
+			jogadores: montarJogadoresSnapshot([
+				{ id: 'p1', equipe: 'A', papel: 'ESPECTADOR' },
+				{ id: 'p2', equipe: 'A', papel: 'ESPECTADOR' },
+				{ id: 'p3', equipe: 'B', papel: 'CODIFICADOR' },
+				{ id: 'p4', equipe: 'B', papel: 'PALPITEIRO' }
+			]),
+			rodadaAtiva: {
+				numero: 6,
+				equipe: 'B',
+				codificadorId: 'p3',
+				palpiteiroId: 'p4',
+				espectroEsquerda: 'Modinha passageira',
+				espectroDireita: 'Clássico atemporal',
+				metaOculta: 88,
+				dica: 'Trilogia original de ficção científica no cinema',
+				palpite: 89,
+				pontos: 4,
+				tier: 'NA_MOSCA',
+				label: 'Na Mosca!',
+				diff: 1
+			},
+			historico: [
+				{
+					numero: 1,
+					equipe: 'A',
+					codificadorId: 'p1',
+					palpiteiroId: 'p2',
+					espectroEsquerda: 'Frágil',
+					espectroDireita: 'Indestrutível',
+					metaOculta: 45,
+					palpite: 54,
+					dica: 'Caneca de cerâmica grossa',
+					pontos: 2,
+					tier: 'PERTO',
+					diff: 9,
+					duracaoSegundos: 18
+				},
+				{
+					numero: 2,
+					equipe: 'B',
+					codificadorId: 'p3',
+					palpiteiroId: 'p4',
+					espectroEsquerda: 'Entediante',
+					espectroDireita: 'Empolgante',
+					metaOculta: 91,
+					palpite: 90,
+					dica: 'Final de campeonato decidida nos acréscimos',
+					pontos: 4,
+					tier: 'NA_MOSCA',
+					diff: 1,
+					duracaoSegundos: 13
+				},
+				{
+					numero: 3,
+					equipe: 'A',
+					codificadorId: 'p2',
+					palpiteiroId: 'p1',
+					espectroEsquerda: 'Subestimado',
+					espectroDireita: 'Superestimado',
+					metaOculta: 28,
+					palpite: 32,
+					dica: 'Pão de queijo de padaria simples',
+					pontos: 3,
+					tier: 'MUITO_PERTO',
+					diff: 4,
+					duracaoSegundos: 20
+				},
+				{
+					numero: 4,
+					equipe: 'B',
+					codificadorId: 'p4',
+					palpiteiroId: 'p3',
+					espectroEsquerda: 'Inútil',
+					espectroDireita: 'Indispensável',
+					metaOculta: 68,
+					palpite: 63,
+					dica: 'Lanterna no porta-luvas do carro',
+					pontos: 3,
+					tier: 'MUITO_PERTO',
+					diff: 5,
+					duracaoSegundos: 17
+				},
+				{
+					numero: 5,
+					equipe: 'A',
+					codificadorId: 'p1',
+					palpiteiroId: 'p2',
+					espectroEsquerda: 'Insosso',
+					espectroDireita: 'Salgado',
+					metaOculta: 76,
+					palpite: 72,
+					dica: 'Batata frita com queijo parmesão',
+					pontos: 3,
+					tier: 'MUITO_PERTO',
+					diff: 4,
+					duracaoSegundos: 15
+				},
+				{
+					numero: 6,
+					equipe: 'B',
+					codificadorId: 'p3',
+					palpiteiroId: 'p4',
+					espectroEsquerda: 'Modinha passageira',
+					espectroDireita: 'Clássico atemporal',
+					metaOculta: 88,
+					palpite: 89,
+					dica: 'Trilogia original de ficção científica no cinema',
+					pontos: 4,
+					tier: 'NA_MOSCA',
+					diff: 1,
+					duracaoSegundos: 14
+				}
+			]
+		}
+	},
+	fim_de_jogo_wo: {
+		id: 'fim_de_jogo_wo',
+		titulo: 'Vitória por W.O. : Encerramento Antecipado',
+		categoria: 'Vitória',
+		fase: 'VITORIA',
+		defaultPovId: 'p1',
+		snapshot: {
+			codigo: 'SALA-DEV',
+			fase: 'FIM_JOGO',
+			rodada: 1,
+			equipeAtiva: 'A',
+			placarA: 0,
+			placarB: 0,
+			vencedor: 'A',
+			motivoFim: 'WO',
+			hostId: 'p1',
+			jogadores: montarJogadoresSnapshot([
+				{ id: 'p1', equipe: 'A', papel: 'ESPECTADOR' },
+				{ id: 'p2', equipe: 'A', papel: 'ESPECTADOR' },
+				{ id: 'p3', equipe: 'B', papel: 'ESPECTADOR' },
+				{ id: 'p4', equipe: 'B', papel: 'ESPECTADOR' }
+			]),
+			rodadaAtiva: {
+				numero: 1,
+				equipe: 'A',
+				codificadorId: 'p1',
+				palpiteiroId: 'p2',
+				espectroEsquerda: 'Insosso',
+				espectroDireita: 'Salgado',
+				metaOculta: 50,
+				dica: '',
+				palpite: 50,
+				pontos: 0,
+				tier: 'FORA_DA_MARGEM',
+				label: 'W.O.',
+				diff: 0
+			},
+			historico: []
 		}
 	}
 };
@@ -580,8 +1050,14 @@ export const PRESET_SEQUENCE: SandboxPresetId[] = [
 	'espectro_voto_parceiro',
 	'rodada_dica',
 	'rodada_palpite',
+	'rodada_match_point_tensao',
 	'rodada_revelacao',
-	'fim_de_jogo_vitoria'
+	'rodada_revelacao_muito_perto',
+	'rodada_revelacao_perto',
+	'rodada_revelacao_fora_margem',
+	'fim_de_jogo_vitoria',
+	'fim_de_jogo_ganso',
+	'fim_de_jogo_wo'
 ];
 
 /**
@@ -611,14 +1087,22 @@ export function projectSnapshotForPlayer(
 		}
 	}
 
-	// 2. Blindagem de Meta Oculta da Rodada
+	// 2. Blindagem de Meta Oculta e Diff da Rodada
 	if (cloned.rodadaAtiva) {
 		const fase = cloned.fase;
-		const isRevelada = fase === 'RODADA_REVELACAO' || fase === 'FIM_DE_JOGO' || fase === 'VITORIA';
+		const isRevelada =
+			fase === 'RODADA_REVELACAO' ||
+			fase === 'REVELACAO' ||
+			fase === 'FIM_DE_JOGO' ||
+			fase === 'FIM_JOGO' ||
+			fase === 'VITORIA';
 		const isCodificador = viewerPlayerId === cloned.rodadaAtiva.codificadorId;
 
-		if (!isRevelada && !isCodificador) {
-			cloned.rodadaAtiva.metaOculta = null;
+		if (!isRevelada) {
+			cloned.rodadaAtiva.diff = null;
+			if (!isCodificador) {
+				cloned.rodadaAtiva.metaOculta = null;
+			}
 		}
 	}
 
